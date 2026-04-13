@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#0a0f1a"/>
+<title>A.G. Rhodes — Meal Check-In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:      #0a0f1a;
+    --surface: #111827;
+    --border:  #1f2d42;
+    --card:    #141e2e;
+    --accent:  #00c896;
+    --accent2: #0ea5e9;
+    --gold:    #f59e0b;
+    --danger:  #ef4444;
+    --warn:    #f59e0b;
+    --text:    #f0f6ff;
+    --muted:   #6b7f99;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 4px;
+    text-align: center;
+  }
+  .logo span { color: var(--accent); }
+  .tagline { color: var(--muted); font-size: .82rem; margin-bottom: 28px; text-align: center; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 32px 28px;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .card h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  #empId {
+    width: 100%;
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+    font-size: 1.3rem;
+    font-family: inherit;
+    color: var(--text);
+    outline: none;
+    text-align: center;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    transition: border-color .2s;
+    -webkit-appearance: none;
+  }
+  #empId:focus { border-color: var(--accent); }
+  #empId::placeholder { letter-spacing: normal; text-transform: none; color: var(--muted); font-size: .95rem; }
+
+  #submitBtn {
+    width: 100%;
+    padding: 18px;
+    border-radius: 14px;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all .2s;
+    -webkit-appearance: none;
+  }
+  #submitBtn:active { transform: scale(.98); background: #00a87d; }
+  #submitBtn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  /* Result card */
+  .result {
+    margin-top: 18px;
+    padding: 20px;
+    border-radius: 16px;
+    text-align: center;
+    display: none;
+    animation: fadeIn .3s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+  .result.success { background: rgba(0,200,150,.08); border: 1.5px solid rgba(0,200,150,.25); }
+  .result.error   { background: rgba(239,68,68,.08);  border: 1.5px solid rgba(239,68,68,.25); }
+  .result.warn    { background: rgba(245,158,11,.08); border: 1.5px solid rgba(245,158,11,.25); }
+  .result.free    { background: rgba(245,158,11,.08); border: 1.5px solid rgba(245,158,11,.3); }
+
+  .ri   { font-size: 2.4rem; margin-bottom: 10px; }
+  .rn   { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; margin-bottom: 4px; }
+  .rd   { color: var(--accent2); font-size: .82rem; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px; }
+  .rm   { color: var(--muted); font-size: .88rem; margin-bottom: 8px; }
+  .rp   { display: inline-block; margin-top: 8px; border-radius: 100px; padding: 6px 18px; font-weight: 700; font-size: .95rem; }
+  .rp.green  { background: rgba(0,200,150,.15); color: var(--accent); }
+  .rp.gold   { background: rgba(245,158,11,.15); color: var(--gold); }
+  .rb   { display: inline-block; margin-top: 6px; background: rgba(14,165,233,.1); border-radius: 100px; padding: 4px 14px; color: var(--accent2); font-size: .78rem; font-weight: 600; }
+
+  /* Pricing note */
+  .pricing {
+    margin-top: 16px;
+    padding: 11px 14px;
+    background: rgba(255,255,255,.03);
+    border-radius: 10px;
+    font-size: .76rem;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.6;
+  }
+  .pricing strong { color: var(--text); }
+
+  /* Divider */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 18px 0;
+    color: var(--muted);
+    font-size: .78rem;
+  }
+  .divider::before, .divider::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  #feedbackBtn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: .88rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all .2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    -webkit-appearance: none;
+  }
+  #feedbackBtn:active { border-color: var(--gold); color: var(--gold); }
+
+  .clock { color: var(--muted); font-size: .8rem; margin-bottom: 20px; font-variant-numeric: tabular-nums; }
+  .admin-link { margin-top: 20px; font-size: .72rem; text-align: center; }
+  .admin-link a { color: var(--muted); text-decoration: none; }
+
+  /* Loading spinner */
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    display: inline-block;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="logo">🍽 Meal<span>Track</span></div>
+<div class="tagline">A.G. Rhodes Atlanta</div>
+<div class="clock" id="clk"></div>
+
+<div class="card">
+  <h2>Employee Check-In</h2>
+
+  <input
+    type="text"
+    id="empId"
+    placeholder="Enter your Employee ID"
+    maxlength="20"
+    autocomplete="off"
+    autocorrect="off"
+    autocapitalize="characters"
+    spellcheck="false"
+    inputmode="numeric"
+  />
+
+  <button id="submitBtn">Check In for Meal</button>
+
+  <div class="result" id="result">
+    <div class="ri" id="rI"></div>
+    <div class="rn" id="rN"></div>
+    <div class="rd" id="rD"></div>
+    <div class="rm" id="rM"></div>
+    <div class="rp" id="rP" style="display:none"></div>
+    <div class="rb" id="rB" style="display:none"></div>
+  </div>
+
+  <div class="pricing">
+    Meal ticket: <strong>$2.50</strong> &nbsp;·&nbsp; 5 tickets in one day: <strong>$9.00</strong>
+  </div>
+
+  <div class="divider">or</div>
+  <button id="feedbackBtn">💬 Share Meal Feedback</button>
+</div>
+
+<div class="admin-link">
+  <a href="https://script.google.com/macros/s/AKfycbyIu6RRVDDCzruAUY2HCfT2AKMKkphyVbgy7a6a82RO_lT6lckqKYdelwKBLfl-_pQiGg/exec?page=admin">Admin Panel</a>
+</div>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyIu6RRVDDCzruAUY2HCfT2AKMKkphyVbgy7a6a82RO_lT6lckqKYdelwKBLfl-_pQiGg/exec";
+const FEEDBACK_URL = SCRIPT_URL + "?page=feedback";
+
+// Clock
+function updateClock() {
+  document.getElementById('clk').textContent =
+    new Date().toLocaleTimeString('en-US', { weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// Check-in
+async function checkin() {
+  const id  = document.getElementById('empId').value.trim().toUpperCase();
+  if (!id) { showResult('warn', '⚠️', '', '', 'Please enter your Employee ID.'); return; }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Checking in…';
+
+  try {
+    const res  = await fetch(SCRIPT_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ action: 'checkin', employee_id: id })
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      showSuccess(data);
+      document.getElementById('empId').value = '';
+    } else {
+      const type = data.message.includes('wait') ? 'warn' : 'error';
+      showResult(type, type === 'warn' ? '⚠️' : '❌', '', '', data.message);
+    }
+  } catch(e) {
+    showResult('error', '❌', '', '', 'Connection error. Please try again.');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Check In for Meal';
+}
+
+function showSuccess(d) {
+  const el = document.getElementById('result');
+  el.className = 'result ' + (d.is_free ? 'free' : 'success');
+  el.style.display = 'block';
+  document.getElementById('rI').textContent = d.is_free ? '🎉' : '✅';
+  document.getElementById('rN').textContent = d.employee_name;
+  document.getElementById('rD').textContent = d.department || '';
+  document.getElementById('rM').textContent = 'Meal ' + d.today_count + ' of 5 today — logged at ' + d.time;
+  const rp = document.getElementById('rP');
+  rp.style.display = 'inline-block';
+  rp.className = 'rp ' + (d.is_free ? 'gold' : 'green');
+  rp.textContent = d.is_free ? '✨ FREE MEAL' : "Today's total: $" + parseFloat(d.daily_total).toFixed(2);
+  const rb = document.getElementById('rB');
+  if (d.price_msg) { rb.style.display = 'inline-block'; rb.textContent = d.price_msg; }
+  else { rb.style.display = 'none'; }
+}
+
+function showResult(type, icon, name, dept, msg) {
+  const el = document.getElementById('result');
+  el.className = 'result ' + type;
+  el.style.display = 'block';
+  document.getElementById('rI').textContent = icon;
+  document.getElementById('rN').textContent = name;
+  document.getElementById('rD').textContent = dept;
+  document.getElementById('rM').textContent = msg;
+  document.getElementById('rP').style.display = 'none';
+  document.getElementById('rB').style.display = 'none';
+}
+
+document.getElementById('submitBtn').addEventListener('click', checkin);
+document.getElementById('empId').addEventListener('keydown', e => { if (e.key === 'Enter') checkin(); });
+document.getElementById('feedbackBtn').addEventListener('click', () => { window.open(FEEDBACK_URL, '_blank'); });
+</script>
+</body>
+</html>
