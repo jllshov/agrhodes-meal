@@ -158,7 +158,9 @@
     <div class="inline-err" id="idErr"></div>
     <div class="divider">or</div>
     <button id="feedbackBtn">💬 Share Meal Feedback</button>
-  </div>
+    <div style="margin-top:10px;text-align:center">
+      <a href="https://script.google.com/macros/s/AKfycbyIu6RRVDDCzruAUY2HCfT2AKMKkphyVbgy7a6a82RO_lT6lckqKYdelwKBLfl-_pQiGg/exec?page=admin" target="_blank" style="font-size:.72rem;color:var(--muted);text-decoration:none;">Admin Panel</a>
+    </div>
 
   <!-- Screen 2: Meal Choice -->
   <div class="screen" id="scr-choice">
@@ -219,9 +221,7 @@
 
 </div>
 
-<div class="admin-link">
-  <a href="https://script.google.com/macros/s/AKfycbyIu6RRVDDCzruAUY2HCfT2AKMKkphyVbgy7a6a82RO_lT6lckqKYdelwKBLfl-_pQiGg/exec?page=admin">Admin Panel</a>
-</div>
+
 
 <script>
 const SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbyIu6RRVDDCzruAUY2HCfT2AKMKkphyVbgy7a6a82RO_lT6lckqKYdelwKBLfl-_pQiGg/exec";
@@ -377,7 +377,9 @@ function jsonp(params) {
 
 document.getElementById('lookupBtn').addEventListener('click', lookup);
 document.getElementById('empId').addEventListener('keydown', e => { if(e.key==='Enter') lookup(); });
-document.getElementById('feedbackBtn').addEventListener('click', () => window.open(FEEDBACK_URL,'_blank'));
+document.getElementById('feedbackBtn').addEventListener('click', function() {
+  window.location.href = 'https://script.google.com/macros/s/AKfycbyIu6RRVDDCzruAUY2HCfT2AKMKkphyVbgy7a6a82RO_lT6lckqKYdelwKBLfl-_pQiGg/exec?page=feedback';
+});
 </script>
 </body>
 </html>
