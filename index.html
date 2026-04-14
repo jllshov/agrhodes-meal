@@ -260,7 +260,7 @@ async function lookup() {
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Looking up…';
   document.getElementById('idErr').style.display = 'none';
   try {
-    const data = await apsFetch({ action:'lookup', employee_id:id });
+    const data = await jsonp({ action:'lookup', employee_id:id });
     if (data.ok) {
       emp = data; selOpt = null;
       if (data.is_free) {
@@ -310,7 +310,7 @@ async function doCheckin() {
   const btn    = isFree ? document.getElementById('freeBtn') : document.getElementById('confirmBtn');
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Checking in…';
   try {
-    const data = await apsFetch({ action:'checkin', employee_id: emp.employee_id, meal_option: selOpt });
+    const data = await jsonp({ action:'checkin', employee_id: emp.employee_id, meal_option: selOpt });
     if (data.ok) {
       showDone(data);
     } else {
@@ -352,15 +352,27 @@ function resetAll() {
   showScr('id');
 }
 
-// Helper fetch for Apps Script (handles redirects)
-async function apsFetch(body) {
-  const res = await fetch(SCRIPT_URL, {
-    method:   'POST',
-    redirect: 'follow',
-    headers:  { 'Content-Type': 'text/plain' }, // text/plain avoids CORS preflight
-    body:     JSON.stringify(body)
+// JSONP helper — bypasses CORS restriction on Apps Script
+function jsonp(params) {
+  return new Promise(function(resolve, reject) {
+    var cbName = 'cb_' + Date.now();
+    var script  = document.createElement('script');
+    var timeout = setTimeout(function() {
+      cleanup(); reject(new Error('Request timed out'));
+    }, 15000);
+    function cleanup() {
+      clearTimeout(timeout);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+    window[cbName] = function(data) { cleanup(); resolve(data); };
+    var qs = Object.keys(params).map(function(k) {
+      return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+    }).join('&');
+    script.src = SCRIPT_URL + '?' + qs + '&callback=' + cbName;
+    script.onerror = function() { cleanup(); reject(new Error('Network error')); };
+    document.head.appendChild(script);
   });
-  return res.json();
 }
 
 document.getElementById('lookupBtn').addEventListener('click', lookup);
