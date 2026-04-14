@@ -260,9 +260,7 @@ async function lookup() {
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Looking up…';
   document.getElementById('idErr').style.display = 'none';
   try {
-    const res  = await fetch(SCRIPT_URL, { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action:'lookup', employee_id:id }) });
-    const data = await res.json();
+    const data = await apsFetch({ action:'lookup', employee_id:id });
     if (data.ok) {
       emp = data; selOpt = null;
       if (data.is_free) {
@@ -312,9 +310,7 @@ async function doCheckin() {
   const btn    = isFree ? document.getElementById('freeBtn') : document.getElementById('confirmBtn');
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Checking in…';
   try {
-    const res  = await fetch(SCRIPT_URL, { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action:'checkin', employee_id: emp.employee_id, meal_option: selOpt }) });
-    const data = await res.json();
+    const data = await apsFetch({ action:'checkin', employee_id: emp.employee_id, meal_option: selOpt });
     if (data.ok) {
       showDone(data);
     } else {
@@ -354,6 +350,17 @@ function resetAll() {
   document.getElementById('empId').value = '';
   document.getElementById('idErr').style.display = 'none';
   showScr('id');
+}
+
+// Helper fetch for Apps Script (handles redirects)
+async function apsFetch(body) {
+  const res = await fetch(SCRIPT_URL, {
+    method:   'POST',
+    redirect: 'follow',
+    headers:  { 'Content-Type': 'text/plain' }, // text/plain avoids CORS preflight
+    body:     JSON.stringify(body)
+  });
+  return res.json();
 }
 
 document.getElementById('lookupBtn').addEventListener('click', lookup);
