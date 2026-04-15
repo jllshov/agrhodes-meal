@@ -131,6 +131,30 @@
 
   .screen{display:none;}
   .screen.active{display:block;}
+
+  /* Guest styles */
+  .btn-guest{width:100%;padding:13px;border-radius:12px;border:1.5px solid #1f2d42;
+    background:transparent;color:#6b7f99;font-size:.88rem;font-weight:600;
+    font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .btn-guest:active{border-color:#0ea5e9;color:#0ea5e9;}
+  .fg-wrap{margin-bottom:16px;}
+  .fg-label{display:block;font-size:.78rem;font-weight:700;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+  .fg-wrap input{width:100%;background:var(--card);border:1.5px solid var(--border);
+    border-radius:12px;padding:14px 16px;font-size:1rem;font-family:inherit;
+    color:var(--text);outline:none;-webkit-appearance:none;}
+  .fg-wrap input:focus{border-color:var(--accent2);}
+  .fg-wrap input::placeholder{color:var(--muted);}
+  .pay-choices{display:flex;gap:12px;}
+  .pay-opt{flex:1;padding:16px 10px;border-radius:14px;border:2px solid var(--border);
+    background:var(--card);cursor:pointer;text-align:center;transition:all .2s;
+    -webkit-appearance:none;font-family:inherit;display:flex;flex-direction:column;
+    align-items:center;gap:6px;}
+  .pay-opt:active{transform:scale(.97);}
+  .pay-opt.sel-card{border-color:var(--accent2);background:rgba(14,165,233,.08);}
+  .pay-opt.sel-cash{border-color:var(--accent);background:rgba(0,200,150,.08);}
+  .pay-icon{font-size:1.8rem;}
+  .pay-label{font-size:.85rem;font-weight:700;color:var(--text);}
 </style>
 </head>
 <body>
@@ -158,9 +182,41 @@
     <div class="inline-err" id="idErr"></div>
     <div class="divider">or</div>
     <button id="feedbackBtn">💬 Share Meal Feedback</button>
+    <button class="btn btn-guest" id="guestBtn" style="margin-top:10px">🧑‍🤝‍🧑 Guest Check-In</button>
     <div style="margin-top:10px;text-align:center">
       <a href="https://script.google.com/macros/s/AKfycbyIu6RRVDDCzruAUY2HCfT2AKMKkphyVbgy7a6a82RO_lT6lckqKYdelwKBLfl-_pQiGg/exec?page=admin" target="_blank" style="font-size:.72rem;color:var(--muted);text-decoration:none;">Admin Panel</a>
     </div>
+  </div>
+
+  <!-- Screen G: Guest Form -->
+  <div class="screen" id="scr-guest">
+    <h2>Guest Check-In</h2>
+    <div class="fg-wrap">
+      <label class="fg-label">Guest Name</label>
+      <input type="text" id="guestName" placeholder="Enter guest name"
+        autocomplete="off" autocorrect="off" spellcheck="false"/>
+    </div>
+    <div class="fg-wrap">
+      <label class="fg-label">Amount ($)</label>
+      <input type="number" id="guestAmount" placeholder="0.00"
+        min="0" step="0.01" inputmode="decimal"/>
+    </div>
+    <div class="fg-wrap">
+      <label class="fg-label">Payment Type</label>
+      <div class="pay-choices">
+        <button class="pay-opt" id="pay-card" onclick="selectPay('card')">
+          <span class="pay-icon">💳</span>
+          <span class="pay-label">Credit Card</span>
+        </button>
+        <button class="pay-opt" id="pay-cash" onclick="selectPay('cash')">
+          <span class="pay-icon">💵</span>
+          <span class="pay-label">Cash</span>
+        </button>
+      </div>
+    </div>
+    <div class="inline-err" id="guestErr"></div>
+    <button class="btn btn-accent" id="guestSubmitBtn" onclick="submitGuest()">Complete Guest Check-In</button>
+    <button class="back-btn" onclick="cancelGuest()">← Back</button>
   </div>
 
   <!-- Screen 2: Meal Choice -->
@@ -217,7 +273,7 @@
       <div class="rp" id="rP"></div>
       <div class="credits" id="rC" style="display:none"></div>
     </div>
-    <button class="btn btn-ghost" onclick="resetAll()">Next Employee</button>
+    <button class="btn btn-ghost" onclick="resetAll()">← New Check-In</button>
   </div>
 
 </div>
@@ -347,7 +403,7 @@ function showDone(d) {
 }
 
 function resetAll() {
-  emp = null; selOpt = null;
+  emp = null; selOpt = null; selPay = null;
   document.getElementById('empId').value = '';
   document.getElementById('idErr').style.display = 'none';
   showScr('id');
@@ -381,6 +437,67 @@ document.getElementById('empId').addEventListener('keydown', e => { if(e.key==='
 document.getElementById('feedbackBtn').addEventListener('click', function() {
   window.location.href = 'https://script.google.com/macros/s/AKfycbyIu6RRVDDCzruAUY2HCfT2AKMKkphyVbgy7a6a82RO_lT6lckqKYdelwKBLfl-_pQiGg/exec?page=feedback';
 });
+
+// ── Guest Check-In ────────────────────────────────────────────────────────────
+let selPay = null; // 'card' | 'cash'
+
+document.getElementById('guestBtn').addEventListener('click', function() {
+  selPay = null;
+  document.getElementById('guestName').value = '';
+  document.getElementById('guestAmount').value = '';
+  document.getElementById('pay-card').className = 'pay-opt';
+  document.getElementById('pay-cash').className = 'pay-opt';
+  document.getElementById('guestErr').style.display = 'none';
+  showScr('guest');
+});
+
+function selectPay(type) {
+  selPay = type;
+  document.getElementById('pay-card').className = 'pay-opt' + (type === 'card' ? ' sel-card' : '');
+  document.getElementById('pay-cash').className = 'pay-opt' + (type === 'cash' ? ' sel-cash' : '');
+}
+
+function cancelGuest() {
+  selPay = null;
+  showScr('id');
+}
+
+async function submitGuest() {
+  const name   = document.getElementById('guestName').value.trim();
+  const amount = parseFloat(document.getElementById('guestAmount').value);
+  const errEl  = document.getElementById('guestErr');
+  errEl.style.display = 'none';
+
+  if (!name)           { errEl.textContent = 'Please enter the guest name.'; errEl.style.display = 'block'; return; }
+  if (!amount || amount <= 0) { errEl.textContent = 'Please enter a valid amount.'; errEl.style.display = 'block'; return; }
+  if (!selPay)         { errEl.textContent = 'Please select a payment type.'; errEl.style.display = 'block'; return; }
+
+  const btn = document.getElementById('guestSubmitBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Processing…';
+
+  try {
+    const data = await jsonp({ action: 'guest_checkin', guest_name: name, amount: amount, payment_type: selPay });
+    if (data.ok) {
+      // Reuse confirmation screen
+      showScr('done');
+      const box = document.getElementById('resultBox');
+      box.className = 'result res-success';
+      document.getElementById('rI').textContent = selPay === 'card' ? '💳' : '💵';
+      document.getElementById('rN').textContent = name;
+      document.getElementById('rD').textContent = 'Guest Visitor';
+      document.getElementById('rM').textContent = 'Logged at ' + data.time + ' on ' + data.date;
+      const rp = document.getElementById('rP');
+      rp.className = 'rp rp-green';
+      rp.textContent = (selPay === 'card' ? 'Credit Card' : 'Cash') + ' — $' + amount.toFixed(2);
+      document.getElementById('rC').style.display = 'none';
+    } else {
+      errEl.textContent = data.message; errEl.style.display = 'block';
+    }
+  } catch(e) {
+    errEl.textContent = 'Connection error. Please try again.'; errEl.style.display = 'block';
+  }
+  btn.disabled = false; btn.textContent = 'Complete Guest Check-In';
+}
 </script>
 </body>
 </html>
