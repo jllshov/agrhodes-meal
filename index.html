@@ -4,164 +4,299 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="theme-color" content="#0a0f1a"/>
+<meta name="theme-color" content="#E8EAFF"/>
 <title>A.G. Rhodes — Meal Check-In</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
   :root {
-    --bg:#0a0f1a;--surface:#111827;--border:#1f2d42;--card:#141e2e;
-    --accent:#00c896;--accent2:#0ea5e9;--gold:#f59e0b;--danger:#ef4444;
-    --text:#f0f6ff;--muted:#6b7f99;
+    --bg:       #E8EAFF;
+    --bg2:      #F2F3FF;
+    --surface:  #FFFFFF;
+    --border:   #D5D8F0;
+    --accent:   #6B73FF;
+    --accent-d: #5B5FC7;
+    --accent-l: #EEF0FF;
+    --gold:     #F59E0B;
+    --danger:   #EF4444;
+    --success:  #10B981;
+    --text:     #1A1A3E;
+    --text2:    #8A8FAD;
+    --text3:    #B0B5D0;
+    --shadow:   0 4px 24px rgba(107,115,255,0.10);
+    --shadow-sm:0 2px 12px rgba(107,115,255,0.08);
   }
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);
-    min-height:100dvh;display:flex;flex-direction:column;align-items:center;
-    justify-content:center;padding:20px;}
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-  .logo{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;margin-bottom:4px;text-align:center;}
-  .logo span{color:var(--accent);}
-  .tagline{color:var(--muted);font-size:.82rem;margin-bottom:20px;text-align:center;}
-  .clock{color:var(--muted);font-size:.78rem;margin-bottom:18px;font-variant-numeric:tabular-nums;text-align:center;}
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 20px;
+  }
 
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:24px;
-    padding:28px 24px;width:100%;max-width:420px;}
-  .card h2{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;margin-bottom:18px;text-align:center;}
+  /* Header */
+  .header { text-align: center; margin-bottom: 24px; }
+  .logo { font-size: 1.6rem; font-weight: 800; color: var(--text); margin-bottom: 2px; }
+  .logo span { color: var(--accent); }
+  .tagline { color: var(--text2); font-size: .82rem; font-weight: 500; }
+  .clock { color: var(--accent); font-size: .82rem; font-weight: 600; margin-top: 6px; }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border-radius: 28px;
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(107,115,255,0.08);
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text);
+    text-align: center;
+    margin-bottom: 20px;
+  }
 
   /* Steps */
-  .steps{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:22px;}
-  .step{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    font-size:.72rem;font-weight:700;border:2px solid var(--border);color:var(--muted);transition:all .3s;}
-  .step.active{border-color:var(--accent);color:var(--accent);background:rgba(0,200,150,.1);}
-  .step.done{border-color:var(--accent);background:var(--accent);color:#000;}
-  .step-line{flex:1;height:2px;background:var(--border);max-width:36px;transition:background .3s;}
-  .step-line.done{background:var(--accent);}
+  .steps { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 24px; }
+  .step {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .72rem; font-weight: 700;
+    border: 2px solid var(--border);
+    color: var(--text3);
+    transition: all .3s;
+    background: var(--surface);
+  }
+  .step.active { border-color: var(--accent); color: var(--accent); background: var(--accent-l); }
+  .step.done { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .step-line { flex: 1; height: 2px; background: var(--border); max-width: 40px; transition: background .3s; border-radius: 2px; }
+  .step-line.done { background: var(--accent); }
 
   /* Input */
-  #empId{width:100%;background:var(--card);border:1.5px solid var(--border);border-radius:14px;
-    padding:18px;font-size:1.25rem;font-family:inherit;color:var(--text);outline:none;
-    text-align:center;letter-spacing:.2em;text-transform:uppercase;margin-bottom:14px;
-    transition:border-color .2s;-webkit-appearance:none;}
-  #empId:focus{border-color:var(--accent);}
-  #empId::placeholder{letter-spacing:normal;text-transform:none;color:var(--muted);font-size:.95rem;}
+  .input-wrap { position: relative; margin-bottom: 14px; }
+  input[type=text], input[type=number] {
+    width: 100%;
+    background: var(--bg2);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 18px;
+    font-size: 1.1rem;
+    font-family: inherit;
+    font-weight: 600;
+    color: var(--text);
+    outline: none;
+    text-align: center;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    transition: border-color .2s, box-shadow .2s;
+    -webkit-appearance: none;
+    margin-bottom: 16px;
+  }
+  input[type=text]:focus, input[type=number]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(107,115,255,.12);
+  }
+  input[type=text]::placeholder, input[type=number]::placeholder {
+    letter-spacing: normal; text-transform: none;
+    color: var(--text3); font-size: .9rem; font-weight: 500;
+  }
 
-  /* Buttons */
-  .btn{width:100%;padding:17px;border-radius:14px;border:none;font-size:1rem;font-weight:700;
-    font-family:inherit;cursor:pointer;transition:all .2s;-webkit-appearance:none;}
-  .btn-accent{background:var(--accent);color:#fff;}
-  .btn-accent:active{transform:scale(.98);background:#00a87d;}
-  .btn-accent:disabled{opacity:.5;cursor:not-allowed;transform:none;}
-  .btn-ghost{background:var(--card);border:1.5px solid var(--border);color:var(--muted);margin-top:10px;}
-  .btn-ghost:active{border-color:var(--accent2);}
-
-  /* Employee banner */
-  .emp-banner{background:rgba(0,200,150,.06);border:1px solid rgba(0,200,150,.18);
-    border-radius:12px;padding:14px 16px;margin-bottom:18px;display:flex;align-items:center;gap:12px;}
-  .emp-banner .icon{font-size:1.5rem;}
-  .emp-banner .name{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;}
-  .emp-banner .dept{font-size:.76rem;color:var(--muted);}
-
-  /* Meal options */
-  .meal-choices{display:flex;gap:12px;margin-bottom:16px;}
-  .meal-opt{flex:1;padding:18px 10px;border-radius:16px;border:2px solid var(--border);
-    background:var(--card);cursor:pointer;text-align:center;transition:all .25s;
-    -webkit-appearance:none;font-family:inherit;display:flex;flex-direction:column;
-    align-items:center;gap:5px;}
-  .meal-opt:active{transform:scale(.97);}
-  .meal-opt.sel-single{border-color:var(--accent);background:rgba(0,200,150,.08);}
-  .meal-opt.sel-bundle{border-color:var(--gold);background:rgba(245,158,11,.08);}
-  .meal-opt .oi{font-size:1.8rem;}
-  .meal-opt .ot{font-family:'Syne',sans-serif;font-size:.92rem;font-weight:800;color:var(--text);}
-  .meal-opt .op{font-size:1.3rem;font-weight:700;}
-  .single-color{color:var(--accent);}
-  .bundle-color{color:var(--gold);}
-  .meal-opt .os{font-size:.68rem;color:var(--muted);line-height:1.3;}
-  .save-badge{font-size:.7rem;font-weight:700;color:var(--gold);background:rgba(245,158,11,.15);
-    padding:2px 8px;border-radius:100px;}
-
-  /* Free meal */
-  .free-banner{background:rgba(245,158,11,.07);border:1.5px solid rgba(245,158,11,.25);
-    border-radius:14px;padding:20px;text-align:center;margin-bottom:16px;}
-  .free-banner .fi{font-size:2rem;margin-bottom:6px;}
-  .free-banner .ft{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:var(--gold);}
-  .free-banner .fs{font-size:.8rem;color:var(--muted);margin-top:4px;}
-
-  /* Result */
-  .result{padding:20px;border-radius:16px;text-align:center;animation:fadeIn .3s ease;}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
-  .res-success{background:rgba(0,200,150,.07);border:1.5px solid rgba(0,200,150,.22);}
-  .res-free{background:rgba(245,158,11,.07);border:1.5px solid rgba(245,158,11,.28);}
-  .res-bundle{background:rgba(14,165,233,.07);border:1.5px solid rgba(14,165,233,.22);}
-  .res-error{background:rgba(239,68,68,.07);border:1.5px solid rgba(239,68,68,.22);}
-  .res-warn{background:rgba(245,158,11,.07);border:1.5px solid rgba(245,158,11,.22);}
-  .ri{font-size:2.4rem;margin-bottom:8px;}
-  .rn{font-family:'Syne',sans-serif;font-size:1.35rem;font-weight:800;margin-bottom:3px;}
-  .rd{color:var(--accent2);font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;}
-  .rm{color:var(--muted);font-size:.86rem;margin-bottom:8px;}
-  .rp{display:inline-block;border-radius:100px;padding:6px 18px;font-weight:700;font-size:.92rem;margin-top:6px;}
-  .rp-green{background:rgba(0,200,150,.15);color:var(--accent);}
-  .rp-gold{background:rgba(245,158,11,.15);color:var(--gold);}
-  .rp-blue{background:rgba(14,165,233,.12);color:var(--accent2);}
-  .credits{display:inline-block;margin-top:8px;background:rgba(14,165,233,.1);border-radius:100px;
-    padding:4px 14px;color:var(--accent2);font-size:.78rem;font-weight:600;}
-
-  /* Error */
-  .inline-err{margin-top:12px;padding:11px;background:rgba(239,68,68,.1);
-    border:1px solid rgba(239,68,68,.25);border-radius:10px;color:#ef4444;
-    font-size:.84rem;text-align:center;display:none;}
+  /* Primary button */
+  .btn {
+    width: 100%; padding: 17px; border-radius: 16px; border: none;
+    font-size: 1rem; font-weight: 700; font-family: inherit;
+    cursor: pointer; transition: all .2s; -webkit-appearance: none;
+    letter-spacing: .02em;
+  }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 16px rgba(107,115,255,.3); }
+  .btn-primary:active { background: var(--accent-d); transform: scale(.98); box-shadow: none; }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-outline {
+    background: var(--bg2); color: var(--text2);
+    border: 2px solid var(--border); font-weight: 600;
+    margin-top: 10px; box-shadow: none;
+  }
+  .btn-outline:active { border-color: var(--accent); color: var(--accent); }
+  .btn-ghost { background: transparent; color: var(--text2); font-weight: 600; margin-top: 10px; }
 
   /* Divider */
-  .divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--muted);font-size:.76rem;}
-  .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+  .divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: 16px 0; color: var(--text3); font-size: .78rem; font-weight: 600;
+  }
+  .divider::before, .divider::after { content:''; flex:1; height:1.5px; background:var(--border); border-radius:2px; }
 
-  #feedbackBtn{width:100%;padding:13px;border-radius:12px;border:1.5px solid var(--border);
-    background:transparent;color:var(--muted);font-size:.85rem;font-weight:600;
-    font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;}
-  #feedbackBtn:active{border-color:var(--gold);color:var(--gold);}
+  /* Error */
+  .inline-err {
+    margin-top: 10px; padding: 11px 14px;
+    background: #FEF2F2; border: 1.5px solid #FECACA;
+    border-radius: 12px; color: #DC2626;
+    font-size: .84rem; font-weight: 600; text-align: center; display: none;
+  }
 
-  .back-btn{background:none;border:none;color:var(--muted);font-size:.8rem;cursor:pointer;
-    font-family:inherit;margin-top:12px;display:block;width:100%;text-align:center;}
-  .admin-link{margin-top:20px;font-size:.72rem;text-align:center;}
-  .admin-link a{color:var(--muted);text-decoration:none;}
+  /* Employee banner */
+  .emp-banner {
+    background: var(--accent-l);
+    border: 1.5px solid rgba(107,115,255,.18);
+    border-radius: 16px; padding: 14px 16px;
+    margin-bottom: 18px; display: flex; align-items: center; gap: 12px;
+  }
+  .emp-banner .icon {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--accent); display: flex; align-items: center;
+    justify-content: center; font-size: 1.2rem; flex-shrink: 0;
+  }
+  .emp-banner .name { font-weight: 800; font-size: .95rem; color: var(--text); }
+  .emp-banner .dept { font-size: .76rem; color: var(--text2); font-weight: 500; margin-top: 2px; }
 
-  .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;
-    border-radius:50%;animation:spin .7s linear infinite;display:inline-block;
-    margin-right:8px;vertical-align:middle;}
-  @keyframes spin{to{transform:rotate(360deg);}}
+  /* Meal option cards */
+  .meal-choices { display: flex; gap: 12px; margin-bottom: 16px; }
+  .meal-opt {
+    flex: 1; padding: 18px 10px; border-radius: 20px;
+    border: 2px solid var(--border); background: var(--bg2);
+    cursor: pointer; text-align: center; transition: all .25s;
+    -webkit-appearance: none; font-family: inherit;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .meal-opt:active { transform: scale(.97); }
+  .meal-opt.sel-single { border-color: var(--accent); background: var(--accent-l); box-shadow: 0 0 0 4px rgba(107,115,255,.1); }
+  .meal-opt.sel-bundle { border-color: var(--gold); background: #FFFBEB; box-shadow: 0 0 0 4px rgba(245,158,11,.1); }
+  .meal-opt .oi { font-size: 1.8rem; }
+  .meal-opt .ot { font-size: .88rem; font-weight: 800; color: var(--text); }
+  .meal-opt .op { font-size: 1.2rem; font-weight: 800; }
+  .single-color { color: var(--accent); }
+  .bundle-color { color: var(--gold); }
+  .meal-opt .os { font-size: .68rem; color: var(--text2); font-weight: 500; line-height: 1.3; }
+  .save-badge {
+    font-size: .68rem; font-weight: 700; color: #92400E;
+    background: #FEF3C7; padding: 2px 8px; border-radius: 100px;
+  }
 
-  .screen{display:none;}
-  .screen.active{display:block;}
+  /* Free meal banner */
+  .free-banner {
+    background: #FFFBEB; border: 2px solid #FDE68A;
+    border-radius: 20px; padding: 20px; text-align: center; margin-bottom: 16px;
+  }
+  .free-banner .fi { font-size: 2rem; margin-bottom: 6px; }
+  .free-banner .ft { font-size: 1rem; font-weight: 800; color: #92400E; }
+  .free-banner .fs { font-size: .78rem; color: #B45309; font-weight: 500; margin-top: 4px; }
 
-  /* Guest styles */
-  .btn-guest{width:100%;padding:13px;border-radius:12px;border:1.5px solid #1f2d42;
-    background:transparent;color:#6b7f99;font-size:.88rem;font-weight:600;
-    font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;}
-  .btn-guest:active{border-color:#0ea5e9;color:#0ea5e9;}
-  .fg-wrap{margin-bottom:16px;}
-  .fg-label{display:block;font-size:.78rem;font-weight:700;color:var(--muted);
-    text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
-  .fg-wrap input{width:100%;background:var(--card);border:1.5px solid var(--border);
-    border-radius:12px;padding:14px 16px;font-size:1rem;font-family:inherit;
-    color:var(--text);outline:none;-webkit-appearance:none;}
-  .fg-wrap input:focus{border-color:var(--accent2);}
-  .fg-wrap input::placeholder{color:var(--muted);}
-  .pay-choices{display:flex;gap:12px;}
-  .pay-opt{flex:1;padding:16px 10px;border-radius:14px;border:2px solid var(--border);
-    background:var(--card);cursor:pointer;text-align:center;transition:all .2s;
-    -webkit-appearance:none;font-family:inherit;display:flex;flex-direction:column;
-    align-items:center;gap:6px;}
-  .pay-opt:active{transform:scale(.97);}
-  .pay-opt.sel-card{border-color:var(--accent2);background:rgba(14,165,233,.08);}
-  .pay-opt.sel-cash{border-color:var(--accent);background:rgba(0,200,150,.08);}
-  .pay-icon{font-size:1.8rem;}
-  .pay-label{font-size:.85rem;font-weight:700;color:var(--text);}
+  /* Result */
+  .result { padding: 20px; border-radius: 20px; text-align: center; animation: fadeIn .3s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+  .res-success { background: #F0FDF4; border: 2px solid #BBF7D0; }
+  .res-free    { background: #FFFBEB; border: 2px solid #FDE68A; }
+  .res-bundle  { background: var(--accent-l); border: 2px solid rgba(107,115,255,.25); }
+  .res-error   { background: #FEF2F2; border: 2px solid #FECACA; }
+  .res-warn    { background: #FFFBEB; border: 2px solid #FDE68A; }
+  .ri { font-size: 2.4rem; margin-bottom: 8px; }
+  .rn { font-size: 1.3rem; font-weight: 800; color: var(--text); margin-bottom: 3px; }
+  .rd { color: var(--accent); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+  .rm { color: var(--text2); font-size: .86rem; font-weight: 500; margin-bottom: 8px; }
+  .rp { display: inline-block; border-radius: 100px; padding: 7px 20px; font-weight: 700; font-size: .9rem; margin-top: 6px; }
+  .rp-green  { background: #D1FAE5; color: #065F46; }
+  .rp-gold   { background: #FEF3C7; color: #92400E; }
+  .rp-purple { background: var(--accent-l); color: var(--accent-d); }
+  .credits { display: inline-block; margin-top: 8px; background: var(--accent-l); border-radius: 100px; padding: 4px 14px; color: var(--accent); font-size: .76rem; font-weight: 700; }
+
+  /* Guest form */
+  .fg-wrap { margin-bottom: 16px; }
+  .fg-label { display: block; font-size: .76rem; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+  .fg-wrap input { letter-spacing: normal; text-transform: none; text-align: left; padding: 14px 16px; font-size: .95rem; }
+  .fg-wrap input[type=number] { letter-spacing: normal; text-transform: none; text-align: left; }
+  .pay-choices { display: flex; gap: 12px; }
+  .pay-opt {
+    flex: 1; padding: 16px 10px; border-radius: 18px;
+    border: 2px solid var(--border); background: var(--bg2);
+    cursor: pointer; text-align: center; transition: all .2s;
+    -webkit-appearance: none; font-family: inherit;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .pay-opt:active { transform: scale(.97); }
+  .pay-opt.sel-card { border-color: var(--accent); background: var(--accent-l); box-shadow: 0 0 0 4px rgba(107,115,255,.1); }
+  .pay-opt.sel-cash { border-color: var(--success); background: #F0FDF4; box-shadow: 0 0 0 4px rgba(16,185,129,.1); }
+  .pay-icon { font-size: 1.8rem; }
+  .pay-label { font-size: .82rem; font-weight: 700; color: var(--text); }
+
+  /* Back button */
+  .back-btn {
+    background: none; border: none; color: var(--text2);
+    font-size: .8rem; font-weight: 600; cursor: pointer;
+    font-family: inherit; margin-top: 14px; display: block; width: 100%; text-align: center;
+  }
+  .back-btn:active { color: var(--accent); }
+
+  /* Bottom links */
+  .bottom-links { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+  .bottom-link {
+    width: 100%; padding: 12px; border-radius: 14px;
+    border: 1.5px solid var(--border); background: transparent;
+    color: var(--text2); font-size: .84rem; font-weight: 600;
+    font-family: inherit; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all .2s; -webkit-appearance: none;
+  }
+  .bottom-link:active { border-color: var(--accent); color: var(--accent); background: var(--accent-l); }
+  .admin-link { text-align: center; margin-top: 8px; }
+  .admin-link a { color: var(--text3); font-size: .72rem; font-weight: 600; text-decoration: none; }
+
+  /* Spinner */
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.4);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin .7s linear infinite; display: inline-block;
+    margin-right: 8px; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* Home bar */
+  .home-bar {    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; max-width: 400px; margin-bottom: 16px; padding: 0 4px;
+  }
+  .home-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 100px; padding: 7px 14px;
+    font-size: .78rem; font-weight: 700; color: var(--accent);
+    text-decoration: none; box-shadow: var(--shadow-sm);
+    transition: all .2s; font-family: inherit; cursor: pointer;
+  }
+  .home-btn:active { background: var(--accent-l); border-color: var(--accent); }
+  .home-btn .hicon { font-size: .9rem; }
+  .page-label {
+    font-size: .72rem; font-weight: 700; color: var(--text2);
+    text-transform: uppercase; letter-spacing: .08em;
+  }
+
 </style>
 </head>
 <body>
 
-<div class="logo">🍽 Meal<span>Track</span></div>
-<div class="tagline">A.G. Rhodes Atlanta</div>
-<div class="clock" id="clk"></div>
+<div class="home-bar">
+  <a href="https://agrhodes-meal.vercel.app" class="home-btn">
+    <span class="hicon">🏠</span> Home
+  </a>
+  <span class="page-label">Meal Check-In</span>
+</div>
+
+<div class="header">
+  <div class="logo">🍽 Meal<span>Track</span></div>
+  <div class="tagline">A.G. Rhodes Atlanta</div>
+  <div class="clock" id="clk"></div>
+</div>
 
 <div class="card">
   <div class="steps">
@@ -174,56 +309,25 @@
 
   <!-- Screen 1: ID Entry -->
   <div class="screen active" id="scr-id">
-    <h2>Enter Employee ID</h2>
+    <div class="card-title">Enter Employee ID</div>
     <input type="text" id="empId" placeholder="Enter your Employee ID"
       maxlength="20" autocomplete="off" autocorrect="off"
       autocapitalize="characters" spellcheck="false" inputmode="numeric"/>
-    <button class="btn btn-accent" id="lookupBtn">Continue →</button>
+    <button class="btn btn-primary" id="lookupBtn">Continue →</button>
     <div class="inline-err" id="idErr"></div>
     <div class="divider">or</div>
-    <button id="feedbackBtn">💬 Share Meal Feedback</button>
-    <button class="btn btn-guest" id="guestBtn" style="margin-top:10px">🧑‍🤝‍🧑 Guest Check-In</button>
-    <div style="margin-top:10px;text-align:center">
-      <a href="https://script.google.com/macros/s/AKfycbyIu6RRVDDCzruAUY2HCfT2AKMKkphyVbgy7a6a82RO_lT6lckqKYdelwKBLfl-_pQiGg/exec?page=admin" target="_blank" style="font-size:.72rem;color:var(--muted);text-decoration:none;">Admin Panel</a>
+    <div class="bottom-links">
+      <button class="bottom-link" id="feedbackBtn">💬 Share Meal Feedback</button>
+      <button class="bottom-link" id="guestBtn">🧑‍🤝‍🧑 Guest Check-In</button>
     </div>
-  </div>
-
-  <!-- Screen G: Guest Form -->
-  <div class="screen" id="scr-guest">
-    <h2>Guest Check-In</h2>
-    <div class="fg-wrap">
-      <label class="fg-label">Guest Name</label>
-      <input type="text" id="guestName" placeholder="Enter guest name"
-        autocomplete="off" autocorrect="off" spellcheck="false"/>
+    <div class="admin-link">
+      <a href="https://script.google.com/macros/s/AKfycbyIu6RRVDDCzruAUY2HCfT2AKMKkphyVbgy7a6a82RO_lT6lckqKYdelwKBLfl-_pQiGg/exec?page=admin" target="_blank">Admin Panel</a>
     </div>
-    <div class="fg-wrap">
-      <label class="fg-label">Amount ($)</label>
-      <input type="number" id="guestAmount" placeholder="0.00"
-        min="0" step="0.01" inputmode="decimal"/>
-    </div>
-    <div class="fg-wrap">
-      <label class="fg-label">Payment Type</label>
-      <div class="pay-choices">
-        <button class="pay-opt" id="pay-card" onclick="selectPay('card')">
-          <span class="pay-icon">💳</span>
-          <span class="pay-label">Credit Card</span>
-        </button>
-        <button class="pay-opt" id="pay-cash" onclick="selectPay('cash')">
-          <span class="pay-icon">💵</span>
-          <span class="pay-label">Cash</span>
-        </button>
-      </div>
-    </div>
-    <div class="inline-err" id="guestErr"></div>
-    <button class="btn btn-accent" id="guestSubmitBtn" onclick="submitGuest()">Complete Guest Check-In</button>
-    <button class="back-btn" onclick="cancelGuest()">← Back</button>
   </div>
 
   <!-- Screen 2: Meal Choice -->
   <div class="screen" id="scr-choice">
-    <h2>Choose Your Meal</h2>
-
-    <!-- Regular employee -->
+    <div class="card-title">Choose Your Meal</div>
     <div id="regularFlow">
       <div class="emp-banner">
         <div class="icon">👤</div>
@@ -247,19 +351,16 @@
           <div class="os">Use over 5 check-ins</div>
         </button>
       </div>
-      <button class="btn btn-accent" id="confirmBtn" disabled onclick="doCheckin()">Confirm Check-In</button>
+      <button class="btn btn-primary" id="confirmBtn" disabled onclick="doCheckin()">Confirm Check-In</button>
     </div>
-
-    <!-- Free meal employee -->
     <div id="freeFlow" style="display:none">
       <div class="free-banner">
         <div class="fi">🎉</div>
         <div class="ft" id="freeName"></div>
         <div class="fs">20+ years of service — your meal is free!</div>
       </div>
-      <button class="btn btn-accent" id="freeBtn" onclick="doCheckin()">Check In — Free Meal ✨</button>
+      <button class="btn btn-primary" id="freeBtn" onclick="doCheckin()">Check In — Free Meal ✨</button>
     </div>
-
     <button class="back-btn" onclick="goBack()">← Change ID</button>
   </div>
 
@@ -273,43 +374,79 @@
       <div class="rp" id="rP"></div>
       <div class="credits" id="rC" style="display:none"></div>
     </div>
-    <button class="btn btn-ghost" onclick="resetAll()">← New Check-In</button>
+    <button class="btn btn-outline" onclick="resetAll()" style="margin-top:16px">← New Check-In</button>
+  </div>
+
+  <!-- Screen G: Guest Form -->
+  <div class="screen" id="scr-guest">
+    <div class="card-title">Guest Check-In</div>
+    <div class="fg-wrap">
+      <label class="fg-label">Guest Name</label>
+      <input type="text" id="guestName" placeholder="Enter guest name"
+        autocomplete="off" autocorrect="off" spellcheck="false"/>
+    </div>
+    <div class="fg-wrap">
+      <label class="fg-label">Amount ($)</label>
+      <input type="number" id="guestAmount" placeholder="0.00" min="0" step="0.01" inputmode="decimal"/>
+    </div>
+    <div class="fg-wrap">
+      <label class="fg-label">Payment Type</label>
+      <div class="pay-choices">
+        <button class="pay-opt" id="pay-card" onclick="selectPay('card')">
+          <div class="pay-icon">💳</div>
+          <div class="pay-label">Credit Card</div>
+        </button>
+        <button class="pay-opt" id="pay-cash" onclick="selectPay('cash')">
+          <div class="pay-icon">💵</div>
+          <div class="pay-label">Cash</div>
+        </button>
+      </div>
+    </div>
+    <div class="inline-err" id="guestErr"></div>
+    <button class="btn btn-primary" id="guestSubmitBtn" onclick="submitGuest()">Complete Guest Check-In</button>
+    <button class="back-btn" onclick="cancelGuest()">← Back</button>
   </div>
 
 </div>
-
-
 
 <script>
 const SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbyIu6RRVDDCzruAUY2HCfT2AKMKkphyVbgy7a6a82RO_lT6lckqKYdelwKBLfl-_pQiGg/exec";
 const FEEDBACK_URL = SCRIPT_URL + "?page=feedback";
 
-let emp     = null; // current employee data from lookup
-let selOpt  = null; // 'single' | 'bundle' | 'free'
+let emp = null, selOpt = null, selPay = null;
 
-// Clock
-setInterval(() => {
+function updateClock() {
   document.getElementById('clk').textContent =
     new Date().toLocaleTimeString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
-}, 1000);
-document.getElementById('clk').textContent =
-  new Date().toLocaleTimeString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+setInterval(updateClock, 1000); updateClock();
 
-// Steps
 function setStep(n) {
   [1,2,3].forEach(i => {
     document.getElementById('s'+i).className = 'step'+(i<n?' done':i===n?' active':'');
     if(i<3) document.getElementById('l'+i).className = 'step-line'+(i<n?' done':'');
   });
 }
-
 function showScr(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('scr-'+name).classList.add('active');
-  setStep({id:1,choice:2,done:3}[name]);
+  setStep({id:1,choice:2,done:3,guest:1}[name]);
 }
 
-// Step 1 — Lookup
+function jsonp(params) {
+  return new Promise(function(resolve, reject) {
+    var cbName = 'cb_' + Date.now();
+    var script = document.createElement('script');
+    var timeout = setTimeout(function() { cleanup(); reject(new Error('Request timed out')); }, 15000);
+    function cleanup() { clearTimeout(timeout); delete window[cbName]; if(script.parentNode) script.parentNode.removeChild(script); }
+    window[cbName] = function(data) { cleanup(); resolve(data); };
+    var qs = Object.keys(params).map(function(k) { return encodeURIComponent(k)+'='+encodeURIComponent(params[k]); }).join('&');
+    script.src = SCRIPT_URL + '?' + qs + '&callback=' + cbName;
+    script.onerror = function() { cleanup(); reject(new Error('Network error')); };
+    document.head.appendChild(script);
+  });
+}
+
 async function lookup() {
   const id = document.getElementById('empId').value.trim().toUpperCase();
   if (!id) return;
@@ -346,11 +483,10 @@ async function lookup() {
   btn.disabled = false; btn.textContent = 'Continue →';
 }
 
-// Step 2 — Select option
 function selectOpt(opt) {
   selOpt = opt;
-  document.getElementById('opt-single').className = 'meal-opt' + (opt==='single' ? ' sel-single' : '');
-  document.getElementById('opt-bundle').className = 'meal-opt' + (opt==='bundle' ? ' sel-bundle' : '');
+  document.getElementById('opt-single').className = 'meal-opt'+(opt==='single'?' sel-single':'');
+  document.getElementById('opt-bundle').className = 'meal-opt'+(opt==='bundle'?' sel-bundle':'');
   document.getElementById('confirmBtn').disabled = false;
 }
 
@@ -361,21 +497,18 @@ function goBack() {
   showScr('id');
 }
 
-// Step 3 — Confirm
 async function doCheckin() {
   const isFree = selOpt === 'free';
-  const btn    = isFree ? document.getElementById('freeBtn') : document.getElementById('confirmBtn');
+  const btn = isFree ? document.getElementById('freeBtn') : document.getElementById('confirmBtn');
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Checking in…';
   try {
     const data = await jsonp({ action:'checkin', employee_id: emp.employee_id, meal_option: selOpt });
-    if (data.ok) {
-      showDone(data);
-    } else {
+    if (data.ok) { showDone(data); }
+    else {
       btn.disabled = false;
       btn.textContent = isFree ? 'Check In — Free Meal ✨' : 'Confirm Check-In';
       const el = document.getElementById('idErr');
-      el.textContent = data.message; el.style.display = 'block';
-      showScr('id');
+      el.textContent = data.message; el.style.display = 'block'; showScr('id');
     }
   } catch(e) {
     btn.disabled = false; btn.textContent = 'Confirm Check-In';
@@ -384,22 +517,19 @@ async function doCheckin() {
 
 function showDone(d) {
   showScr('done');
-  const isBundle = d.meal_option === 'bundle';
-  const isFree   = d.is_free;
-  const box      = document.getElementById('resultBox');
-  box.className  = 'result ' + (isFree ? 'res-free' : isBundle ? 'res-bundle' : 'res-success');
-  document.getElementById('rI').textContent = isFree ? '🎉' : isBundle ? '🎟' : '✅';
+  const isBundle = d.meal_option === 'bundle', isFree = d.is_free;
+  const box = document.getElementById('resultBox');
+  box.className = 'result '+(isFree?'res-free':isBundle?'res-bundle':'res-success');
+  document.getElementById('rI').textContent = isFree?'🎉':isBundle?'🎟':'✅';
   document.getElementById('rN').textContent = d.employee_name;
   document.getElementById('rD').textContent = d.department || '';
-  document.getElementById('rM').textContent = 'Logged at ' + d.time + ' on ' + d.date;
+  document.getElementById('rM').textContent = 'Logged at '+d.time+' on '+d.date;
   const rp = document.getElementById('rP');
-  rp.className = 'rp ' + (isFree ? 'rp-gold' : isBundle ? 'rp-blue' : 'rp-green');
-  rp.textContent = isFree ? '✨ FREE MEAL' : isBundle ? '🎟 5-Meal Bundle — $9.00' : '1 Meal — $2.50';
+  rp.className = 'rp '+(isFree?'rp-gold':isBundle?'rp-purple':'rp-green');
+  rp.textContent = isFree?'✨ FREE MEAL':isBundle?'🎟 5-Meal Bundle — $9.00':'1 Meal — $2.50';
   const rc = document.getElementById('rC');
-  if (isBundle && d.bundle_remaining > 0) {
-    rc.style.display = 'inline-block';
-    rc.textContent   = d.bundle_remaining + ' meal credit(s) remaining today';
-  } else { rc.style.display = 'none'; }
+  if(isBundle && d.bundle_remaining > 0) { rc.style.display='inline-block'; rc.textContent=d.bundle_remaining+' meal credit(s) remaining today'; }
+  else { rc.style.display='none'; }
 }
 
 function resetAll() {
@@ -409,38 +539,7 @@ function resetAll() {
   showScr('id');
 }
 
-// JSONP helper — bypasses CORS restriction on Apps Script
-function jsonp(params) {
-  return new Promise(function(resolve, reject) {
-    var cbName = 'cb_' + Date.now();
-    var script  = document.createElement('script');
-    var timeout = setTimeout(function() {
-      cleanup(); reject(new Error('Request timed out'));
-    }, 15000);
-    function cleanup() {
-      clearTimeout(timeout);
-      delete window[cbName];
-      if (script.parentNode) script.parentNode.removeChild(script);
-    }
-    window[cbName] = function(data) { cleanup(); resolve(data); };
-    var qs = Object.keys(params).map(function(k) {
-      return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
-    }).join('&');
-    script.src = SCRIPT_URL + '?' + qs + '&callback=' + cbName;
-    script.onerror = function() { cleanup(); reject(new Error('Network error')); };
-    document.head.appendChild(script);
-  });
-}
-
-document.getElementById('lookupBtn').addEventListener('click', lookup);
-document.getElementById('empId').addEventListener('keydown', e => { if(e.key==='Enter') lookup(); });
-document.getElementById('feedbackBtn').addEventListener('click', function() {
-  window.location.href = 'https://script.google.com/macros/s/AKfycbyIu6RRVDDCzruAUY2HCfT2AKMKkphyVbgy7a6a82RO_lT6lckqKYdelwKBLfl-_pQiGg/exec?page=feedback';
-});
-
-// ── Guest Check-In ────────────────────────────────────────────────────────────
-let selPay = null; // 'card' | 'cash'
-
+// Guest
 document.getElementById('guestBtn').addEventListener('click', function() {
   selPay = null;
   document.getElementById('guestName').value = '';
@@ -453,51 +552,46 @@ document.getElementById('guestBtn').addEventListener('click', function() {
 
 function selectPay(type) {
   selPay = type;
-  document.getElementById('pay-card').className = 'pay-opt' + (type === 'card' ? ' sel-card' : '');
-  document.getElementById('pay-cash').className = 'pay-opt' + (type === 'cash' ? ' sel-cash' : '');
+  document.getElementById('pay-card').className = 'pay-opt'+(type==='card'?' sel-card':'');
+  document.getElementById('pay-cash').className = 'pay-opt'+(type==='cash'?' sel-cash':'');
 }
 
-function cancelGuest() {
-  selPay = null;
-  showScr('id');
-}
+function cancelGuest() { selPay = null; showScr('id'); }
 
 async function submitGuest() {
   const name   = document.getElementById('guestName').value.trim();
   const amount = parseFloat(document.getElementById('guestAmount').value);
   const errEl  = document.getElementById('guestErr');
   errEl.style.display = 'none';
-
-  if (!name)           { errEl.textContent = 'Please enter the guest name.'; errEl.style.display = 'block'; return; }
-  if (!amount || amount <= 0) { errEl.textContent = 'Please enter a valid amount.'; errEl.style.display = 'block'; return; }
-  if (!selPay)         { errEl.textContent = 'Please select a payment type.'; errEl.style.display = 'block'; return; }
-
+  if (!name)           { errEl.textContent='Please enter the guest name.'; errEl.style.display='block'; return; }
+  if (!amount||amount<=0) { errEl.textContent='Please enter a valid amount.'; errEl.style.display='block'; return; }
+  if (!selPay)         { errEl.textContent='Please select a payment type.'; errEl.style.display='block'; return; }
   const btn = document.getElementById('guestSubmitBtn');
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Processing…';
-
   try {
-    const data = await jsonp({ action: 'guest_checkin', guest_name: name, amount: amount, payment_type: selPay });
+    const data = await jsonp({ action:'guest_checkin', guest_name:name, amount:amount, payment_type:selPay });
     if (data.ok) {
-      // Reuse confirmation screen
       showScr('done');
       const box = document.getElementById('resultBox');
       box.className = 'result res-success';
-      document.getElementById('rI').textContent = selPay === 'card' ? '💳' : '💵';
+      document.getElementById('rI').textContent = selPay==='card'?'💳':'💵';
       document.getElementById('rN').textContent = name;
       document.getElementById('rD').textContent = 'Guest Visitor';
-      document.getElementById('rM').textContent = 'Logged at ' + data.time + ' on ' + data.date;
+      document.getElementById('rM').textContent = 'Logged at '+data.time+' on '+data.date;
       const rp = document.getElementById('rP');
       rp.className = 'rp rp-green';
-      rp.textContent = (selPay === 'card' ? 'Credit Card' : 'Cash') + ' — $' + amount.toFixed(2);
-      document.getElementById('rC').style.display = 'none';
-    } else {
-      errEl.textContent = data.message; errEl.style.display = 'block';
-    }
-  } catch(e) {
-    errEl.textContent = 'Connection error. Please try again.'; errEl.style.display = 'block';
-  }
+      rp.textContent = (selPay==='card'?'Credit Card':'Cash')+' — $'+amount.toFixed(2);
+      document.getElementById('rC').style.display='none';
+    } else { errEl.textContent=data.message; errEl.style.display='block'; }
+  } catch(e) { errEl.textContent='Connection error. Please try again.'; errEl.style.display='block'; }
   btn.disabled = false; btn.textContent = 'Complete Guest Check-In';
 }
+
+document.getElementById('lookupBtn').addEventListener('click', lookup);
+document.getElementById('empId').addEventListener('keydown', e => { if(e.key==='Enter') lookup(); });
+document.getElementById('feedbackBtn').addEventListener('click', function() {
+  window.location.href = FEEDBACK_URL;
+});
 </script>
 </body>
 </html>
