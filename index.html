@@ -262,6 +262,17 @@
   .screen { display: none; }
   .screen.active { display: block; }
 
+  /* Credit banner */
+  .credit-banner {
+    background: #FFFBEB; border: 2px solid #FDE68A;
+    border-radius: 16px; padding: 16px 18px;
+    margin-bottom: 16px; display: flex; align-items: center; gap: 14px;
+  }
+  .cb-icon { font-size: 1.8rem; flex-shrink: 0; }
+  .cb-title { font-weight: 800; font-size: .95rem; color: #92400E; margin-bottom: 3px; }
+  .cb-sub { font-size: .82rem; color: #B45309; font-weight: 500; }
+  .cb-sub span { font-weight: 800; font-size: 1rem; color: #92400E; }
+
   /* Home bar */
   .home-bar {    display: flex; align-items: center; justify-content: space-between;
     width: 100%; max-width: 400px; margin-bottom: 16px; padding: 0 4px;
@@ -336,7 +347,20 @@
           <div class="dept" id="bannerDept"></div>
         </div>
       </div>
-      <div class="meal-choices">
+
+      <!-- Credit banner — shown when bundle credits remain -->
+      <div id="creditArea" style="display:none">
+        <div class="credit-banner">
+          <div class="cb-icon">🎟</div>
+          <div>
+            <div class="cb-title">Bundle Credit</div>
+            <div class="cb-sub"><span id="creditCount">0</span> meal(s) remaining on your bundle</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Meal choice cards — shown when no credits -->
+      <div id="mealChoiceArea" class="meal-choices">
         <button class="meal-opt" id="opt-single" onclick="selectOpt('single')">
           <div class="oi">🍽</div>
           <div class="ot">1 Meal</div>
@@ -351,6 +375,7 @@
           <div class="os">Use over 5 check-ins</div>
         </button>
       </div>
+
       <button class="btn btn-primary" id="confirmBtn" disabled onclick="doCheckin()">Confirm Check-In</button>
     </div>
     <div id="freeFlow" style="display:none">
@@ -457,21 +482,40 @@ async function lookup() {
     const data = await jsonp({ action:'lookup', employee_id:id });
     if (data.ok) {
       emp = data; selOpt = null;
-      if (data.is_free) {
+
+      // Employee has active bundle credits — skip choice screen
+      if (!data.is_free && data.bundle_credits > 0) {
+        selOpt = 'credit';
+        showScr('choice');
+        document.getElementById('regularFlow').style.display = 'block';
+        document.getElementById('freeFlow').style.display = 'none';
+        document.getElementById('bannerName').textContent = data.employee_name;
+        document.getElementById('bannerDept').textContent = data.department || 'A.G. Rhodes Atlanta';
+        // Hide meal options, show credit banner instead
+        document.getElementById('mealChoiceArea').style.display = 'none';
+        document.getElementById('creditArea').style.display = 'block';
+        document.getElementById('creditCount').textContent = data.bundle_credits;
+        document.getElementById('confirmBtn').disabled = false;
+        document.getElementById('confirmBtn').textContent = 'Use Bundle Credit →';
+      } else if (data.is_free) {
         document.getElementById('freeFlow').style.display = 'block';
         document.getElementById('regularFlow').style.display = 'none';
         document.getElementById('freeName').textContent = data.employee_name;
         selOpt = 'free';
+        showScr('choice');
       } else {
         document.getElementById('regularFlow').style.display = 'block';
         document.getElementById('freeFlow').style.display = 'none';
         document.getElementById('bannerName').textContent = data.employee_name;
         document.getElementById('bannerDept').textContent = data.department || 'A.G. Rhodes Atlanta';
+        document.getElementById('mealChoiceArea').style.display = 'flex';
+        document.getElementById('creditArea').style.display = 'none';
         document.getElementById('opt-single').className = 'meal-opt';
         document.getElementById('opt-bundle').className = 'meal-opt';
         document.getElementById('confirmBtn').disabled = true;
+        document.getElementById('confirmBtn').textContent = 'Confirm Check-In';
+        showScr('choice');
       }
-      showScr('choice');
     } else {
       const el = document.getElementById('idErr');
       el.textContent = data.message; el.style.display = 'block';
@@ -517,25 +561,41 @@ async function doCheckin() {
 
 function showDone(d) {
   showScr('done');
-  const isBundle = d.meal_option === 'bundle', isFree = d.is_free;
+  const isBundle  = d.meal_option === 'bundle';
+  const isCredit  = d.meal_option === 'credit';
+  const isFree    = d.is_free;
+  const remaining = d.bundle_remaining || 0;
   const box = document.getElementById('resultBox');
-  box.className = 'result '+(isFree?'res-free':isBundle?'res-bundle':'res-success');
-  document.getElementById('rI').textContent = isFree?'🎉':isBundle?'🎟':'✅';
+  box.className = 'result '+(isFree?'res-free':(isBundle||isCredit)?'res-bundle':'res-success');
+  document.getElementById('rI').textContent = isFree?'🎉':(isBundle||isCredit)?'🎟':'✅';
   document.getElementById('rN').textContent = d.employee_name;
   document.getElementById('rD').textContent = d.department || '';
   document.getElementById('rM').textContent = 'Logged at '+d.time+' on '+d.date;
   const rp = document.getElementById('rP');
-  rp.className = 'rp '+(isFree?'rp-gold':isBundle?'rp-purple':'rp-green');
-  rp.textContent = isFree?'✨ FREE MEAL':isBundle?'🎟 5-Meal Bundle — $9.00':'1 Meal — $2.50';
+  rp.className = 'rp '+(isFree?'rp-gold':(isBundle||isCredit)?'rp-purple':'rp-green');
+  if(isFree)        rp.textContent = '✨ FREE MEAL';
+  else if(isBundle) rp.textContent = '🎟 Bundle purchased — $9.00';
+  else if(isCredit) rp.textContent = '🎟 Bundle credit used — $0.00';
+  else              rp.textContent = '1 Meal — $2.50';
   const rc = document.getElementById('rC');
-  if(isBundle && d.bundle_remaining > 0) { rc.style.display='inline-block'; rc.textContent=d.bundle_remaining+' meal credit(s) remaining today'; }
-  else { rc.style.display='none'; }
+  if((isBundle||isCredit) && remaining > 0) {
+    rc.style.display='inline-block'; rc.style.background=''; rc.style.color='';
+    rc.textContent = remaining+' bundle meal'+(remaining===1?'':'s')+' remaining';
+  } else if((isBundle||isCredit) && remaining === 0) {
+    rc.style.display='inline-block'; rc.style.background='#F2F3FF'; rc.style.color='#8A8FAD';
+    rc.textContent = 'Bundle fully used — purchase a new one next time';
+  } else { rc.style.display='none'; }
 }
 
 function resetAll() {
   emp = null; selOpt = null; selPay = null;
   document.getElementById('empId').value = '';
   document.getElementById('idErr').style.display = 'none';
+  // Reset choice screen
+  document.getElementById('mealChoiceArea').style.display = 'flex';
+  document.getElementById('creditArea').style.display = 'none';
+  document.getElementById('confirmBtn').disabled = true;
+  document.getElementById('confirmBtn').textContent = 'Confirm Check-In';
   showScr('id');
 }
 
