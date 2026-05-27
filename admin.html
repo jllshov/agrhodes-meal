@@ -729,7 +729,7 @@ function filterLogs() {
       <td>${!voided?`<button class="btn-danger-sm" onclick="voidLog('${l.id}')">Void</button>`:''}
       </td>
     </tr>`;
-  }).join('');
+  }).join('\n');
 }
 
 async function voidLog(id) {
@@ -838,7 +838,7 @@ async function loadGuests() {
       <td style="font-weight:800">$${parseFloat(l.amount_charged).toFixed(2)}</td>
       <td>${payment==='card'?'💳 Card':payment==='cash'?'💵 Cash':payment}</td>
     </tr>`;
-  }).join('');
+  }).join('\n');
 }
 
 
@@ -891,18 +891,16 @@ function filterFeedback() {
       <td style="font-size:.78rem">${ynaLabel[f.eat_again]||'—'}</td>
       <td style="font-size:.78rem;color:var(--text2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(f.comment||'').replace(/"/g,'&quot;')}">${f.comment||'—'}</td>
     </tr>`;
-  }).join('');
+  }).join('\n');
 }
 
 function exportFeedbackCSV() {
   if (!allFeedback.length) { showToast('No data to export'); return; }
-  const header = 'Date,Respondent,Overall,Taste,Temperature,Portion Size,Eat Again,Comment
-';
+  const header = 'Date,Respondent,Overall,Taste,Temperature,Portion Size,Eat Again,Comment\n';
   const csv = header + allFeedback.map(f => {
     const date = new Date(f.submitted_at).toLocaleDateString('en-US');
     return `${date},${f.respondent_type},${f.overall_meal||''},${f.food_taste||''},${f.food_temperature||''},${f.portion_size||''},${f.eat_again||''},"${(f.comment||'').replace(/"/g,'""')}"`;
-  }).join('
-');
+  }).join('\n');
   const blob = new Blob([csv], {type:'text/csv'});
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
