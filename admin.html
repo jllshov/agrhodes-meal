@@ -694,13 +694,13 @@ function filterLogs() {
 }
 
 async function voidLog(id) {
-  if (!confirm('Void this check-in? This cannot be undone.')) return;
+  if (!confirm('Delete this check-in? This cannot be undone.')) return;
   try {
-    await sb(`meal_logs?id=eq.${id}`, { method:'PATCH', body: JSON.stringify({ is_voided:true, voided_at: new Date().toISOString() }) });
-    showToast('Check-in voided');
+    await sb(`meal_logs?id=eq.${id}`, { method:'DELETE' });
+    showToast('Check-in deleted');
     await loadLogs();
     await loadDashboard();
-  } catch(e) { showToast('Error voiding log'); }
+  } catch(e) { showToast('Error deleting log'); console.error(e); }
 }
 
 // ─── REPORTS ───────────────────────────────────────────────
