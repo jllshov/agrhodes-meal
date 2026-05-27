@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#E8EAFF"/>
+<title>A.G. Rhodes — Meal Feedback</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:       #E8EAFF;
+    --bg2:      #F2F3FF;
+    --surface:  #FFFFFF;
+    --border:   #D5D8F0;
+    --accent:   #6B73FF;
+    --accent-d: #5B5FC7;
+    --accent-l: #EEF0FF;
+    --gold:     #F59E0B;
+    --success:  #10B981;
+    --danger:   #EF4444;
+    --text:     #1A1A3E;
+    --text2:    #8A8FAD;
+    --text3:    #B0B5D0;
+    --shadow:   0 4px 24px rgba(107,115,255,0.10);
+    --shadow-sm:0 2px 12px rgba(107,115,255,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 20px 40px;
+  }
+
+  .home-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; max-width: 420px; margin-bottom: 16px; padding: 0 4px;
+  }
+  .home-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 100px; padding: 7px 14px;
+    font-size: .78rem; font-weight: 700; color: var(--accent);
+    text-decoration: none; box-shadow: var(--shadow-sm);
+    font-family: inherit;
+  }
+  .page-label { font-size: .72rem; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .08em; }
+
+  .header { text-align: center; margin-bottom: 20px; }
+  .logo { font-size: 1.5rem; font-weight: 800; margin-bottom: 2px; }
+  .logo span { color: var(--accent); }
+  .tagline { color: var(--text2); font-size: .82rem; font-weight: 500; }
+
+  .card {
+    background: var(--surface); border-radius: 28px; padding: 26px 22px;
+    width: 100%; max-width: 420px; box-shadow: var(--shadow);
+    border: 1px solid rgba(107,115,255,0.08); margin-bottom: 14px;
+  }
+  .card-title { font-size: 1rem; font-weight: 800; text-align: center; margin-bottom: 20px; color: var(--text); }
+
+  /* Who are you */
+  .who-choices { display: flex; gap: 10px; margin-bottom: 4px; }
+  .who-opt {
+    flex: 1; padding: 14px 8px; border-radius: 18px;
+    border: 2px solid var(--border); background: var(--bg2);
+    cursor: pointer; text-align: center; transition: all .22s;
+    font-family: inherit; display: flex; flex-direction: column; align-items: center; gap: 5px;
+  }
+  .who-opt:active { transform: scale(.97); }
+  .who-opt.selected { border-color: var(--accent); background: var(--accent-l); box-shadow: 0 0 0 3px rgba(107,115,255,.1); }
+  .who-icon { font-size: 1.6rem; }
+  .who-label { font-size: .72rem; font-weight: 700; color: var(--text); }
+
+  /* Section label */
+  .sec-label {
+    font-size: .72rem; font-weight: 700; color: var(--text2);
+    text-transform: uppercase; letter-spacing: .07em; margin-bottom: 12px; margin-top: 20px;
+  }
+
+  /* Star rating */
+  .stars { display: flex; gap: 8px; justify-content: center; margin-bottom: 4px; }
+  .star {
+    font-size: 2rem; cursor: pointer; transition: transform .15s;
+    filter: grayscale(1) opacity(.35);
+    background: none; border: none; padding: 0; font-family: inherit;
+  }
+  .star:active { transform: scale(.88); }
+  .star.lit { filter: none; }
+  .rating-label { text-align: center; font-size: .78rem; font-weight: 600; color: var(--text2); margin-top: 4px; height: 18px; }
+
+  /* Yes/No/NA */
+  .yna-choices { display: flex; gap: 10px; }
+  .yna-opt {
+    flex: 1; padding: 12px 8px; border-radius: 14px;
+    border: 2px solid var(--border); background: var(--bg2);
+    cursor: pointer; text-align: center; font-size: .84rem; font-weight: 700;
+    font-family: inherit; transition: all .2s; color: var(--text2);
+  }
+  .yna-opt:active { transform: scale(.97); }
+  .yna-opt.sel-yes { border-color: var(--success); background: #F0FDF4; color: var(--success); }
+  .yna-opt.sel-no  { border-color: var(--danger); background: #FEF2F2; color: var(--danger); }
+  .yna-opt.sel-na  { border-color: var(--accent); background: var(--accent-l); color: var(--accent); }
+
+  /* Comment */
+  textarea {
+    width: 100%; background: var(--bg2); border: 2px solid var(--border);
+    border-radius: 16px; padding: 14px 16px; font-size: .9rem; font-family: inherit;
+    font-weight: 500; color: var(--text); outline: none; resize: none;
+    transition: border-color .2s; margin-bottom: 4px;
+  }
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--text3); }
+
+  /* Submit */
+  .btn-submit {
+    width: 100%; padding: 17px; border-radius: 16px; border: none;
+    background: var(--accent); color: #fff; font-size: 1rem; font-weight: 700;
+    font-family: inherit; cursor: pointer; transition: all .2s;
+    box-shadow: 0 4px 16px rgba(107,115,255,.3); margin-top: 6px;
+  }
+  .btn-submit:active { background: var(--accent-d); transform: scale(.98); }
+  .btn-submit:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  .inline-err {
+    margin-top: 10px; padding: 11px 14px;
+    background: #FEF2F2; border: 1.5px solid #FECACA;
+    border-radius: 12px; color: #DC2626;
+    font-size: .84rem; font-weight: 600; text-align: center; display: none;
+  }
+
+  /* Success screen */
+  .success-screen {
+    display: none; flex-direction: column; align-items: center;
+    justify-content: center; min-height: 60vh; text-align: center; padding: 20px;
+  }
+  .success-screen.show { display: flex; }
+  .success-icon { font-size: 4rem; margin-bottom: 16px; }
+  .success-title { font-size: 1.4rem; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+  .success-sub { font-size: .88rem; color: var(--text2); font-weight: 500; margin-bottom: 28px; }
+  .btn-another {
+    padding: 14px 28px; border-radius: 16px; border: 2px solid var(--border);
+    background: var(--surface); color: var(--text2); font-size: .9rem; font-weight: 700;
+    font-family: inherit; cursor: pointer; transition: all .2s;
+  }
+  .btn-another:active { border-color: var(--accent); color: var(--accent); }
+
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.4);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin .7s linear infinite; display: inline-block;
+    margin-right: 8px; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .form-wrap { width: 100%; max-width: 420px; }
+</style>
+</head>
+<body>
+
+<div class="home-bar">
+  <a href="https://agrhodes-meal.vercel.app" class="home-btn">
+    <span>🏠</span> Home
+  </a>
+  <span class="page-label">Meal Feedback</span>
+</div>
+
+<div class="header">
+  <div class="logo">🍽 Meal<span>Track</span></div>
+  <div class="tagline">A.G. Rhodes Atlanta</div>
+</div>
+
+<!-- SUCCESS SCREEN -->
+<div class="success-screen" id="successScreen">
+  <div class="success-icon">🎉</div>
+  <div class="success-title">Thank you!</div>
+  <div class="success-sub">Your feedback helps us improve meals<br>for everyone at A.G. Rhodes.</div>
+  <button class="btn-another" onclick="resetForm()">Submit Another</button>
+</div>
+
+<!-- FORM -->
+<div class="form-wrap" id="formWrap">
+
+  <!-- Who are you -->
+  <div class="card">
+    <div class="card-title">Share Your Meal Feedback</div>
+    <div class="sec-label" style="margin-top:0">I am a…</div>
+    <div class="who-choices">
+      <button class="who-opt" id="who-patient" onclick="selectWho('patient')">
+        <div class="who-icon">🛏</div>
+        <div class="who-label">Patient</div>
+      </button>
+      <button class="who-opt" id="who-caregiver" onclick="selectWho('caregiver')">
+        <div class="who-icon">🧑‍🤝‍🧑</div>
+        <div class="who-label">Caregiver</div>
+      </button>
+      <button class="who-opt" id="who-staff" onclick="selectWho('staff')">
+        <div class="who-icon">👔</div>
+        <div class="who-label">Staff</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Ratings -->
+  <div class="card">
+    <div class="card-title">Rate Your Meal</div>
+
+    <div class="sec-label" style="margin-top:0">Overall meal</div>
+    <div class="stars" id="stars-overall"></div>
+    <div class="rating-label" id="lbl-overall"></div>
+
+    <div class="sec-label">Food taste</div>
+    <div class="stars" id="stars-taste"></div>
+    <div class="rating-label" id="lbl-taste"></div>
+
+    <div class="sec-label">Food temperature</div>
+    <div class="stars" id="stars-temp"></div>
+    <div class="rating-label" id="lbl-temp"></div>
+  </div>
+
+  <!-- Portion & Eat again -->
+  <div class="card">
+    <div class="card-title">A Few More Questions</div>
+
+    <div class="sec-label" style="margin-top:0">Was the portion size right?</div>
+    <div class="yna-choices">
+      <button class="yna-opt" id="ps-yes" onclick="selectYNA('portion','yes')">Yes</button>
+      <button class="yna-opt" id="ps-no"  onclick="selectYNA('portion','no')">No</button>
+      <button class="yna-opt" id="ps-na"  onclick="selectYNA('portion','na')">N/A</button>
+    </div>
+
+    <div class="sec-label">Would you eat this meal again?</div>
+    <div class="yna-choices">
+      <button class="yna-opt" id="ea-yes" onclick="selectYNA('eatagain','yes')">Yes</button>
+      <button class="yna-opt" id="ea-no"  onclick="selectYNA('eatagain','no')">No</button>
+      <button class="yna-opt" id="ea-na"  onclick="selectYNA('eatagain','na')">N/A</button>
+    </div>
+  </div>
+
+  <!-- Comment -->
+  <div class="card">
+    <div class="card-title">Any Comments?</div>
+    <textarea id="comment" rows="4" placeholder="Tell us what you loved, what could be better, or anything else…"></textarea>
+  </div>
+
+  <div class="inline-err" id="formErr"></div>
+  <button class="btn-submit" id="submitBtn" onclick="submitFeedback()">Submit Feedback →</button>
+
+</div>
+
+<script>
+const SUPABASE_URL      = "https://gtbiatetqyuxwuehwilr.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34";
+const FACILITY_SUBDOMAIN = "agrhodes";
+
+let facilityId  = null;
+let selWho      = null;
+let ratings     = { overall: 0, taste: 0, temp: 0 };
+let selPortion  = null;
+let selEatAgain = null;
+
+const LABELS = ['','Poor','Fair','Good','Great','Excellent'];
+
+async function sb(path, options = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+      "Content-Type": "application/json",
+      "Prefer": "return=representation",
+      ...(options.headers || {})
+    }
+  });
+  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.message||`HTTP ${res.status}`); }
+  const text = await res.text();
+  return text ? JSON.parse(text) : [];
+}
+
+// Load facility
+(async () => {
+  try {
+    const f = await sb(`facilities?subdomain=eq.${FACILITY_SUBDOMAIN}&select=id`);
+    if (f.length) facilityId = f[0].id;
+  } catch(e) { console.error(e); }
+})();
+
+// Build star rows
+['overall','taste','temp'].forEach(key => {
+  const container = document.getElementById('stars-'+key);
+  for (let i = 1; i <= 5; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'star';
+    btn.textContent = '⭐';
+    btn.setAttribute('aria-label', `${i} star`);
+    btn.addEventListener('click', () => setRating(key, i));
+    container.appendChild(btn);
+  }
+});
+
+function setRating(key, val) {
+  ratings[key] = val;
+  const stars = document.getElementById('stars-'+key).querySelectorAll('.star');
+  stars.forEach((s, i) => s.classList.toggle('lit', i < val));
+  document.getElementById('lbl-'+key).textContent = LABELS[val];
+}
+
+function selectWho(type) {
+  selWho = type;
+  ['patient','caregiver','staff'].forEach(t => {
+    document.getElementById('who-'+t).classList.toggle('selected', t === type);
+  });
+}
+
+function selectYNA(field, val) {
+  if (field === 'portion') {
+    selPortion = val;
+    ['yes','no','na'].forEach(v => {
+      document.getElementById('ps-'+v).className = 'yna-opt'+(v===val?' sel-'+v:'');
+    });
+  } else {
+    selEatAgain = val;
+    ['yes','no','na'].forEach(v => {
+      document.getElementById('ea-'+v).className = 'yna-opt'+(v===val?' sel-'+v:'');
+    });
+  }
+}
+
+async function submitFeedback() {
+  const errEl = document.getElementById('formErr');
+  errEl.style.display = 'none';
+
+  if (!selWho)           { errEl.textContent = 'Please select who you are.'; errEl.style.display='block'; return; }
+  if (!ratings.overall)  { errEl.textContent = 'Please rate your overall meal.'; errEl.style.display='block'; return; }
+  if (!ratings.taste)    { errEl.textContent = 'Please rate the food taste.'; errEl.style.display='block'; return; }
+  if (!ratings.temp)     { errEl.textContent = 'Please rate the food temperature.'; errEl.style.display='block'; return; }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Submitting…';
+
+  try {
+    await sb('feedback', {
+      method: 'POST',
+      body: JSON.stringify({
+        facility_id:      facilityId,
+        respondent_type:  selWho,
+        overall_meal:     ratings.overall,
+        food_taste:       ratings.taste,
+        food_temperature: ratings.temp,
+        portion_size:     selPortion || 'na',
+        eat_again:        selEatAgain || 'na',
+        comment:          document.getElementById('comment').value.trim() || null,
+        submitted_at:     new Date().toISOString()
+      })
+    });
+
+    document.getElementById('formWrap').style.display = 'none';
+    document.getElementById('successScreen').classList.add('show');
+  } catch(e) {
+    errEl.textContent = 'Submission failed. Please try again.';
+    errEl.style.display = 'block';
+    console.error(e);
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Submit Feedback →';
+}
+
+function resetForm() {
+  selWho = null; selPortion = null; selEatAgain = null;
+  ratings = { overall: 0, taste: 0, temp: 0 };
+  ['patient','caregiver','staff'].forEach(t => document.getElementById('who-'+t).classList.remove('selected'));
+  ['overall','taste','temp'].forEach(key => {
+    document.getElementById('stars-'+key).querySelectorAll('.star').forEach(s => s.classList.remove('lit'));
+    document.getElementById('lbl-'+key).textContent = '';
+  });
+  ['yes','no','na'].forEach(v => {
+    document.getElementById('ps-'+v).className = 'yna-opt';
+    document.getElementById('ea-'+v).className = 'yna-opt';
+  });
+  document.getElementById('comment').value = '';
+  document.getElementById('formErr').style.display = 'none';
+  document.getElementById('submitBtn').textContent = 'Submit Feedback →';
+  document.getElementById('successScreen').classList.remove('show');
+  document.getElementById('formWrap').style.display = 'block';
+}
+</script>
+</body>
+</html>
