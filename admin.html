@@ -285,6 +285,7 @@
     <button class="nav-tab" onclick="showTab('logs')">Meal Logs</button>
     <button class="nav-tab" onclick="showTab('reports')">Reports</button>
     <button class="nav-tab" onclick="showTab('guests')">Guest Logs</button>
+    <button class="nav-tab" onclick="showTab('feedback')">Feedback</button>
   </div>
 
   <div class="content">
@@ -392,6 +393,40 @@
           </table>
         </div>
       </div>
+
+    <!-- FEEDBACK -->
+    <div class="section" id="sec-feedback">
+      <div class="stats" id="feedbackStats" style="margin-bottom:18px">
+        <div class="stat-card"><div class="stat-label">Total Responses</div><div class="stat-val accent" id="fbTotal">—</div></div>
+        <div class="stat-card"><div class="stat-label">Avg Overall Rating</div><div class="stat-val gold" id="fbAvg">—</div></div>
+        <div class="stat-card"><div class="stat-label">Would Eat Again</div><div class="stat-val success" id="fbEatAgain">—</div></div>
+        <div class="stat-card"><div class="stat-label">Comments</div><div class="stat-val" id="fbComments">—</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Feedback Responses</div>
+          <button class="btn-sm btn-accent" onclick="exportFeedbackCSV()">Export CSV</button>
+        </div>
+        <div class="toolbar">
+          <input type="date" class="filter" id="fbDateFrom" onchange="loadFeedback()"/>
+          <input type="date" class="filter" id="fbDateTo" onchange="loadFeedback()"/>
+          <select class="filter" id="fbWho" onchange="filterFeedback()">
+            <option value="">All respondents</option>
+            <option value="patient">Patient</option>
+            <option value="caregiver">Caregiver</option>
+            <option value="staff">Staff</option>
+          </select>
+        </div>
+        <div class="result-count" id="fbCount"></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Who</th><th>Overall</th><th>Taste</th><th>Temp</th><th>Eat Again</th><th>Comment</th></tr></thead>
+            <tbody id="fbTbody"><tr><td colspan="7"><div class="empty"><div class="empty-icon">💬</div>Select a date range above</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     </div>
 
   </div>
@@ -494,7 +529,7 @@ async function init() {
 // ─── TAB NAV ───────────────────────────────────────────────
 function showTab(name) {
   document.querySelectorAll('.nav-tab').forEach((t,i) => {
-    t.classList.toggle('active', ['dashboard','employees','logs','reports','guests'][i]===name);
+    t.classList.toggle('active', ['dashboard','employees','logs','reports','guests','feedback'][i]===name);
   });
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-'+name).classList.add('active');
@@ -800,6 +835,76 @@ async function loadGuests() {
       <td>${payment==='card'?'💳 Card':payment==='cash'?'💵 Cash':payment}</td>
     </tr>`;
   }).join('');
+}
+
+
+// ─── FEEDBACK ──────────────────────────────────────────────
+let allFeedback = [];
+
+async function loadFeedback() {
+  const from = document.getElementById('fbDateFrom').value;
+  const to   = document.getElementById('fbDateTo').value;
+  if (!from || !to || !facilityId) return;
+  const start = new Date(from+'T00:00:00').toISOString();
+  const end   = new Date(to+'T23:59:59').toISOString();
+  document.getElementById('fbTbody').innerHTML = '<tr><td colspan="7"><div class="loading"><div class="spinner"></div><br>Loading…</div></td></tr>';
+  allFeedback = await sb(`feedback?facility_id=eq.${facilityId}&submitted_at=gte.${start}&submitted_at=lte.${end}&select=*&order=submitted_at.desc`);
+
+  // Stats
+  const total   = allFeedback.length;
+  const avgOv   = total ? (allFeedback.reduce((s,f)=>s+(f.overall_meal||0),0)/total).toFixed(1) : '—';
+  const eatYes  = allFeedback.filter(f=>f.eat_again==='yes').length;
+  const eatPct  = total ? Math.round(eatYes/total*100)+'%' : '—';
+  const withComment = allFeedback.filter(f=>f.comment).length;
+  document.getElementById('fbTotal').textContent    = total;
+  document.getElementById('fbAvg').textContent      = avgOv === '—' ? '—' : avgOv + ' ⭐';
+  document.getElementById('fbEatAgain').textContent = eatPct;
+  document.getElementById('fbComments').textContent = withComment;
+
+  filterFeedback();
+}
+
+function filterFeedback() {
+  const who = document.getElementById('fbWho').value;
+  let rows = allFeedback.filter(f => !who || f.respondent_type === who);
+  document.getElementById('fbCount').textContent = `${rows.length} response${rows.length!==1?'s':''}`;
+  const tbody = document.getElementById('fbTbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><div class="empty-icon">💬</div>No feedback found</div></td></tr>';
+    return;
+  }
+  const stars = n => '⭐'.repeat(n) + '☆'.repeat(5-n);
+  const whoLabel = { patient:'🛏 Patient', caregiver:'🧑‍🤝‍🧑 Caregiver', staff:'👔 Staff' };
+  const ynaLabel = { yes:'✅ Yes', no:'❌ No', na:'N/A' };
+  tbody.innerHTML = rows.map(f => {
+    const date = new Date(f.submitted_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    return `<tr>
+      <td style="font-size:.78rem;color:var(--text2)">${date}</td>
+      <td style="font-size:.78rem">${whoLabel[f.respondent_type]||f.respondent_type}</td>
+      <td style="font-size:.8rem">${stars(f.overall_meal||0)}</td>
+      <td style="font-size:.8rem">${stars(f.food_taste||0)}</td>
+      <td style="font-size:.8rem">${stars(f.food_temperature||0)}</td>
+      <td style="font-size:.78rem">${ynaLabel[f.eat_again]||'—'}</td>
+      <td style="font-size:.78rem;color:var(--text2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(f.comment||'').replace(/"/g,'&quot;')}">${f.comment||'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function exportFeedbackCSV() {
+  if (!allFeedback.length) { showToast('No data to export'); return; }
+  const header = 'Date,Respondent,Overall,Taste,Temperature,Portion Size,Eat Again,Comment
+';
+  const csv = header + allFeedback.map(f => {
+    const date = new Date(f.submitted_at).toLocaleDateString('en-US');
+    return `${date},${f.respondent_type},${f.overall_meal||''},${f.food_taste||''},${f.food_temperature||''},${f.portion_size||''},${f.eat_again||''},"${(f.comment||'').replace(/"/g,'""')}"`;
+  }).join('
+');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'meal-feedback.csv'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('Feedback CSV downloaded');
 }
 
 // ─── Helpers ───────────────────────────────────────────────
