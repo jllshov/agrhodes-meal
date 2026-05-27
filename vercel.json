@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "buildCommand": "",
-  "outputDirectory": ".",
-  "framework": null
+  "rewrites": [
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/feedback", "destination": "/feedback.html" }
+  ]
 }
