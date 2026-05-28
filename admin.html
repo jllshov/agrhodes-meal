@@ -396,7 +396,7 @@
 
     <!-- FEEDBACK -->
     <div class="section" id="sec-feedback">
-      <div class="stats" id="feedbackStats" style="margin-bottom:18px">
+      <div class="stats" style="margin-bottom:18px">
         <div class="stat-card"><div class="stat-label">Total Responses</div><div class="stat-val accent" id="fbTotal">—</div></div>
         <div class="stat-card"><div class="stat-label">Avg Overall Rating</div><div class="stat-val gold" id="fbAvg">—</div></div>
         <div class="stat-card"><div class="stat-label">Would Eat Again</div><div class="stat-val success" id="fbEatAgain">—</div></div>
@@ -408,20 +408,21 @@
           <button class="btn-sm btn-accent" onclick="exportFeedbackCSV()">Export CSV</button>
         </div>
         <div class="toolbar">
-          <input type="date" class="filter" id="fbDateFrom" onchange="loadFeedback()"/>
-          <input type="date" class="filter" id="fbDateTo" onchange="loadFeedback()"/>
-          <select class="filter" id="fbWho" onchange="filterFeedback()">
+          <input type="date" class="filter" id="fbDateFrom"/>
+          <input type="date" class="filter" id="fbDateTo"/>
+          <select class="filter" id="fbWho">
             <option value="">All respondents</option>
             <option value="patient">Patient</option>
             <option value="caregiver">Caregiver</option>
             <option value="staff">Staff</option>
           </select>
+          <button class="btn-sm btn-accent" onclick="loadFeedback()">Load</button>
         </div>
         <div class="result-count" id="fbCount"></div>
         <div class="tbl-wrap">
           <table>
             <thead><tr><th>Date</th><th>Who</th><th>Overall</th><th>Taste</th><th>Temp</th><th>Eat Again</th><th>Comment</th></tr></thead>
-            <tbody id="fbTbody"><tr><td colspan="7"><div class="empty"><div class="empty-icon">💬</div>Select a date range above</div></td></tr></tbody>
+            <tbody id="fbTbody"><tr><td colspan="7"><div class="empty"><div class="empty-icon">💬</div>Select a date range and click Load</div></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -537,16 +538,6 @@ function showTab(name) {
   });
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-'+name).classList.add('active');
-  // Init feedback dates on first open
-  if (name === 'feedback') {
-    const today   = new Date().toISOString().split('T')[0];
-    const weekAgo = new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0];
-    if (!document.getElementById('fbDateFrom').value) {
-      document.getElementById('fbDateFrom').value = weekAgo;
-      document.getElementById('fbDateTo').value   = today;
-      loadFeedback();
-    }
-  }
 }
 
 // ─── DASHBOARD ─────────────────────────────────────────────
