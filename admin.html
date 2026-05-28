@@ -520,14 +520,10 @@ async function init() {
     await Promise.all([loadDashboard(), loadEmployees(), loadPayrollPeriods()]);
     // Set default dates
     const today = new Date().toISOString().split('T')[0];
-    const weekAgo = new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0];
     document.getElementById('logDate').value = today;
     document.getElementById('guestDate').value = today;
-    document.getElementById('fbDateFrom').value = weekAgo;
-    document.getElementById('fbDateTo').value = today;
     loadLogs();
     loadGuests();
-    loadFeedback();
   } catch(e) { showToast('Error connecting to database'); console.error(e); }
 }
 
