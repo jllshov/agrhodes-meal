@@ -537,6 +537,16 @@ function showTab(name) {
   });
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-'+name).classList.add('active');
+  // Init feedback dates on first open
+  if (name === 'feedback') {
+    const today   = new Date().toISOString().split('T')[0];
+    const weekAgo = new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0];
+    if (!document.getElementById('fbDateFrom').value) {
+      document.getElementById('fbDateFrom').value = weekAgo;
+      document.getElementById('fbDateTo').value   = today;
+      loadFeedback();
+    }
+  }
 }
 
 // ─── DASHBOARD ─────────────────────────────────────────────
