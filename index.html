@@ -367,7 +367,7 @@
     <button class="back-btn" onclick="goBack()">← Change ID</button>
   </div>
 
-  <!-- Screen 3: Confirmation -->
+  <!-- Screen 3: Confirmation + Ticket -->
   <div class="screen" id="scr-done">
     <div class="result" id="resultBox">
       <div class="ri" id="rI"></div>
@@ -377,7 +377,22 @@
       <div class="rp" id="rP"></div>
       <div class="credits" id="rC" style="display:none"></div>
     </div>
-    <button class="btn btn-outline" onclick="resetAll()" style="margin-top:16px">← New Check-In</button>
+    <!-- Digital Ticket -->
+    <div id="ticketBox" style="display:none;margin-top:16px;background:#FFFBEB;border:2px dashed #FDE68A;border-radius:20px;padding:20px;text-align:center">
+      <div style="font-size:.7rem;font-weight:700;color:#B45309;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Meal Ticket</div>
+      <div style="font-size:1.2rem;font-weight:800;color:#1A1A3E;margin-bottom:4px" id="tktName"></div>
+      <div style="font-size:.78rem;color:#8A8FAD;font-weight:500;margin-bottom:12px" id="tktDept"></div>
+      <div style="display:flex;justify-content:space-around;margin-bottom:12px">
+        <div><div style="font-size:.68rem;color:#B45309;font-weight:700;text-transform:uppercase">Type</div><div style="font-size:.88rem;font-weight:700;color:#1A1A3E" id="tktType"></div></div>
+        <div><div style="font-size:.68rem;color:#B45309;font-weight:700;text-transform:uppercase">Date</div><div style="font-size:.88rem;font-weight:700;color:#1A1A3E" id="tktDate"></div></div>
+        <div><div style="font-size:.68rem;color:#B45309;font-weight:700;text-transform:uppercase">Time</div><div style="font-size:.88rem;font-weight:700;color:#1A1A3E" id="tktTime"></div></div>
+      </div>
+      <div style="font-size:.68rem;color:#B45309;font-weight:700;text-transform:uppercase;margin-bottom:4px">Ticket #</div>
+      <div style="font-size:1.1rem;font-weight:800;color:#92400E;letter-spacing:.1em" id="tktNum"></div>
+      <div style="font-size:.68rem;color:#B45309;margin-top:8px">Valid for 30 minutes from purchase</div>
+    </div>
+    <button class="btn btn-outline" id="showTicketBtn" onclick="showTicket()" style="margin-top:16px;display:none">🎟 Show Meal Ticket</button>
+    <button class="btn btn-outline" onclick="resetAll()" style="margin-top:10px">← New Check-In</button>
   </div>
 
   <!-- Screen G: Guest Form -->
@@ -681,6 +696,12 @@ async function doCheckin() {
   }
 }
 
+let lastTicket = null;
+
+function generateTicketNum() {
+  return Math.random().toString(36).substr(2,6).toUpperCase();
+}
+
 function showDone(d) {
   showScr('done');
   const isBundle  = d.meal_option === 'bundle';
@@ -707,6 +728,33 @@ function showDone(d) {
     rc.style.display='inline-block'; rc.style.background='#F2F3FF'; rc.style.color='#8A8FAD';
     rc.textContent = 'Bundle fully used — purchase a new one next time';
   } else { rc.style.display='none'; }
+
+  // Store ticket info
+  const tktNum = generateTicketNum();
+  lastTicket = {
+    name: d.employee_name,
+    dept: d.department || 'A.G. Rhodes Atlanta',
+    type: isFree ? 'Free Meal' : isBundle ? 'Bundle (5 meals)' : isCredit ? 'Bundle Credit' : 'Single Meal',
+    date: d.date,
+    time: d.time,
+    num:  tktNum
+  };
+
+  // Show ticket button
+  document.getElementById('showTicketBtn').style.display = 'block';
+  document.getElementById('ticketBox').style.display = 'none';
+}
+
+function showTicket() {
+  if (!lastTicket) return;
+  document.getElementById('tktName').textContent = lastTicket.name;
+  document.getElementById('tktDept').textContent = lastTicket.dept;
+  document.getElementById('tktType').textContent = lastTicket.type;
+  document.getElementById('tktDate').textContent = lastTicket.date;
+  document.getElementById('tktTime').textContent = lastTicket.time;
+  document.getElementById('tktNum').textContent  = lastTicket.num;
+  document.getElementById('ticketBox').style.display = 'block';
+  document.getElementById('showTicketBtn').style.display = 'none';
 }
 
 function resetAll() {
