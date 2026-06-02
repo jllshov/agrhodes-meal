@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#E8EAFF"/>
+<title>A.G. Rhodes — Meal Ticket Lookup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:#E8EAFF;--bg2:#F2F3FF;--surface:#FFFFFF;--border:#D5D8F0;
+    --accent:#6B73FF;--accent-d:#5B5FC7;--accent-l:#EEF0FF;
+    --gold:#F59E0B;--success:#10B981;--danger:#EF4444;
+    --text:#1A1A3E;--text2:#8A8FAD;--text3:#B0B5D0;
+    --shadow:0 4px 24px rgba(107,115,255,0.10);
+    --shadow-sm:0 2px 12px rgba(107,115,255,0.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px}
+  .home-bar{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:420px;margin-bottom:16px;padding:0 4px}
+  .home-btn{display:flex;align-items:center;gap:6px;background:var(--surface);border:1.5px solid var(--border);border-radius:100px;padding:7px 14px;font-size:.78rem;font-weight:700;color:var(--accent);text-decoration:none;box-shadow:var(--shadow-sm);font-family:inherit}
+  .page-label{font-size:.72rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em}
+  .header{text-align:center;margin-bottom:24px}
+  .logo{font-size:1.5rem;font-weight:800;margin-bottom:2px}
+  .logo span{color:var(--accent)}
+  .tagline{color:var(--text2);font-size:.82rem;font-weight:500}
+  .card{background:var(--surface);border-radius:28px;padding:28px 24px;width:100%;max-width:420px;box-shadow:var(--shadow);border:1px solid rgba(107,115,255,0.08)}
+  .card-title{font-size:1.1rem;font-weight:800;text-align:center;margin-bottom:20px}
+  input[type=text]{width:100%;background:var(--bg2);border:2px solid var(--border);border-radius:16px;padding:16px 18px;font-size:1.1rem;font-family:inherit;font-weight:600;color:var(--text);outline:none;text-align:center;letter-spacing:.15em;text-transform:uppercase;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;margin-bottom:16px}
+  input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(107,115,255,.12)}
+  input[type=text]::placeholder{letter-spacing:normal;text-transform:none;color:var(--text3);font-size:.9rem;font-weight:500}
+  .btn{width:100%;padding:17px;border-radius:16px;border:none;font-size:1rem;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s;-webkit-appearance:none}
+  .btn-primary{background:var(--accent);color:#fff;box-shadow:0 4px 16px rgba(107,115,255,.3)}
+  .btn-primary:active{background:var(--accent-d);transform:scale(.98)}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .btn-outline{background:var(--bg2);color:var(--text2);border:2px solid var(--border);font-weight:600;margin-top:10px}
+  .inline-err{margin-top:10px;padding:11px 14px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:12px;color:#DC2626;font-size:.84rem;font-weight:600;text-align:center;display:none}
+  .ticket{margin-top:20px;background:#FFFBEB;border:2px dashed #FDE68A;border-radius:20px;padding:24px 20px;text-align:center;display:none;animation:fadeIn .3s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .tkt-label{font-size:.7rem;font-weight:700;color:#B45309;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+  .tkt-name{font-size:1.3rem;font-weight:800;color:var(--text);margin-bottom:3px}
+  .tkt-dept{font-size:.78rem;color:var(--text2);font-weight:500;margin-bottom:14px}
+  .tkt-grid{display:flex;justify-content:space-around;margin-bottom:14px}
+  .tkt-field-label{font-size:.65rem;color:#B45309;font-weight:700;text-transform:uppercase;margin-bottom:3px}
+  .tkt-field-val{font-size:.88rem;font-weight:700;color:var(--text)}
+  .tkt-divider{border:none;border-top:1.5px dashed #FDE68A;margin:12px 0}
+  .tkt-type{display:inline-block;padding:6px 16px;border-radius:100px;font-weight:700;font-size:.88rem;margin-bottom:12px}
+  .tkt-type.single{background:#EEF0FF;color:var(--accent-d)}
+  .tkt-type.bundle{background:#FEF3C7;color:#92400E}
+  .tkt-type.free{background:#FEF3C7;color:#92400E}
+  .tkt-type.credit{background:#EDE9FE;color:#6D28D9}
+  .tkt-num-label{font-size:.68rem;color:#B45309;font-weight:700;text-transform:uppercase;margin-bottom:4px}
+  .tkt-num{font-size:1.2rem;font-weight:800;color:#92400E;letter-spacing:.12em}
+  .tkt-validity{font-size:.68rem;color:#B45309;margin-top:10px}
+  .tkt-expired{background:#FEF2F2;border-color:#FECACA}
+  .tkt-expired .tkt-label,.tkt-expired .tkt-field-label,.tkt-expired .tkt-validity,.tkt-expired .tkt-num-label{color:#DC2626}
+  .tkt-expired .tkt-num{color:#DC2626}
+  .expired-banner{background:#DC2626;color:#fff;border-radius:100px;padding:4px 14px;font-size:.72rem;font-weight:700;display:inline-block;margin-bottom:10px}
+  .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;margin-right:8px;vertical-align:middle}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .meals-today{margin-top:14px;background:var(--accent-l);border-radius:14px;padding:12px 16px}
+  .meals-today-title{font-size:.72rem;font-weight:700;color:var(--accent-d);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+  .meal-row{display:flex;justify-content:space-between;align-items:center;font-size:.82rem;padding:4px 0;border-bottom:1px solid rgba(107,115,255,.1)}
+  .meal-row:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+
+<div class="home-bar">
+  <a href="https://agrhodes-meal.vercel.app" class="home-btn">🏠 Home</a>
+  <span class="page-label">Ticket Lookup</span>
+</div>
+
+<div class="header">
+  <div class="logo">🍽 Meal<span>Track</span></div>
+  <div class="tagline">A.G. Rhodes Atlanta</div>
+</div>
+
+<div class="card">
+  <div class="card-title">Look Up Meal Ticket</div>
+  <input type="text" id="empId" placeholder="Enter your Employee ID"
+    maxlength="20" autocomplete="off" autocorrect="off"
+    autocapitalize="characters" spellcheck="false" inputmode="numeric"/>
+  <button class="btn btn-primary" id="lookupBtn" onclick="lookupTicket()">Look Up Ticket →</button>
+  <div class="inline-err" id="errMsg"></div>
+
+  <!-- Ticket display -->
+  <div class="ticket" id="ticketBox">
+    <div class="expired-banner" id="expiredBanner" style="display:none">⚠ Ticket Expired</div>
+    <div class="tkt-label">🎟 Meal Ticket</div>
+    <div class="tkt-name" id="tktName"></div>
+    <div class="tkt-dept" id="tktDept"></div>
+    <div class="tkt-type" id="tktType"></div>
+    <hr class="tkt-divider"/>
+    <div class="tkt-grid">
+      <div><div class="tkt-field-label">Date</div><div class="tkt-field-val" id="tktDate"></div></div>
+      <div><div class="tkt-field-label">Time</div><div class="tkt-field-val" id="tktTime"></div></div>
+      <div><div class="tkt-field-label">Amount</div><div class="tkt-field-val" id="tktAmount"></div></div>
+    </div>
+    <hr class="tkt-divider"/>
+    <div class="tkt-num-label">Facility</div>
+    <div class="tkt-num" style="font-size:.9rem;letter-spacing:0" id="tktFacility"></div>
+    <div class="tkt-validity" id="tktValidity"></div>
+
+    <!-- Today's meals -->
+    <div class="meals-today" id="mealsToday" style="display:none">
+      <div class="meals-today-title">All meals today</div>
+      <div id="mealRows"></div>
+    </div>
+  </div>
+
+  <button class="btn btn-outline" onclick="reset()" id="resetBtn" style="display:none">← New Lookup</button>
+</div>
+
+<script>
+const SUPABASE_URL      = "https://gtbiatetqyuxwuehwilr.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34";
+const FACILITY_SUBDOMAIN = "agrhodes";
+
+async function sb(path, options={}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+      "Content-Type": "application/json",
+      ...(options.headers||{})
+    }
+  });
+  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.message||`HTTP ${res.status}`); }
+  const t = await res.text();
+  return t ? JSON.parse(t) : [];
+}
+
+document.getElementById('empId').addEventListener('keydown', e => { if(e.key==='Enter') lookupTicket(); });
+
+async function lookupTicket() {
+  const id  = document.getElementById('empId').value.trim().toUpperCase();
+  const err = document.getElementById('errMsg');
+  err.style.display = 'none';
+  if (!id) { err.textContent='Please enter your Employee ID.'; err.style.display='block'; return; }
+
+  const btn = document.getElementById('lookupBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Looking up…';
+
+  try {
+    // Get facility
+    const facilities = await sb(`facilities?subdomain=eq.${FACILITY_SUBDOMAIN}&select=id,name`);
+    if (!facilities.length) throw new Error('Facility not found.');
+    const { id: facilityId, name: facilityName } = facilities[0];
+
+    // Get employee
+    const emps = await sb(`employees?facility_id=eq.${facilityId}&employee_number=eq.${encodeURIComponent(id)}&is_active=eq.true&select=*`);
+    if (!emps.length) { err.textContent='Employee ID not found.'; err.style.display='block'; btn.disabled=false; btn.textContent='Look Up Ticket →'; return; }
+    const emp = emps[0];
+
+    // Get today's meal logs
+    const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+    const todayEnd   = new Date(); todayEnd.setHours(23,59,59,999);
+    const logs = await sb(
+      `meal_logs?employee_id=eq.${emp.id}&is_voided=eq.false&checked_in_at=gte.${todayStart.toISOString()}&checked_in_at=lte.${todayEnd.toISOString()}&select=*&order=checked_in_at.desc`
+    );
+
+    if (!logs.length) {
+      err.textContent = 'No meal check-ins found for today.';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Look Up Ticket →';
+      return;
+    }
+
+    // Most recent log
+    const latest = logs[0];
+    const checkinTime = new Date(latest.checked_in_at);
+    const now = new Date();
+    const minutesAgo = (now - checkinTime) / 60000;
+    const isExpired = minutesAgo > 30;
+
+    // Meal type display
+    const typeMap = { single:'Single Meal', bundle:'Bundle (5 meals)', credit:'Bundle Credit', free:'Free Meal' };
+    const typeClass = latest.meal_type;
+
+    // Populate ticket
+    document.getElementById('tktName').textContent     = emp.first_name + ' ' + emp.last_name;
+    document.getElementById('tktDept').textContent     = emp.unit || facilityName;
+    document.getElementById('tktFacility').textContent = facilityName;
+    document.getElementById('tktType').textContent     = typeMap[latest.meal_type] || latest.meal_type;
+    document.getElementById('tktType').className       = `tkt-type ${typeClass}`;
+    document.getElementById('tktDate').textContent     = checkinTime.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    document.getElementById('tktTime').textContent     = checkinTime.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('tktAmount').textContent   = latest.is_free_meal ? 'Free' : '$'+parseFloat(latest.amount_charged).toFixed(2);
+
+    // Validity
+    const box = document.getElementById('ticketBox');
+    const expiredBanner = document.getElementById('expiredBanner');
+    if (isExpired) {
+      box.classList.add('tkt-expired');
+      expiredBanner.style.display = 'inline-block';
+      document.getElementById('tktValidity').textContent = `Checked in ${Math.round(minutesAgo)} minutes ago — ticket expired`;
+    } else {
+      box.classList.remove('tkt-expired');
+      expiredBanner.style.display = 'none';
+      const minsLeft = Math.ceil(30 - minutesAgo);
+      document.getElementById('tktValidity').textContent = `Valid — expires in ${minsLeft} minute${minsLeft!==1?'s':''}`;
+    }
+
+    // All meals today
+    if (logs.length > 0) {
+      document.getElementById('mealsToday').style.display = 'block';
+      document.getElementById('mealRows').innerHTML = logs.map(l => {
+        const t = new Date(l.checked_in_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+        const amt = l.is_free_meal ? 'Free' : '$'+parseFloat(l.amount_charged).toFixed(2);
+        return `<div class="meal-row"><span>${typeMap[l.meal_type]||l.meal_type}</span><span style="color:var(--text2)">${t}</span><span style="font-weight:700">${amt}</span></div>`;
+      }).join('');
+    }
+
+    box.style.display = 'block';
+    document.getElementById('resetBtn').style.display = 'block';
+    document.getElementById('lookupBtn').style.display = 'none';
+
+  } catch(e) {
+    err.textContent = e.message || 'Connection error. Please try again.';
+    err.style.display = 'block';
+    console.error(e);
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Look Up Ticket →';
+}
+
+function reset() {
+  document.getElementById('empId').value = '';
+  document.getElementById('errMsg').style.display = 'none';
+  document.getElementById('ticketBox').style.display = 'none';
+  document.getElementById('resetBtn').style.display = 'none';
+  document.getElementById('lookupBtn').style.display = 'block';
+  document.getElementById('mealsToday').style.display = 'none';
+  document.getElementById('ticketBox').classList.remove('tkt-expired');
+}
+</script>
+</body>
+</html>
