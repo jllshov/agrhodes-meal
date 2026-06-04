@@ -652,6 +652,9 @@ async function doCheckin() {
     );
     const payrollPeriodId = periods.length ? periods[0].id : null;
 
+    // Generate ticket number
+    const ticketNumber = Math.random().toString(36).substr(2,6).toUpperCase();
+
     // Insert meal log
     await sbFetch('meal_logs', {
       method: 'POST',
@@ -662,7 +665,8 @@ async function doCheckin() {
         meal_type:         mealType,
         amount_charged:    amountCharged,
         is_free_meal:      isFree,
-        checked_in_at:     new Date().toISOString()
+        checked_in_at:     new Date().toISOString(),
+        ticket_number:     ticketNumber
       })
     });
 
@@ -730,14 +734,13 @@ function showDone(d) {
   } else { rc.style.display='none'; }
 
   // Store ticket info
-  const tktNum = generateTicketNum();
   lastTicket = {
     name: d.employee_name,
     dept: d.department || 'A.G. Rhodes Atlanta',
     type: isFree ? 'Free Meal' : isBundle ? 'Bundle (5 meals)' : isCredit ? 'Bundle Credit' : 'Single Meal',
     date: d.date,
     time: d.time,
-    num:  tktNum
+    num:  d.ticket_number || generateTicketNum()
   };
 
   // Show ticket button
