@@ -192,6 +192,7 @@ async function lookupTicket() {
     document.getElementById('tktDate').textContent     = checkinTime.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
     document.getElementById('tktTime').textContent     = checkinTime.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
     document.getElementById('tktAmount').textContent   = latest.is_free_meal ? 'Free' : '$'+parseFloat(latest.amount_charged).toFixed(2);
+    document.getElementById('tktNum').textContent      = latest.ticket_number || '—';
 
     // Validity
     const box = document.getElementById('ticketBox');
