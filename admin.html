@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MealTrack — Admin Panel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#E8EAFF"/>
+<title>A.G. Rhodes — Meal Check-In</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
@@ -25,456 +27,418 @@
     --shadow-sm:0 2px 12px rgba(107,115,255,0.08);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh; }
 
-  /* ── PIN SCREEN ── */
-  .pin-screen {
-    min-height: 100dvh; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; padding: 24px;
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 20px;
   }
-  .pin-logo { font-size: 1.6rem; font-weight: 800; margin-bottom: 4px; }
-  .pin-logo span { color: var(--accent); }
-  .pin-sub { color: var(--text2); font-size: .82rem; font-weight: 500; margin-bottom: 32px; }
-  .pin-card {
-    background: var(--surface); border-radius: 28px; padding: 32px 28px;
-    width: 100%; max-width: 360px; box-shadow: var(--shadow);
-  }
-  .pin-card h2 { font-size: 1.1rem; font-weight: 800; text-align: center; margin-bottom: 20px; }
-  .pin-input {
-    width: 100%; background: var(--bg2); border: 2px solid var(--border);
-    border-radius: 16px; padding: 16px; font-size: 1.4rem; font-family: inherit;
-    font-weight: 700; color: var(--text); outline: none; text-align: center;
-    letter-spacing: .4em; margin-bottom: 14px; transition: border-color .2s;
-    -webkit-appearance: none;
-  }
-  .pin-input:focus { border-color: var(--accent); }
-  .pin-err { color: var(--danger); font-size: .82rem; font-weight: 600; text-align: center; margin-bottom: 10px; display: none; }
-  .btn-primary {
-    width: 100%; padding: 16px; border-radius: 16px; border: none;
-    background: var(--accent); color: #fff; font-size: 1rem; font-weight: 700;
-    font-family: inherit; cursor: pointer; transition: all .2s;
-    box-shadow: 0 4px 16px rgba(107,115,255,.3);
-  }
-  .btn-primary:active { background: var(--accent-d); transform: scale(.98); }
-  .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
 
-  /* ── MAIN LAYOUT ── */
-  .app { display: none; flex-direction: column; min-height: 100dvh; }
-  .app.active { display: flex; }
+  .header { text-align: center; margin-bottom: 24px; }
+  .logo { font-size: 1.6rem; font-weight: 800; color: var(--text); margin-bottom: 2px; }
+  .logo span { color: var(--accent); }
+  .tagline { color: var(--text2); font-size: .82rem; font-weight: 500; }
+  .clock { color: var(--accent); font-size: .82rem; font-weight: 600; margin-top: 6px; }
 
-  /* Top bar */
-  .topbar {
-    background: var(--surface); border-bottom: 1px solid var(--border);
-    padding: 14px 20px; display: flex; align-items: center;
-    justify-content: space-between; position: sticky; top: 0; z-index: 100;
-    box-shadow: var(--shadow-sm);
-  }
-  .topbar-logo { font-size: 1.1rem; font-weight: 800; }
-  .topbar-logo span { color: var(--accent); }
-  .topbar-facility { font-size: .76rem; font-weight: 600; color: var(--text2); }
-  .logout-btn {
-    background: var(--bg2); border: 1.5px solid var(--border); border-radius: 100px;
-    padding: 6px 14px; font-size: .76rem; font-weight: 700; color: var(--text2);
-    cursor: pointer; font-family: inherit; transition: all .2s;
-  }
-  .logout-btn:active { border-color: var(--danger); color: var(--danger); }
-
-  /* Nav tabs */
-  .nav {
-    background: var(--surface); border-bottom: 1px solid var(--border);
-    display: flex; overflow-x: auto; gap: 0; padding: 0 16px;
-  }
-  .nav::-webkit-scrollbar { display: none; }
-  .nav-tab {
-    padding: 12px 16px; font-size: .84rem; font-weight: 700; color: var(--text2);
-    cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap;
-    transition: all .2s; background: none; border-top: none; border-left: none; border-right: none;
-    font-family: inherit;
-  }
-  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-  .nav-tab:hover:not(.active) { color: var(--text); }
-
-  /* Content area */
-  .content { flex: 1; padding: 20px 16px; max-width: 900px; margin: 0 auto; width: 100%; }
-
-  /* Section */
-  .section { display: none; }
-  .section.active { display: block; }
-
-  /* Stats row */
-  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px; }
-  .stat-card {
-    background: var(--surface); border-radius: 18px; padding: 16px;
-    box-shadow: var(--shadow-sm); border: 1px solid rgba(107,115,255,.06);
-  }
-  .stat-label { font-size: .72rem; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
-  .stat-val { font-size: 1.8rem; font-weight: 800; color: var(--text); }
-  .stat-val.accent { color: var(--accent); }
-  .stat-val.gold { color: var(--gold); }
-  .stat-val.success { color: var(--success); }
-
-  /* Card */
   .card {
-    background: var(--surface); border-radius: 20px; padding: 18px 16px;
-    box-shadow: var(--shadow-sm); border: 1px solid rgba(107,115,255,.06);
-    margin-bottom: 14px;
-  }
-  .card-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
-  }
-  .card-title { font-size: .95rem; font-weight: 800; color: var(--text); }
-
-  /* Toolbar */
-  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
-  .search-box {
-    flex: 1; min-width: 180px; background: var(--bg2); border: 1.5px solid var(--border);
-    border-radius: 12px; padding: 10px 14px; font-size: .88rem; font-family: inherit;
-    font-weight: 600; color: var(--text); outline: none; transition: border-color .2s;
-  }
-  .search-box:focus { border-color: var(--accent); }
-  .search-box::placeholder { color: var(--text3); font-weight: 500; }
-  select.filter {
-    background: var(--bg2); border: 1.5px solid var(--border); border-radius: 12px;
-    padding: 10px 14px; font-size: .84rem; font-family: inherit; font-weight: 600;
-    color: var(--text); outline: none; cursor: pointer;
-  }
-  input[type=date].filter {
-    background: var(--bg2); border: 1.5px solid var(--border); border-radius: 12px;
-    padding: 10px 14px; font-size: .84rem; font-family: inherit; font-weight: 600;
-    color: var(--text); outline: none;
-  }
-  .btn-sm {
-    padding: 10px 16px; border-radius: 12px; border: none; font-size: .82rem;
-    font-weight: 700; font-family: inherit; cursor: pointer; transition: all .2s;
-    white-space: nowrap;
-  }
-  .btn-accent { background: var(--accent); color: #fff; }
-  .btn-accent:active { background: var(--accent-d); }
-  .btn-outline-sm {
-    background: var(--bg2); border: 1.5px solid var(--border); color: var(--text2);
-    font-weight: 700; font-size: .82rem; font-family: inherit; border-radius: 12px;
-    padding: 10px 16px; cursor: pointer; transition: all .2s;
-  }
-  .btn-outline-sm:active { border-color: var(--accent); color: var(--accent); }
-  .btn-danger-sm {
-    background: #FEF2F2; border: 1.5px solid #FECACA; color: var(--danger);
-    font-weight: 700; font-size: .76rem; font-family: inherit; border-radius: 10px;
-    padding: 6px 12px; cursor: pointer; transition: all .2s;
-  }
-  .btn-danger-sm:active { background: var(--danger); color: #fff; }
-  .btn-success-sm {
-    background: #F0FDF4; border: 1.5px solid #BBF7D0; color: var(--success);
-    font-weight: 700; font-size: .76rem; font-family: inherit; border-radius: 10px;
-    padding: 6px 12px; cursor: pointer; transition: all .2s;
+    background: var(--surface);
+    border-radius: 28px;
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(107,115,255,0.08);
   }
 
-  /* Table */
-  .tbl-wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; min-width: 480px; }
-  th {
-    font-size: .72rem; font-weight: 700; color: var(--text2); text-transform: uppercase;
-    letter-spacing: .06em; text-align: left; padding: 8px 10px;
-    border-bottom: 1.5px solid var(--border);
+  .card-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text);
+    text-align: center;
+    margin-bottom: 20px;
   }
-  td { font-size: .84rem; color: var(--text); padding: 11px 10px; border-bottom: 1px solid var(--bg2); vertical-align: middle; }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: var(--bg2); }
 
-  /* Badge */
-  .badge { display: inline-block; font-size: .7rem; font-weight: 700; padding: 3px 10px; border-radius: 100px; }
-  .badge-active  { background: #D1FAE5; color: #065F46; }
-  .badge-inactive{ background: #F1F5F9; color: #94A3B8; }
-  .badge-free    { background: #FEF3C7; color: #92400E; }
-  .badge-single  { background: var(--accent-l); color: var(--accent-d); }
-  .badge-bundle  { background: #FEF3C7; color: #92400E; }
-  .badge-credit  { background: #EDE9FE; color: #6D28D9; }
-  .badge-voided  { background: #FEF2F2; color: var(--danger); text-decoration: line-through; }
-  .badge-guest   { background: #F0FDF4; color: #065F46; }
-
-  /* Toggle switch */
-  .toggle { position: relative; display: inline-block; width: 40px; height: 22px; }
-  .toggle input { opacity: 0; width: 0; height: 0; }
-  .toggle-slider {
-    position: absolute; cursor: pointer; inset: 0; background: var(--border);
-    border-radius: 100px; transition: .3s;
+  .steps { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 24px; }
+  .step {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .72rem; font-weight: 700;
+    border: 2px solid var(--border);
+    color: var(--text3);
+    transition: all .3s;
+    background: var(--surface);
   }
-  .toggle-slider:before {
-    position: absolute; content: ''; height: 16px; width: 16px;
-    left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .3s;
+  .step.active { border-color: var(--accent); color: var(--accent); background: var(--accent-l); }
+  .step.done { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .step-line { flex: 1; height: 2px; background: var(--border); max-width: 40px; transition: background .3s; border-radius: 2px; }
+  .step-line.done { background: var(--accent); }
+
+  .input-wrap { position: relative; margin-bottom: 14px; }
+  input[type=text], input[type=number] {
+    width: 100%;
+    background: var(--bg2);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 18px;
+    font-size: 1.1rem;
+    font-family: inherit;
+    font-weight: 600;
+    color: var(--text);
+    outline: none;
+    text-align: center;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    transition: border-color .2s, box-shadow .2s;
+    -webkit-appearance: none;
+    margin-bottom: 16px;
   }
-  .toggle input:checked + .toggle-slider { background: var(--gold); }
-  .toggle input:checked + .toggle-slider:before { transform: translateX(18px); }
+  input[type=text]:focus, input[type=number]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(107,115,255,.12);
+  }
+  input[type=text]::placeholder, input[type=number]::placeholder {
+    letter-spacing: normal; text-transform: none;
+    color: var(--text3); font-size: .9rem; font-weight: 500;
+  }
 
-  /* Empty state */
-  .empty { text-align: center; padding: 32px; color: var(--text2); font-size: .88rem; font-weight: 600; }
-  .empty-icon { font-size: 2rem; margin-bottom: 8px; }
+  .btn {
+    width: 100%; padding: 17px; border-radius: 16px; border: none;
+    font-size: 1rem; font-weight: 700; font-family: inherit;
+    cursor: pointer; transition: all .2s; -webkit-appearance: none;
+    letter-spacing: .02em;
+  }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 16px rgba(107,115,255,.3); }
+  .btn-primary:active { background: var(--accent-d); transform: scale(.98); box-shadow: none; }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-outline {
+    background: var(--bg2); color: var(--text2);
+    border: 2px solid var(--border); font-weight: 600;
+    margin-top: 10px; box-shadow: none;
+  }
+  .btn-outline:active { border-color: var(--accent); color: var(--accent); }
+  .btn-ghost { background: transparent; color: var(--text2); font-weight: 600; margin-top: 10px; }
 
-  /* Loading */
-  .loading { text-align: center; padding: 32px; color: var(--text2); font-size: .88rem; font-weight: 600; }
+  .divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: 16px 0; color: var(--text3); font-size: .78rem; font-weight: 600;
+  }
+  .divider::before, .divider::after { content:''; flex:1; height:1.5px; background:var(--border); border-radius:2px; }
+
+  .inline-err {
+    margin-top: 10px; padding: 11px 14px;
+    background: #FEF2F2; border: 1.5px solid #FECACA;
+    border-radius: 12px; color: #DC2626;
+    font-size: .84rem; font-weight: 600; text-align: center; display: none;
+  }
+
+  .emp-banner {
+    background: var(--accent-l);
+    border: 1.5px solid rgba(107,115,255,.18);
+    border-radius: 16px; padding: 14px 16px;
+    margin-bottom: 18px; display: flex; align-items: center; gap: 12px;
+  }
+  .emp-banner .icon {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--accent); display: flex; align-items: center;
+    justify-content: center; font-size: 1.2rem; flex-shrink: 0;
+  }
+  .emp-banner .name { font-weight: 800; font-size: .95rem; color: var(--text); }
+  .emp-banner .dept { font-size: .76rem; color: var(--text2); font-weight: 500; margin-top: 2px; }
+
+  .meal-choices { display: flex; gap: 12px; margin-bottom: 16px; }
+  .meal-opt {
+    flex: 1; padding: 18px 10px; border-radius: 20px;
+    border: 2px solid var(--border); background: var(--bg2);
+    cursor: pointer; text-align: center; transition: all .25s;
+    -webkit-appearance: none; font-family: inherit;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .meal-opt:active { transform: scale(.97); }
+  .meal-opt.sel-single { border-color: var(--accent); background: var(--accent-l); box-shadow: 0 0 0 4px rgba(107,115,255,.1); }
+  .meal-opt.sel-bundle { border-color: var(--gold); background: #FFFBEB; box-shadow: 0 0 0 4px rgba(245,158,11,.1); }
+  .meal-opt .oi { font-size: 1.8rem; }
+  .meal-opt .ot { font-size: .88rem; font-weight: 800; color: var(--text); }
+  .meal-opt .op { font-size: 1.2rem; font-weight: 800; }
+  .single-color { color: var(--accent); }
+  .bundle-color { color: var(--gold); }
+  .meal-opt .os { font-size: .68rem; color: var(--text2); font-weight: 500; line-height: 1.3; }
+  .save-badge {
+    font-size: .68rem; font-weight: 700; color: #92400E;
+    background: #FEF3C7; padding: 2px 8px; border-radius: 100px;
+  }
+
+  .free-banner {
+    background: #FFFBEB; border: 2px solid #FDE68A;
+    border-radius: 20px; padding: 20px; text-align: center; margin-bottom: 16px;
+  }
+  .free-banner .fi { font-size: 2rem; margin-bottom: 6px; }
+  .free-banner .ft { font-size: 1rem; font-weight: 800; color: #92400E; }
+  .free-banner .fs { font-size: .78rem; color: #B45309; font-weight: 500; margin-top: 4px; }
+
+  .result { padding: 20px; border-radius: 20px; text-align: center; animation: fadeIn .3s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+  .res-success { background: #F0FDF4; border: 2px solid #BBF7D0; }
+  .res-free    { background: #FFFBEB; border: 2px solid #FDE68A; }
+  .res-bundle  { background: var(--accent-l); border: 2px solid rgba(107,115,255,.25); }
+  .res-error   { background: #FEF2F2; border: 2px solid #FECACA; }
+  .res-warn    { background: #FFFBEB; border: 2px solid #FDE68A; }
+  .ri { font-size: 2.4rem; margin-bottom: 8px; }
+  .rn { font-size: 1.3rem; font-weight: 800; color: var(--text); margin-bottom: 3px; }
+  .rd { color: var(--accent); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+  .rm { color: var(--text2); font-size: .86rem; font-weight: 500; margin-bottom: 8px; }
+  .rp { display: inline-block; border-radius: 100px; padding: 7px 20px; font-weight: 700; font-size: .9rem; margin-top: 6px; }
+  .rp-green  { background: #D1FAE5; color: #065F46; }
+  .rp-gold   { background: #FEF3C7; color: #92400E; }
+  .rp-purple { background: var(--accent-l); color: var(--accent-d); }
+  .credits { display: inline-block; margin-top: 8px; background: var(--accent-l); border-radius: 100px; padding: 4px 14px; color: var(--accent); font-size: .76rem; font-weight: 700; }
+
+  .fg-wrap { margin-bottom: 16px; }
+  .fg-label { display: block; font-size: .76rem; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+  .fg-wrap input { letter-spacing: normal; text-transform: none; text-align: left; padding: 14px 16px; font-size: .95rem; }
+  .fg-wrap input[type=number] { letter-spacing: normal; text-transform: none; text-align: left; }
+  .pay-choices { display: flex; gap: 12px; }
+  .pay-opt {
+    flex: 1; padding: 16px 10px; border-radius: 18px;
+    border: 2px solid var(--border); background: var(--bg2);
+    cursor: pointer; text-align: center; transition: all .2s;
+    -webkit-appearance: none; font-family: inherit;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .pay-opt:active { transform: scale(.97); }
+  .pay-opt.sel-card { border-color: var(--accent); background: var(--accent-l); box-shadow: 0 0 0 4px rgba(107,115,255,.1); }
+  .pay-opt.sel-cash { border-color: var(--success); background: #F0FDF4; box-shadow: 0 0 0 4px rgba(16,185,129,.1); }
+  .pay-icon { font-size: 1.8rem; }
+  .pay-label { font-size: .82rem; font-weight: 700; color: var(--text); }
+
+  .back-btn {
+    background: none; border: none; color: var(--text2);
+    font-size: .8rem; font-weight: 600; cursor: pointer;
+    font-family: inherit; margin-top: 14px; display: block; width: 100%; text-align: center;
+  }
+  .back-btn:active { color: var(--accent); }
+
+  .bottom-links { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+  .bottom-link {
+    width: 100%; padding: 12px; border-radius: 14px;
+    border: 1.5px solid var(--border); background: transparent;
+    color: var(--text2); font-size: .84rem; font-weight: 600;
+    font-family: inherit; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all .2s; -webkit-appearance: none;
+  }
+  .bottom-link:active { border-color: var(--accent); color: var(--accent); background: var(--accent-l); }
+  .admin-link { text-align: center; margin-top: 8px; }
+  .admin-link a { color: var(--text3); font-size: .72rem; font-weight: 600; text-decoration: none; }
+
   .spinner {
-    width: 20px; height: 20px; border: 2px solid var(--border);
-    border-top-color: var(--accent); border-radius: 50%;
-    animation: spin .7s linear infinite; display: inline-block; margin-bottom: 10px;
+    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.4);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin .7s linear infinite; display: inline-block;
+    margin-right: 8px; vertical-align: middle;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Toast */
-  .toast {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-    background: var(--text); color: #fff; padding: 12px 24px; border-radius: 100px;
-    font-size: .84rem; font-weight: 700; z-index: 999; opacity: 0;
-    transition: opacity .3s; pointer-events: none; white-space: nowrap;
-  }
-  .toast.show { opacity: 1; }
+  .screen { display: none; }
+  .screen.active { display: block; }
 
-  /* Modal */
-  .modal-overlay {
-    position: fixed; inset: 0; background: rgba(26,26,62,.5);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 200; padding: 20px; display: none;
+  .credit-banner {
+    background: #FFFBEB; border: 2px solid #FDE68A;
+    border-radius: 16px; padding: 16px 18px;
+    margin-bottom: 16px; display: flex; align-items: center; gap: 14px;
   }
-  .modal-overlay.open { display: flex; }
-  .modal {
-    background: var(--surface); border-radius: 24px; padding: 28px 24px;
-    width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(107,115,255,.2);
-  }
-  .modal h3 { font-size: 1rem; font-weight: 800; margin-bottom: 16px; }
-  .modal-label { font-size: .76rem; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; display: block; }
-  .modal-input {
-    width: 100%; background: var(--bg2); border: 1.5px solid var(--border);
-    border-radius: 12px; padding: 12px 14px; font-size: .9rem; font-family: inherit;
-    font-weight: 600; color: var(--text); outline: none; margin-bottom: 14px;
-    transition: border-color .2s;
-  }
-  .modal-input:focus { border-color: var(--accent); }
-  .modal-actions { display: flex; gap: 10px; margin-top: 4px; }
-  .modal-actions button { flex: 1; }
+  .cb-icon { font-size: 1.8rem; flex-shrink: 0; }
+  .cb-title { font-weight: 800; font-size: .95rem; color: #92400E; margin-bottom: 3px; }
+  .cb-sub { font-size: .82rem; color: #B45309; font-weight: 500; }
+  .cb-sub span { font-weight: 800; font-size: 1rem; color: #92400E; }
 
-  /* Result count */
-  .result-count { font-size: .76rem; color: var(--text2); font-weight: 600; margin-bottom: 10px; }
+  .home-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; max-width: 400px; margin-bottom: 16px; padding: 0 4px;
+  }
+  .home-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 100px; padding: 7px 14px;
+    font-size: .78rem; font-weight: 700; color: var(--accent);
+    text-decoration: none; box-shadow: var(--shadow-sm);
+    transition: all .2s; font-family: inherit; cursor: pointer;
+  }
+  .home-btn:active { background: var(--accent-l); border-color: var(--accent); }
+  .home-btn .hicon { font-size: .9rem; }
+  .page-label {
+    font-size: .72rem; font-weight: 700; color: var(--text2);
+    text-transform: uppercase; letter-spacing: .08em;
+  }
 </style>
 </head>
 <body>
 
-<!-- PIN SCREEN -->
-<div class="pin-screen" id="pinScreen">
-  <div class="pin-logo">🍽 Meal<span>Track</span></div>
-  <div class="pin-sub">Admin Panel · A.G. Rhodes Atlanta</div>
-  <div class="pin-card">
-    <h2>Enter Admin PIN</h2>
-    <input type="password" class="pin-input" id="pinInput" placeholder="••••" maxlength="6" inputmode="numeric" autocomplete="off"/>
-    <div class="pin-err" id="pinErr">Incorrect PIN. Try again.</div>
-    <button class="btn-primary" id="pinBtn">Unlock →</button>
-  </div>
+<div class="home-bar">
+  <a href="https://agrhodes-cobb.vercel.app" class="home-btn">
+    <span class="hicon">🏠</span> Home
+  </a>
+  <span class="page-label">Meal Check-In</span>
 </div>
 
-<!-- MAIN APP -->
-<div class="app" id="app">
-  <div class="topbar">
-    <div>
-      <div class="topbar-logo">🍽 Meal<span>Track</span></div>
-      <div class="topbar-facility">A.G. Rhodes Atlanta · Admin</div>
-    </div>
-    <button class="logout-btn" onclick="logout()">Lock</button>
-  </div>
-
-  <div class="nav">
-    <button class="nav-tab active" onclick="showTab('dashboard')">Dashboard</button>
-    <button class="nav-tab" onclick="showTab('employees')">Employees</button>
-    <button class="nav-tab" onclick="showTab('logs')">Meal Logs</button>
-    <button class="nav-tab" onclick="showTab('reports')">Reports</button>
-    <button class="nav-tab" onclick="showTab('guests')">Guest Logs</button>
-    <button class="nav-tab" onclick="showTab('feedback')">Feedback</button>
-  </div>
-
-  <div class="content">
-
-    <!-- DASHBOARD -->
-    <div class="section active" id="sec-dashboard">
-      <div class="stats" id="dashStats">
-        <div class="stat-card"><div class="stat-label">Today's Check-ins</div><div class="stat-val accent" id="dToday">—</div></div>
-        <div class="stat-card"><div class="stat-label">Total Employees</div><div class="stat-val" id="dTotal">—</div></div>
-        <div class="stat-card"><div class="stat-label">Today's Revenue</div><div class="stat-val success" id="dRevenue">—</div></div>
-        <div class="stat-card"><div class="stat-label">Free Meals Today</div><div class="stat-val gold" id="dFree">—</div></div>
-      </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title">Recent Check-ins</div></div>
-        <div id="recentLogs"><div class="loading"><div class="spinner"></div><br>Loading…</div></div>
-      </div>
-    </div>
-
-    <!-- EMPLOYEES -->
-    <div class="section" id="sec-employees">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Employee Roster</div>
-          <button class="btn-sm btn-accent" onclick="openAddEmployee()">+ Add Employee</button>
-        </div>
-        <div class="toolbar">
-          <input type="text" class="search-box" id="empSearch" placeholder="Search name or ID…" oninput="filterEmployees()"/>
-          <select class="filter" id="empFilter" onchange="filterEmployees()">
-            <option value="">All</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="free">Free Meal</option>
-          </select>
-        </div>
-        <div class="result-count" id="empCount"></div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>Name</th><th>ID</th><th>Unit</th><th>Status</th><th>Free Meal</th><th></th></tr></thead>
-            <tbody id="empTbody"><tr><td colspan="6"><div class="loading"><div class="spinner"></div><br>Loading…</div></td></tr></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- MEAL LOGS -->
-    <div class="section" id="sec-logs">
-      <div class="card">
-        <div class="card-header"><div class="card-title">Meal Logs</div></div>
-        <div class="toolbar">
-          <input type="text" class="search-box" id="logSearch" placeholder="Search employee…" oninput="filterLogs()"/>
-          <input type="date" class="filter" id="logDate" onchange="loadLogs()"/>
-          <select class="filter" id="logType" onchange="filterLogs()">
-            <option value="">All types</option>
-            <option value="single">Single</option>
-            <option value="bundle">Bundle</option>
-            <option value="credit">Credit</option>
-            <option value="free">Free</option>
-          </select>
-        </div>
-        <div class="result-count" id="logCount"></div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>Employee</th><th>Time</th><th>Type</th><th>Amount</th><th>Status</th><th></th></tr></thead>
-            <tbody id="logTbody"><tr><td colspan="6"><div class="loading"><div class="spinner"></div><br>Loading…</div></td></tr></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- REPORTS -->
-    <div class="section" id="sec-reports">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Payroll Deduction Report</div>
-          <button class="btn-sm btn-accent" onclick="exportCSV()">Export CSV</button>
-        </div>
-        <div class="toolbar">
-          <select class="filter" id="reportPeriod" onchange="loadReport()">
-            <option value="">Select pay period…</option>
-          </select>
-          <input type="text" class="search-box" id="reportSearch" placeholder="Search employee…" oninput="filterReport()"/>
-        </div>
-        <div class="result-count" id="reportSummary"></div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>Employee</th><th>ID</th><th>Unit</th><th>Meals</th><th>Bundles</th><th>Deduction</th></tr></thead>
-            <tbody id="reportTbody"><tr><td colspan="6"><div class="empty"><div class="empty-icon">📊</div>Select a pay period above</div></td></tr></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- GUEST LOGS -->
-    <div class="section" id="sec-guests">
-      <div class="card">
-        <div class="card-header"><div class="card-title">Guest Logs</div></div>
-        <div class="toolbar">
-          <input type="date" class="filter" id="guestDate" onchange="loadGuests()"/>
-          <button class="btn-sm btn-outline-sm" onclick="loadGuests()">Refresh</button>
-        </div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>Guest</th><th>Date</th><th>Time</th><th>Amount</th><th>Payment</th></tr></thead>
-            <tbody id="guestTbody"><tr><td colspan="5"><div class="loading"><div class="spinner"></div><br>Loading…</div></td></tr></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- FEEDBACK -->
-    <div class="section" id="sec-feedback">
-      <div class="stats" style="margin-bottom:18px">
-        <div class="stat-card"><div class="stat-label">Total Responses</div><div class="stat-val accent" id="fbTotal">—</div></div>
-        <div class="stat-card"><div class="stat-label">Avg Overall Rating</div><div class="stat-val gold" id="fbAvg">—</div></div>
-        <div class="stat-card"><div class="stat-label">Would Eat Again</div><div class="stat-val success" id="fbEatAgain">—</div></div>
-        <div class="stat-card"><div class="stat-label">Comments</div><div class="stat-val" id="fbComments">—</div></div>
-      </div>
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Feedback Responses</div>
-          <button class="btn-sm btn-accent" onclick="exportFeedbackCSV()">Export CSV</button>
-        </div>
-        <div class="toolbar">
-          <input type="date" class="filter" id="fbDateFrom"/>
-          <input type="date" class="filter" id="fbDateTo"/>
-          <select class="filter" id="fbWho">
-            <option value="">All respondents</option>
-            <option value="patient">Patient</option>
-            <option value="caregiver">Caregiver</option>
-            <option value="staff">Staff</option>
-          </select>
-          <button class="btn-sm btn-accent" onclick="loadFeedback()">Load</button>
-        </div>
-        <div class="result-count" id="fbCount"></div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>Date</th><th>Who</th><th>Overall</th><th>Taste</th><th>Temp</th><th>Eat Again</th><th>Comment</th></tr></thead>
-            <tbody id="fbTbody"><tr><td colspan="7"><div class="empty"><div class="empty-icon">💬</div>Select a date range and click Load</div></td></tr></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    </div>
-
-  </div>
+<div class="header">
+  <div class="logo">🍽 Meal<span>Track</span></div>
+  <div class="tagline">A.G. Rhodes Cobb</div>
+  <div class="clock" id="clk"></div>
 </div>
 
-<!-- ADD/EDIT EMPLOYEE MODAL -->
-<div class="modal-overlay" id="empModal">
-  <div class="modal">
-    <h3 id="modalTitle">Add Employee</h3>
-    <label class="modal-label">First Name</label>
-    <input type="text" class="modal-input" id="mFirst" placeholder="First name"/>
-    <label class="modal-label">Last Name</label>
-    <input type="text" class="modal-input" id="mLast" placeholder="Last name"/>
-    <label class="modal-label">Employee ID</label>
-    <input type="text" class="modal-input" id="mEmpId" placeholder="Employee number"/>
-    <label class="modal-label">Unit</label>
-    <input type="text" class="modal-input" id="mUnit" placeholder="e.g. Taylor, ICF, Garden…"/>
-    <label class="modal-label">Role</label>
-    <input type="text" class="modal-input" id="mRole" placeholder="e.g. CNA, LPN…"/>
-    <label class="modal-label">Hire Date (optional)</label>
-    <input type="date" class="modal-input" id="mHire"/>
-    <div class="modal-actions">
-      <button class="btn-sm btn-outline-sm" onclick="closeModal()">Cancel</button>
-      <button class="btn-sm btn-accent" id="modalSaveBtn" onclick="saveEmployee()">Save</button>
+<div class="card">
+  <div class="steps">
+    <div class="step active" id="s1">1</div>
+    <div class="step-line" id="l1"></div>
+    <div class="step" id="s2">2</div>
+    <div class="step-line" id="l2"></div>
+    <div class="step" id="s3">3</div>
+  </div>
+
+  <!-- Screen 1: ID Entry -->
+  <div class="screen active" id="scr-id">
+    <div class="card-title">Enter Employee ID</div>
+    <input type="text" id="empId" placeholder="Enter your Employee ID"
+      maxlength="20" autocomplete="off" autocorrect="off"
+      autocapitalize="characters" spellcheck="false" inputmode="numeric"/>
+    <button class="btn btn-primary" id="lookupBtn">Continue →</button>
+    <div class="inline-err" id="idErr"></div>
+    <div class="divider">or</div>
+    <div class="bottom-links">
+      <button class="bottom-link" id="feedbackBtn">💬 Share Meal Feedback</button>
+      <button class="bottom-link" id="guestBtn">🧑‍🤝‍🧑 Guest Check-In</button>
+    </div>
+    <div class="admin-link">
+      <a href="/admin" target="_blank">Admin Panel</a>
     </div>
   </div>
-</div>
 
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
+  <!-- Screen 2: Meal Choice -->
+  <div class="screen" id="scr-choice">
+    <div class="card-title">Choose Your Meal</div>
+    <div id="regularFlow">
+      <div class="emp-banner">
+        <div class="icon">👤</div>
+        <div>
+          <div class="name" id="bannerName"></div>
+          <div class="dept" id="bannerDept"></div>
+        </div>
+      </div>
+      <div id="creditArea" style="display:none">
+        <div class="credit-banner">
+          <div class="cb-icon">🎟</div>
+          <div>
+            <div class="cb-title">Bundle Credit</div>
+            <div class="cb-sub"><span id="creditCount">0</span> meal(s) remaining on your bundle</div>
+          </div>
+        </div>
+      </div>
+      <div id="mealChoiceArea" class="meal-choices">
+        <button class="meal-opt" id="opt-single" onclick="selectOpt('single')">
+          <div class="oi">🍽</div>
+          <div class="ot">1 Meal</div>
+          <div class="op single-color">$2.50</div>
+          <div class="os">Single ticket</div>
+        </button>
+        <button class="meal-opt" id="opt-bundle" onclick="selectOpt('bundle')">
+          <div class="oi">🎟</div>
+          <div class="ot">5 Meals</div>
+          <div class="op bundle-color">$9.00</div>
+          <div class="save-badge">Save $3.50</div>
+          <div class="os">Use over 5 check-ins</div>
+        </button>
+      </div>
+      <button class="btn btn-primary" id="confirmBtn" disabled onclick="doCheckin()">Confirm Check-In</button>
+    </div>
+    <div id="freeFlow" style="display:none">
+      <div class="free-banner">
+        <div class="fi">🎉</div>
+        <div class="ft" id="freeName"></div>
+        <div class="fs">20+ years of service — your meal is free!</div>
+      </div>
+      <button class="btn btn-primary" id="freeBtn" onclick="doCheckin()">Check In — Free Meal ✨</button>
+    </div>
+    <button class="back-btn" onclick="goBack()">← Change ID</button>
+  </div>
+
+  <!-- Screen 3: Confirmation + Ticket -->
+  <div class="screen" id="scr-done">
+    <div class="result" id="resultBox">
+      <div class="ri" id="rI"></div>
+      <div class="rn" id="rN"></div>
+      <div class="rd" id="rD"></div>
+      <div class="rm" id="rM"></div>
+      <div class="rp" id="rP"></div>
+      <div class="credits" id="rC" style="display:none"></div>
+    </div>
+    <!-- Digital Ticket -->
+    <div id="ticketBox" style="display:none;margin-top:16px;background:#FFFBEB;border:2px dashed #FDE68A;border-radius:20px;padding:20px;text-align:center">
+      <div style="font-size:.7rem;font-weight:700;color:#B45309;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Meal Ticket</div>
+      <div style="font-size:1.2rem;font-weight:800;color:#1A1A3E;margin-bottom:4px" id="tktName"></div>
+      <div style="font-size:.78rem;color:#8A8FAD;font-weight:500;margin-bottom:12px" id="tktDept"></div>
+      <div style="display:flex;justify-content:space-around;margin-bottom:12px">
+        <div><div style="font-size:.68rem;color:#B45309;font-weight:700;text-transform:uppercase">Type</div><div style="font-size:.88rem;font-weight:700;color:#1A1A3E" id="tktType"></div></div>
+        <div><div style="font-size:.68rem;color:#B45309;font-weight:700;text-transform:uppercase">Date</div><div style="font-size:.88rem;font-weight:700;color:#1A1A3E" id="tktDate"></div></div>
+        <div><div style="font-size:.68rem;color:#B45309;font-weight:700;text-transform:uppercase">Time</div><div style="font-size:.88rem;font-weight:700;color:#1A1A3E" id="tktTime"></div></div>
+      </div>
+      <div style="font-size:.68rem;color:#B45309;font-weight:700;text-transform:uppercase;margin-bottom:4px">Ticket #</div>
+      <div style="font-size:1.1rem;font-weight:800;color:#92400E;letter-spacing:.1em" id="tktNum"></div>
+      <div style="font-size:.68rem;color:#B45309;margin-top:8px">Valid for 30 minutes from purchase</div>
+    </div>
+    <button class="btn btn-outline" id="showTicketBtn" onclick="showTicket()" style="margin-top:16px;display:none">🎟 Show Meal Ticket</button>
+    <button class="btn btn-outline" onclick="resetAll()" style="margin-top:10px">← New Check-In</button>
+  </div>
+
+  <!-- Screen G: Guest Form -->
+  <div class="screen" id="scr-guest">
+    <div class="card-title">Guest Check-In</div>
+    <div class="fg-wrap">
+      <label class="fg-label">Guest Name</label>
+      <input type="text" id="guestName" placeholder="Enter guest name"
+        autocomplete="off" autocorrect="off" spellcheck="false"/>
+    </div>
+    <div class="fg-wrap">
+      <label class="fg-label">Amount ($)</label>
+      <input type="number" id="guestAmount" placeholder="0.00" min="0" step="0.01" inputmode="decimal"/>
+    </div>
+    <div class="fg-wrap">
+      <label class="fg-label">Payment Type</label>
+      <div class="pay-choices">
+        <button class="pay-opt" id="pay-card" onclick="selectPay('card')">
+          <div class="pay-icon">💳</div>
+          <div class="pay-label">Credit Card</div>
+        </button>
+        <button class="pay-opt" id="pay-cash" onclick="selectPay('cash')">
+          <div class="pay-icon">💵</div>
+          <div class="pay-label">Cash</div>
+        </button>
+      </div>
+    </div>
+    <div class="inline-err" id="guestErr"></div>
+    <button class="btn btn-primary" id="guestSubmitBtn" onclick="submitGuest()">Complete Guest Check-In</button>
+    <button class="back-btn" onclick="cancelGuest()">← Back</button>
+  </div>
+
+</div>
 
 <script>
-// ─── Config ────────────────────────────────────────────────
+// ─── Supabase config ────────────────────────────────────────
 const SUPABASE_URL      = "https://gtbiatetqyuxwuehwilr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34";
-const FACILITY_SUBDOMAIN = "agrhodes";
-const ADMIN_PIN = "350";
+const FACILITY_SUBDOMAIN = "agrhodes-cobb";
+const FEEDBACK_URL = "/feedback";
 
-let facilityId   = null;
-let allEmployees = [];
-let allLogs      = [];
-let allReport    = [];
-let editingEmpId = null;
+let emp = null, selOpt = null, selPay = null;
+let facilityId = null, facilityConfig = null;
 
-// ─── Supabase helper ───────────────────────────────────────
-async function sb(path, options = {}) {
+// ─── Supabase REST helper ───────────────────────────────────
+async function sbFetch(path, options = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...options,
     headers: {
@@ -485,443 +449,402 @@ async function sb(path, options = {}) {
       ...(options.headers || {})
     }
   });
-  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.message||`HTTP ${res.status}`); }
-  const text = await res.text();
-  return text ? JSON.parse(text) : [];
-}
-
-// ─── PIN ───────────────────────────────────────────────────
-document.getElementById('pinBtn').addEventListener('click', tryPin);
-document.getElementById('pinInput').addEventListener('keydown', e => { if(e.key==='Enter') tryPin(); });
-
-async function tryPin() {
-  const pin = document.getElementById('pinInput').value.trim();
-  if (pin !== ADMIN_PIN) {
-    document.getElementById('pinErr').style.display = 'block';
-    document.getElementById('pinInput').value = '';
-    return;
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `HTTP ${res.status}`);
   }
-  document.getElementById('pinScreen').style.display = 'none';
-  document.getElementById('app').classList.add('active');
-  await init();
+  return res.json();
 }
 
-function logout() {
-  document.getElementById('app').classList.remove('active');
-  document.getElementById('pinScreen').style.display = 'flex';
-  document.getElementById('pinInput').value = '';
-  document.getElementById('pinErr').style.display = 'none';
-}
-
-// ─── Init ──────────────────────────────────────────────────
-async function init() {
+// ─── Load facility + config once on page load ───────────────
+async function loadFacility() {
   try {
-    const facilities = await sb(`facilities?subdomain=eq.${FACILITY_SUBDOMAIN}&select=id`);
-    facilityId = facilities[0]?.id;
-    await Promise.all([loadDashboard(), loadEmployees(), loadPayrollPeriods()]);
-    // Set default dates
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('logDate').value = today;
-    document.getElementById('guestDate').value = today;
-    loadLogs();
-    loadGuests();
-  } catch(e) { showToast('Error connecting to database'); console.error(e); }
+    const facilities = await sbFetch(`facilities?subdomain=eq.${FACILITY_SUBDOMAIN}&select=id`);
+    if (!facilities.length) return;
+    facilityId = facilities[0].id;
+    const configs = await sbFetch(`facility_config?facility_id=eq.${facilityId}&select=*`);
+    if (configs.length) facilityConfig = configs[0];
+  } catch(e) { console.error('Facility load error:', e); }
 }
+loadFacility();
 
-// ─── TAB NAV ───────────────────────────────────────────────
-function showTab(name) {
-  document.querySelectorAll('.nav-tab').forEach((t,i) => {
-    t.classList.toggle('active', ['dashboard','employees','logs','reports','guests','feedback'][i]===name);
+// ─── Clock ──────────────────────────────────────────────────
+function updateClock() {
+  document.getElementById('clk').textContent =
+    new Date().toLocaleTimeString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+setInterval(updateClock, 1000); updateClock();
+
+// ─── Step indicator ─────────────────────────────────────────
+function setStep(n) {
+  [1,2,3].forEach(i => {
+    document.getElementById('s'+i).className = 'step'+(i<n?' done':i===n?' active':'');
+    if(i<3) document.getElementById('l'+i).className = 'step-line'+(i<n?' done':'');
   });
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.getElementById('sec-'+name).classList.add('active');
+}
+function showScr(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('scr-'+name).classList.add('active');
+  setStep({id:1,choice:2,done:3,guest:1}[name]);
 }
 
-// ─── DASHBOARD ─────────────────────────────────────────────
-async function loadDashboard() {
+// ─── Today's meal logs for an employee ──────────────────────
+async function getTodayLogs(employeeId) {
   const todayStart = new Date(); todayStart.setHours(0,0,0,0);
   const todayEnd   = new Date(); todayEnd.setHours(23,59,59,999);
-
-  const [logs, emps] = await Promise.all([
-    sb(`meal_logs?facility_id=eq.${facilityId}&is_voided=eq.false&checked_in_at=gte.${todayStart.toISOString()}&checked_in_at=lte.${todayEnd.toISOString()}&select=*,employees(first_name,last_name,unit)&order=checked_in_at.desc`),
-    sb(`employees?facility_id=eq.${facilityId}&select=id&is_active=eq.true`)
-  ]);
-
-  const revenue  = logs.filter(l=>!l.is_free_meal).reduce((s,l)=>s+parseFloat(l.amount_charged),0);
-  const freeMeals = logs.filter(l=>l.is_free_meal).length;
-
-  document.getElementById('dToday').textContent   = logs.length;
-  document.getElementById('dTotal').textContent   = emps.length;
-  document.getElementById('dRevenue').textContent = '$'+revenue.toFixed(2);
-  document.getElementById('dFree').textContent    = freeMeals;
-
-  // Recent logs table
-  const tbody = document.getElementById('recentLogs');
-  if (!logs.length) { tbody.innerHTML = '<div class="empty"><div class="empty-icon">🍽</div>No check-ins today yet</div>'; return; }
-  tbody.innerHTML = '<div class="tbl-wrap"><table><thead><tr><th>Employee</th><th>Time</th><th>Type</th><th>Amount</th></tr></thead><tbody>' +
-    logs.slice(0,10).map(l => {
-      const name = l.employees ? l.employees.first_name+' '+l.employees.last_name : 'Guest';
-      const time = new Date(l.checked_in_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-      return `<tr><td>${name}</td><td>${time}</td><td>${badgeHTML(l.meal_type)}</td><td>${l.is_free_meal?'Free':'$'+parseFloat(l.amount_charged).toFixed(2)}</td></tr>`;
-    }).join('') + '</tbody></table></div>';
+  return sbFetch(
+    `meal_logs?employee_id=eq.${employeeId}&is_voided=eq.false` +
+    `&checked_in_at=gte.${todayStart.toISOString()}` +
+    `&checked_in_at=lte.${todayEnd.toISOString()}` +
+    `&select=*&order=checked_in_at.desc`
+  );
 }
 
-// ─── EMPLOYEES ─────────────────────────────────────────────
-async function loadEmployees() {
-  allEmployees = await sb(`employees?facility_id=eq.${facilityId}&select=*&order=last_name.asc`);
-  renderEmployees(allEmployees);
+// ─── Get bundle credits remaining ───────────────────────────
+// Bundle credit = purchased a bundle earlier today but hasn't used all 5 meals yet
+function getBundleCredits(todayLogs, config) {
+  const bundleLog = todayLogs.find(l => l.meal_type === 'bundle');
+  if (!bundleLog) return 0;
+  const usedAfterBundle = todayLogs.filter(l =>
+    l.meal_type === 'credit' || (l.meal_type === 'bundle')
+  ).length;
+  const bundleSize = config ? config.bundle_meal_count : 5;
+  return Math.max(0, bundleSize - usedAfterBundle);
 }
 
-function filterEmployees() {
-  const q  = document.getElementById('empSearch').value.toLowerCase();
-  const f  = document.getElementById('empFilter').value;
-  let rows = allEmployees.filter(e => {
-    const matchQ = !q || (e.first_name+' '+e.last_name).toLowerCase().includes(q) || e.employee_number.includes(q);
-    const matchF = !f ||
-      (f==='active' && e.is_active && !e.is_free_meal_eligible) ||
-      (f==='inactive' && !e.is_active) ||
-      (f==='free' && e.is_free_meal_eligible);
-    return matchQ && matchF;
-  });
-  document.getElementById('empCount').textContent = `Showing ${rows.length} of ${allEmployees.length} employees`;
-  renderEmployees(rows);
-}
-
-function renderEmployees(rows) {
-  const tbody = document.getElementById('empTbody');
-  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-icon">👤</div>No employees found</div></td></tr>'; return; }
-  tbody.innerHTML = rows.map(e => `
-    <tr>
-      <td><strong>${e.first_name} ${e.last_name}</strong></td>
-      <td style="font-size:.78rem;color:var(--text2)">${e.employee_number}</td>
-      <td style="font-size:.8rem">${e.unit||'—'}</td>
-      <td>${e.is_active ? '<span class="badge badge-active">Active</span>' : '<span class="badge badge-inactive">Inactive</span>'}</td>
-      <td>
-        <label class="toggle" title="Free meal eligible">
-          <input type="checkbox" ${e.is_free_meal_eligible?'checked':''} onchange="toggleFreeMeal('${e.id}', this.checked)"/>
-          <span class="toggle-slider"></span>
-        </label>
-      </td>
-      <td style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn-outline-sm" style="padding:6px 10px;font-size:.72rem" onclick="openEditEmployee('${e.id}')">Edit</button>
-        <button class="${e.is_active?'btn-danger-sm':'btn-success-sm'}" onclick="toggleActive('${e.id}',${!e.is_active})">${e.is_active?'Deactivate':'Activate'}</button>
-      </td>
-    </tr>
-  `).join('');
-  document.getElementById('empCount').textContent = `Showing ${rows.length} of ${allEmployees.length} employees`;
-}
-
-async function toggleFreeMeal(id, val) {
-  try {
-    await sb(`employees?id=eq.${id}`, { method:'PATCH', body: JSON.stringify({ is_free_meal_eligible: val }) });
-    const emp = allEmployees.find(e=>e.id===id);
-    if (emp) emp.is_free_meal_eligible = val;
-    showToast(val ? '✨ Free meal enabled' : 'Free meal removed');
-  } catch(e) { showToast('Error updating employee'); console.error(e); }
-}
-
-async function toggleActive(id, val) {
-  try {
-    await sb(`employees?id=eq.${id}`, { method:'PATCH', body: JSON.stringify({ is_active: val }) });
-    await loadEmployees();
-    showToast(val ? 'Employee activated' : 'Employee deactivated');
-  } catch(e) { showToast('Error updating employee'); console.error(e); }
-}
-
-// ─── ADD / EDIT EMPLOYEE ───────────────────────────────────
-function openAddEmployee() {
-  editingEmpId = null;
-  document.getElementById('modalTitle').textContent = 'Add Employee';
-  document.getElementById('mFirst').value = '';
-  document.getElementById('mLast').value = '';
-  document.getElementById('mEmpId').value = '';
-  document.getElementById('mUnit').value = '';
-  document.getElementById('mRole').value = '';
-  document.getElementById('mHire').value = '';
-  document.getElementById('empModal').classList.add('open');
-}
-
-function openEditEmployee(id) {
-  const emp = allEmployees.find(e=>e.id===id);
-  if (!emp) return;
-  editingEmpId = id;
-  document.getElementById('modalTitle').textContent = 'Edit Employee';
-  document.getElementById('mFirst').value = emp.first_name||'';
-  document.getElementById('mLast').value  = emp.last_name||'';
-  document.getElementById('mEmpId').value = emp.employee_number||'';
-  document.getElementById('mUnit').value  = emp.unit||'';
-  document.getElementById('mRole').value  = emp.role||'';
-  document.getElementById('mHire').value  = emp.hire_date||'';
-  document.getElementById('empModal').classList.add('open');
-}
-
-function closeModal() { document.getElementById('empModal').classList.remove('open'); }
-
-async function saveEmployee() {
-  const first = document.getElementById('mFirst').value.trim();
-  const last  = document.getElementById('mLast').value.trim();
-  const empNo = document.getElementById('mEmpId').value.trim();
-  const unit  = document.getElementById('mUnit').value.trim();
-  const role  = document.getElementById('mRole').value.trim();
-  const hire  = document.getElementById('mHire').value;
-  if (!first||!last||!empNo) { showToast('First name, last name and ID required'); return; }
-
-  // Auto-flag free meal if hire date >= 20 years ago
-  let isFree = false;
-  if (hire) {
-    const years = (Date.now() - new Date(hire).getTime()) / (1000*60*60*24*365.25);
-    isFree = years >= 20;
-  }
-
-  const payload = { first_name:first, last_name:last, employee_number:empNo, unit:unit||null, role:role||null, hire_date:hire||null, is_free_meal_eligible:isFree, facility_id:facilityId };
+// ─── Lookup employee (Step 1 → Step 2) ──────────────────────
+async function lookup() {
+  const id = document.getElementById('empId').value.trim().toUpperCase();
+  if (!id) return;
+  const btn = document.getElementById('lookupBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Looking up…';
+  document.getElementById('idErr').style.display = 'none';
 
   try {
-    const btn = document.getElementById('modalSaveBtn');
-    btn.disabled = true; btn.textContent = 'Saving…';
-    if (editingEmpId) {
-      await sb(`employees?id=eq.${editingEmpId}`, { method:'PATCH', body: JSON.stringify(payload) });
-      showToast('Employee updated');
-    } else {
-      await sb('employees', { method:'POST', body: JSON.stringify(payload) });
-      showToast('Employee added');
+    if (!facilityId) await loadFacility();
+    if (!facilityId) throw new Error('Facility not available. Please try again.');
+
+    // Look up employee
+    const employees = await sbFetch(
+      `employees?facility_id=eq.${facilityId}&employee_number=eq.${encodeURIComponent(id)}&is_active=eq.true&select=*`
+    );
+    if (!employees.length) {
+      const el = document.getElementById('idErr');
+      el.textContent = 'Employee ID not found. Please check and try again.';
+      el.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Continue →';
+      return;
     }
-    closeModal();
-    await loadEmployees();
-    btn.disabled = false; btn.textContent = 'Save';
-  } catch(e) { showToast('Error: '+e.message); document.getElementById('modalSaveBtn').disabled=false; document.getElementById('modalSaveBtn').textContent='Save'; }
-}
+    emp = employees[0];
 
-// ─── MEAL LOGS ─────────────────────────────────────────────
-async function loadLogs() {
-  const date = document.getElementById('logDate').value;
-  if (!date||!facilityId) return;
-  const start = new Date(date+'T00:00:00').toISOString();
-  const end   = new Date(date+'T23:59:59').toISOString();
-  document.getElementById('logTbody').innerHTML = '<tr><td colspan="6"><div class="loading"><div class="spinner"></div><br>Loading…</div></td></tr>';
-  allLogs = await sb(`meal_logs?facility_id=eq.${facilityId}&checked_in_at=gte.${start}&checked_in_at=lte.${end}&select=*,employees(first_name,last_name)&order=checked_in_at.desc`);
-  filterLogs();
-}
+    // Get today's logs
+    const todayLogs = await getTodayLogs(emp.id);
+    const config    = facilityConfig;
+    const dailyLimit = config ? config.daily_meal_limit : 5;
 
-function filterLogs() {
-  const q  = document.getElementById('logSearch').value.toLowerCase();
-  const t  = document.getElementById('logType').value;
-  let rows = allLogs.filter(l => {
-    const name = l.employees ? (l.employees.first_name+' '+l.employees.last_name).toLowerCase() : '';
-    const matchQ = !q || name.includes(q);
-    const matchT = !t || l.meal_type === t;
-    return matchQ && matchT;
-  });
-  document.getElementById('logCount').textContent = `${rows.length} log${rows.length!==1?'s':''}`;
-  const tbody = document.getElementById('logTbody');
-  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-icon">📋</div>No logs found</div></td></tr>'; return; }
-  tbody.innerHTML = rows.map(l => {
-    const name = l.employees ? l.employees.first_name+' '+l.employees.last_name : '—';
-    const time = new Date(l.checked_in_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-    const voided = l.is_voided;
-    return `<tr style="${voided?'opacity:.5':''}">
-      <td><strong>${name}</strong></td>
-      <td style="font-size:.78rem;color:var(--text2)">${time}</td>
-      <td>${voided?'<span class="badge badge-voided">voided</span>':badgeHTML(l.meal_type)}</td>
-      <td>${l.is_free_meal?'Free':'$'+parseFloat(l.amount_charged).toFixed(2)}</td>
-      <td>${voided?'<span style="font-size:.72rem;color:var(--text2)">Voided</span>':'<span style="font-size:.72rem;color:var(--success);font-weight:700">✓ Valid</span>'}</td>
-      <td>${!voided?`<button class="btn-danger-sm" onclick="voidLog('${l.id}')">Void</button>`:''}
-      </td>
-    </tr>`;
-  }).join('\n');
-}
+    // Daily limit check
+    if (todayLogs.length >= dailyLimit) {
+      const el = document.getElementById('idErr');
+      el.textContent = `Daily limit of ${dailyLimit} meals reached.`;
+      el.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Continue →';
+      return;
+    }
 
-async function voidLog(id) {
-  if (!confirm('Delete this check-in? This cannot be undone.')) return;
-  try {
-    await sb(`meal_logs?id=eq.${id}`, { method:'DELETE' });
-    showToast('Check-in deleted');
-    await loadLogs();
-    await loadDashboard();
-  } catch(e) { showToast('Error deleting log'); console.error(e); }
-}
+    // Cooldown check
+    if (todayLogs.length > 0) {
+      const cooldown = config ? config.cooldown_minutes : 30;
+      const lastCheckin = new Date(todayLogs[0].checked_in_at);
+      const minutesSince = (Date.now() - lastCheckin.getTime()) / 60000;
+      if (minutesSince < cooldown) {
+        const waitMins = Math.ceil(cooldown - minutesSince);
+        const el = document.getElementById('idErr');
+        el.textContent = `Please wait ${waitMins} more minute${waitMins !== 1 ? 's' : ''} before checking in again.`;
+        el.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'Continue →';
+        return;
+      }
+    }
 
-// ─── REPORTS ───────────────────────────────────────────────
-async function loadPayrollPeriods() {
-  const periods = await sb(`payroll_periods?facility_id=eq.${facilityId}&select=*&order=period_start.desc`);
-  const sel = document.getElementById('reportPeriod');
-  sel.innerHTML = '<option value="">Select pay period…</option>' +
-    periods.map(p => `<option value="${p.id}">${fmtDate(p.period_start)} – ${fmtDate(p.period_end)}${p.is_closed?' (closed)':' (active)'}</option>`).join('');
-}
+    // Store today logs on emp for use in doCheckin
+    emp.todayLogs = todayLogs;
 
-async function loadReport() {
-  const pid = document.getElementById('reportPeriod').value;
-  if (!pid) return;
-  document.getElementById('reportTbody').innerHTML = '<tr><td colspan="6"><div class="loading"><div class="spinner"></div><br>Loading…</div></td></tr>';
-  const logs = await sb(`meal_logs?facility_id=eq.${facilityId}&payroll_period_id=eq.${pid}&is_voided=eq.false&select=*,employees(employee_number,first_name,last_name,unit)`);
+    const bundleCredits = getBundleCredits(todayLogs, config);
 
-  // Group by employee
-  const map = {};
-  logs.forEach(l => {
-    const eid = l.employee_id;
-    if (!map[eid]) map[eid] = { emp: l.employees, meals:0, bundles:0, free:0, total:0 };
-    map[eid].meals++;
-    if (l.meal_type==='bundle') map[eid].bundles++;
-    if (l.is_free_meal) map[eid].free++;
-    map[eid].total += parseFloat(l.amount_charged);
-  });
-
-  allReport = Object.values(map);
-  const grandTotal = allReport.reduce((s,r)=>s+r.total,0);
-  document.getElementById('reportSummary').textContent =
-    `${allReport.length} employees · ${logs.length} total meals · $${grandTotal.toFixed(2)} total deductions`;
-  filterReport();
-}
-
-function filterReport() {
-  const q = document.getElementById('reportSearch').value.toLowerCase();
-  let rows = allReport.filter(r => {
-    const name = r.emp ? (r.emp.first_name+' '+r.emp.last_name).toLowerCase() : '';
-    return !q || name.includes(q) || (r.emp?.employee_number||'').includes(q);
-  });
-  const tbody = document.getElementById('reportTbody');
-  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-icon">📊</div>No data found</div></td></tr>'; return; }
-  tbody.innerHTML = rows.map(r => `
-    <tr>
-      <td><strong>${r.emp?r.emp.first_name+' '+r.emp.last_name:'Unknown'}</strong></td>
-      <td style="font-size:.78rem;color:var(--text2)">${r.emp?.employee_number||'—'}</td>
-      <td style="font-size:.8rem">${r.emp?.unit||'—'}</td>
-      <td>${r.meals}</td>
-      <td>${r.bundles}</td>
-      <td style="font-weight:800">${r.free===r.meals?'<span style="color:var(--gold)">Free</span>':'$'+r.total.toFixed(2)}</td>
-    </tr>
-  `).join('');
-}
-
-function exportCSV() {
-  const q = document.getElementById('reportSearch').value.toLowerCase();
-  let rows = allReport.filter(r => {
-    const name = r.emp ? (r.emp.first_name+' '+r.emp.last_name).toLowerCase() : '';
-    return !q || name.includes(q);
-  });
-  if (!rows.length) { showToast('No data to export'); return; }
-  const header = 'Employee,Employee ID,Unit,Total Meals,Bundles,Free Meals,Deduction\n';
-  const csv = header + rows.map(r =>
-    `"${r.emp?r.emp.first_name+' '+r.emp.last_name:'Unknown'}",${r.emp?.employee_number||''},${r.emp?.unit||''},${r.meals},${r.bundles},${r.free},$${r.total.toFixed(2)}`
-  ).join('\n');
-  const blob = new Blob([csv], {type:'text/csv'});
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url; a.download = 'payroll-deductions.csv'; a.click();
-  URL.revokeObjectURL(url);
-  showToast('CSV downloaded');
-}
-
-// ─── GUEST LOGS ────────────────────────────────────────────
-async function loadGuests() {
-  const date = document.getElementById('guestDate').value;
-  if (!date||!facilityId) return;
-  const start = new Date(date+'T00:00:00').toISOString();
-  const end   = new Date(date+'T23:59:59').toISOString();
-  document.getElementById('guestTbody').innerHTML = '<tr><td colspan="5"><div class="loading"><div class="spinner"></div><br>Loading…</div></td></tr>';
-  // Guest logs have employee_id = null
-  const logs = await sb(`meal_logs?facility_id=eq.${facilityId}&employee_id=is.null&checked_in_at=gte.${start}&checked_in_at=lte.${end}&select=*&order=checked_in_at.desc`);
-  const tbody = document.getElementById('guestTbody');
-  if (!logs.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty"><div class="empty-icon">🧑‍🤝‍🧑</div>No guest logs for this date</div></td></tr>'; return; }
-  tbody.innerHTML = logs.map(l => {
-    // Guest name + payment stored in void_reason field
-    const parts   = (l.void_reason||'').split('|');
-    const gName   = parts[0]?.replace('Guest:','').trim()||'Guest';
-    const payment = parts[1]?.replace('Payment:','').trim()||'—';
-    const time    = new Date(l.checked_in_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-    const date    = new Date(l.checked_in_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    return `<tr>
-      <td><strong>${gName}</strong></td>
-      <td style="font-size:.78rem;color:var(--text2)">${date}</td>
-      <td style="font-size:.78rem;color:var(--text2)">${time}</td>
-      <td style="font-weight:800">$${parseFloat(l.amount_charged).toFixed(2)}</td>
-      <td>${payment==='card'?'💳 Card':payment==='cash'?'💵 Cash':payment}</td>
-    </tr>`;
-  }).join('\n');
-}
-
-
-// ─── FEEDBACK ──────────────────────────────────────────────
-let allFeedback = [];
-
-async function loadFeedback() {
-  const from = document.getElementById('fbDateFrom').value;
-  const to   = document.getElementById('fbDateTo').value;
-  if (!from || !to || !facilityId) return;
-  const start = new Date(from+'T00:00:00').toISOString();
-  const end   = new Date(to+'T23:59:59').toISOString();
-  document.getElementById('fbTbody').innerHTML = '<tr><td colspan="7"><div class="loading"><div class="spinner"></div><br>Loading…</div></td></tr>';
-  allFeedback = await sb(`feedback?facility_id=eq.${facilityId}&submitted_at=gte.${start}&submitted_at=lte.${end}&select=*&order=submitted_at.desc`);
-
-  // Stats
-  const total   = allFeedback.length;
-  const avgOv   = total ? (allFeedback.reduce((s,f)=>s+(f.overall_meal||0),0)/total).toFixed(1) : '—';
-  const eatYes  = allFeedback.filter(f=>f.eat_again==='yes').length;
-  const eatPct  = total ? Math.round(eatYes/total*100)+'%' : '—';
-  const withComment = allFeedback.filter(f=>f.comment).length;
-  document.getElementById('fbTotal').textContent    = total;
-  document.getElementById('fbAvg').textContent      = avgOv === '—' ? '—' : avgOv + ' ⭐';
-  document.getElementById('fbEatAgain').textContent = eatPct;
-  document.getElementById('fbComments').textContent = withComment;
-
-  filterFeedback();
-}
-
-function filterFeedback() {
-  const who = document.getElementById('fbWho').value;
-  let rows = allFeedback.filter(f => !who || f.respondent_type === who);
-  document.getElementById('fbCount').textContent = `${rows.length} response${rows.length!==1?'s':''}`;
-  const tbody = document.getElementById('fbTbody');
-  if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><div class="empty-icon">💬</div>No feedback found</div></td></tr>';
-    return;
+    if (emp.is_free_meal_eligible) {
+      selOpt = 'free';
+      document.getElementById('freeFlow').style.display = 'block';
+      document.getElementById('regularFlow').style.display = 'none';
+      document.getElementById('freeName').textContent = emp.first_name + ' ' + emp.last_name;
+      showScr('choice');
+    } else if (bundleCredits > 0) {
+      selOpt = 'credit';
+      document.getElementById('regularFlow').style.display = 'block';
+      document.getElementById('freeFlow').style.display = 'none';
+      document.getElementById('bannerName').textContent = emp.first_name + ' ' + emp.last_name;
+      document.getElementById('bannerDept').textContent = emp.unit || 'A.G. Rhodes Cobb';
+      document.getElementById('mealChoiceArea').style.display = 'none';
+      document.getElementById('creditArea').style.display = 'block';
+      document.getElementById('creditCount').textContent = bundleCredits;
+      document.getElementById('confirmBtn').disabled = false;
+      document.getElementById('confirmBtn').textContent = 'Use Bundle Credit →';
+      emp.bundleCredits = bundleCredits;
+      showScr('choice');
+    } else {
+      selOpt = null;
+      document.getElementById('regularFlow').style.display = 'block';
+      document.getElementById('freeFlow').style.display = 'none';
+      document.getElementById('bannerName').textContent = emp.first_name + ' ' + emp.last_name;
+      document.getElementById('bannerDept').textContent = emp.unit || 'A.G. Rhodes Cobb';
+      document.getElementById('mealChoiceArea').style.display = 'flex';
+      document.getElementById('creditArea').style.display = 'none';
+      document.getElementById('opt-single').className = 'meal-opt';
+      document.getElementById('opt-bundle').className = 'meal-opt';
+      document.getElementById('confirmBtn').disabled = true;
+      document.getElementById('confirmBtn').textContent = 'Confirm Check-In';
+      showScr('choice');
+    }
+  } catch(e) {
+    console.error(e);
+    const el = document.getElementById('idErr');
+    el.textContent = e.message || 'Connection error. Please try again.';
+    el.style.display = 'block';
   }
-  const stars = n => '⭐'.repeat(n) + '☆'.repeat(5-n);
-  const whoLabel = { patient:'🛏 Patient', caregiver:'🧑‍🤝‍🧑 Caregiver', staff:'👔 Staff' };
-  const ynaLabel = { yes:'✅ Yes', no:'❌ No', na:'N/A' };
-  tbody.innerHTML = rows.map(f => {
-    const date = new Date(f.submitted_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    return `<tr>
-      <td style="font-size:.78rem;color:var(--text2)">${date}</td>
-      <td style="font-size:.78rem">${whoLabel[f.respondent_type]||f.respondent_type}</td>
-      <td style="font-size:.8rem">${stars(f.overall_meal||0)}</td>
-      <td style="font-size:.8rem">${stars(f.food_taste||0)}</td>
-      <td style="font-size:.8rem">${stars(f.food_temperature||0)}</td>
-      <td style="font-size:.78rem">${ynaLabel[f.eat_again]||'—'}</td>
-      <td style="font-size:.78rem;color:var(--text2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(f.comment||'').replace(/"/g,'&quot;')}">${f.comment||'—'}</td>
-    </tr>`;
-  }).join('\n');
+
+  btn.disabled = false; btn.textContent = 'Continue →';
 }
 
-function exportFeedbackCSV() {
-  if (!allFeedback.length) { showToast('No data to export'); return; }
-  const header = 'Date,Respondent,Overall,Taste,Temperature,Portion Size,Eat Again,Comment\n';
-  const csv = header + allFeedback.map(f => {
-    const date = new Date(f.submitted_at).toLocaleDateString('en-US');
-    return `${date},${f.respondent_type},${f.overall_meal||''},${f.food_taste||''},${f.food_temperature||''},${f.portion_size||''},${f.eat_again||''},"${(f.comment||'').replace(/"/g,'""')}"`;
-  }).join('\n');
-  const blob = new Blob([csv], {type:'text/csv'});
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url; a.download = 'meal-feedback.csv'; a.click();
-  URL.revokeObjectURL(url);
-  showToast('Feedback CSV downloaded');
+function selectOpt(opt) {
+  selOpt = opt;
+  document.getElementById('opt-single').className = 'meal-opt'+(opt==='single'?' sel-single':'');
+  document.getElementById('opt-bundle').className = 'meal-opt'+(opt==='bundle'?' sel-bundle':'');
+  document.getElementById('confirmBtn').disabled = false;
 }
 
-// ─── Helpers ───────────────────────────────────────────────
-function badgeHTML(type) {
-  const map = { single:'badge-single', bundle:'badge-bundle', credit:'badge-credit', free:'badge-free' };
-  return `<span class="badge ${map[type]||''}">${type}</span>`;
+function goBack() {
+  emp = null; selOpt = null;
+  document.getElementById('empId').value = '';
+  document.getElementById('idErr').style.display = 'none';
+  showScr('id');
 }
 
-function fmtDate(d) {
-  return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+// ─── Do check-in (Step 2 → Step 3) ──────────────────────────
+async function doCheckin() {
+  const isFree = selOpt === 'free';
+  const btn = isFree ? document.getElementById('freeBtn') : document.getElementById('confirmBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Checking in…';
+
+  try {
+    const config       = facilityConfig;
+    const singlePrice  = config ? parseFloat(config.single_meal_price) : 2.50;
+    const bundlePrice  = config ? parseFloat(config.bundle_price) : 9.00;
+    const bundleSize   = config ? config.bundle_meal_count : 5;
+
+    let mealType      = selOpt === 'bundle' ? 'bundle' : selOpt === 'credit' ? 'credit' : selOpt === 'free' ? 'free' : 'single';
+    let amountCharged = 0.00;
+    if (selOpt === 'single')  amountCharged = singlePrice;
+    if (selOpt === 'bundle')  amountCharged = bundlePrice;
+
+    // Get active payroll period
+    const today = new Date().toISOString().split('T')[0];
+    const periods = await sbFetch(
+      `payroll_periods?facility_id=eq.${facilityId}&is_closed=eq.false&period_start=lte.${today}&period_end=gte.${today}&select=id&limit=1`
+    );
+    const payrollPeriodId = periods.length ? periods[0].id : null;
+
+    // Generate ticket number
+    const ticketNumber = Math.random().toString(36).substr(2,6).toUpperCase();
+
+    // Insert meal log
+    await sbFetch('meal_logs', {
+      method: 'POST',
+      body: JSON.stringify({
+        facility_id:       facilityId,
+        employee_id:       emp.id,
+        payroll_period_id: payrollPeriodId,
+        meal_type:         mealType,
+        amount_charged:    amountCharged,
+        is_free_meal:      isFree,
+        checked_in_at:     new Date().toISOString(),
+        ticket_number:     ticketNumber
+      })
+    });
+
+    // Calculate bundle remaining
+    let bundleRemaining = 0;
+    if (selOpt === 'bundle') {
+      bundleRemaining = bundleSize - 1; // just bought, used 1
+    } else if (selOpt === 'credit') {
+      bundleRemaining = Math.max(0, (emp.bundleCredits || 1) - 1);
+    }
+
+    const now = new Date();
+    showDone({
+      employee_name:    emp.first_name + ' ' + emp.last_name,
+      department:       emp.unit || '',
+      is_free:          isFree,
+      meal_option:      selOpt,
+      bundle_remaining: bundleRemaining,
+      time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      date: now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    });
+
+  } catch(e) {
+    console.error(e);
+    btn.disabled = false;
+    btn.textContent = isFree ? 'Check In — Free Meal ✨' : 'Confirm Check-In';
+    const el = document.getElementById('idErr');
+    el.textContent = e.message || 'Connection error. Please try again.';
+    el.style.display = 'block';
+    showScr('id');
+  }
 }
 
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2800);
+let lastTicket = null;
+
+function generateTicketNum() {
+  return Math.random().toString(36).substr(2,6).toUpperCase();
 }
+
+function showDone(d) {
+  showScr('done');
+  const isBundle  = d.meal_option === 'bundle';
+  const isCredit  = d.meal_option === 'credit';
+  const isFree    = d.is_free;
+  const remaining = d.bundle_remaining || 0;
+  const box = document.getElementById('resultBox');
+  box.className = 'result '+(isFree?'res-free':(isBundle||isCredit)?'res-bundle':'res-success');
+  document.getElementById('rI').textContent = isFree?'🎉':(isBundle||isCredit)?'🎟':'✅';
+  document.getElementById('rN').textContent = d.employee_name;
+  document.getElementById('rD').textContent = d.department || '';
+  document.getElementById('rM').textContent = 'Logged at '+d.time+' on '+d.date;
+  const rp = document.getElementById('rP');
+  rp.className = 'rp '+(isFree?'rp-gold':(isBundle||isCredit)?'rp-purple':'rp-green');
+  if(isFree)        rp.textContent = '✨ FREE MEAL';
+  else if(isBundle) rp.textContent = '🎟 Bundle purchased — $9.00';
+  else if(isCredit) rp.textContent = '🎟 Bundle credit used — $0.00';
+  else              rp.textContent = '1 Meal — $2.50';
+  const rc = document.getElementById('rC');
+  if((isBundle||isCredit) && remaining > 0) {
+    rc.style.display='inline-block'; rc.style.background=''; rc.style.color='';
+    rc.textContent = remaining+' bundle meal'+(remaining===1?'':'s')+' remaining';
+  } else if((isBundle||isCredit) && remaining === 0) {
+    rc.style.display='inline-block'; rc.style.background='#F2F3FF'; rc.style.color='#8A8FAD';
+    rc.textContent = 'Bundle fully used — purchase a new one next time';
+  } else { rc.style.display='none'; }
+
+  // Store ticket info
+  lastTicket = {
+    name: d.employee_name,
+    dept: d.department || 'A.G. Rhodes Cobb',
+    type: isFree ? 'Free Meal' : isBundle ? 'Bundle (5 meals)' : isCredit ? 'Bundle Credit' : 'Single Meal',
+    date: d.date,
+    time: d.time,
+    num:  d.ticket_number || generateTicketNum()
+  };
+
+  // Show ticket button
+  document.getElementById('showTicketBtn').style.display = 'block';
+  document.getElementById('ticketBox').style.display = 'none';
+}
+
+function showTicket() {
+  if (!lastTicket) return;
+  document.getElementById('tktName').textContent = lastTicket.name;
+  document.getElementById('tktDept').textContent = lastTicket.dept;
+  document.getElementById('tktType').textContent = lastTicket.type;
+  document.getElementById('tktDate').textContent = lastTicket.date;
+  document.getElementById('tktTime').textContent = lastTicket.time;
+  document.getElementById('tktNum').textContent  = lastTicket.num;
+  document.getElementById('ticketBox').style.display = 'block';
+  document.getElementById('showTicketBtn').style.display = 'none';
+}
+
+function resetAll() {
+  emp = null; selOpt = null; selPay = null;
+  document.getElementById('empId').value = '';
+  document.getElementById('idErr').style.display = 'none';
+  document.getElementById('mealChoiceArea').style.display = 'flex';
+  document.getElementById('creditArea').style.display = 'none';
+  document.getElementById('confirmBtn').disabled = true;
+  document.getElementById('confirmBtn').textContent = 'Confirm Check-In';
+  showScr('id');
+}
+
+// ─── Guest check-in ─────────────────────────────────────────
+document.getElementById('guestBtn').addEventListener('click', function() {
+  selPay = null;
+  document.getElementById('guestName').value = '';
+  document.getElementById('guestAmount').value = '';
+  document.getElementById('pay-card').className = 'pay-opt';
+  document.getElementById('pay-cash').className = 'pay-opt';
+  document.getElementById('guestErr').style.display = 'none';
+  showScr('guest');
+});
+
+function selectPay(type) {
+  selPay = type;
+  document.getElementById('pay-card').className = 'pay-opt'+(type==='card'?' sel-card':'');
+  document.getElementById('pay-cash').className = 'pay-opt'+(type==='cash'?' sel-cash':'');
+}
+
+function cancelGuest() { selPay = null; showScr('id'); }
+
+async function submitGuest() {
+  const name   = document.getElementById('guestName').value.trim();
+  const amount = parseFloat(document.getElementById('guestAmount').value);
+  const errEl  = document.getElementById('guestErr');
+  errEl.style.display = 'none';
+  if (!name)              { errEl.textContent='Please enter the guest name.'; errEl.style.display='block'; return; }
+  if (!amount||amount<=0) { errEl.textContent='Please enter a valid amount.'; errEl.style.display='block'; return; }
+  if (!selPay)            { errEl.textContent='Please select a payment type.'; errEl.style.display='block'; return; }
+
+  const btn = document.getElementById('guestSubmitBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Processing…';
+
+  try {
+    // Insert guest log into meal_logs with meal_type = 'single' and a note
+    await sbFetch('meal_logs', {
+      method: 'POST',
+      body: JSON.stringify({
+        facility_id:    facilityId,
+        employee_id:    null,
+        meal_type:      'single',
+        amount_charged: amount,
+        is_free_meal:   false,
+        checked_in_at:  new Date().toISOString(),
+        void_reason:    `Guest: ${name} | Payment: ${selPay}`
+      })
+    });
+
+    const now = new Date();
+    showScr('done');
+    const box = document.getElementById('resultBox');
+    box.className = 'result res-success';
+    document.getElementById('rI').textContent = selPay==='card'?'💳':'💵';
+    document.getElementById('rN').textContent = name;
+    document.getElementById('rD').textContent = 'Guest Visitor';
+    document.getElementById('rM').textContent = 'Logged at '+
+      now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})+' on '+
+      now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    const rp = document.getElementById('rP');
+    rp.className = 'rp rp-green';
+    rp.textContent = (selPay==='card'?'Credit Card':'Cash')+' — $'+amount.toFixed(2);
+    document.getElementById('rC').style.display='none';
+  } catch(e) {
+    errEl.textContent = e.message || 'Connection error. Please try again.';
+    errEl.style.display='block';
+  }
+
+  btn.disabled = false; btn.textContent = 'Complete Guest Check-In';
+}
+
+// ─── Event listeners ────────────────────────────────────────
+document.getElementById('lookupBtn').addEventListener('click', lookup);
+document.getElementById('empId').addEventListener('keydown', e => { if(e.key==='Enter') lookup(); });
+document.getElementById('feedbackBtn').addEventListener('click', function() {
+  window.location.href = FEEDBACK_URL;
+});
 </script>
 </body>
 </html>
