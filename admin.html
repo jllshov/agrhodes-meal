@@ -260,7 +260,7 @@
 <!-- PIN SCREEN -->
 <div class="pin-screen" id="pinScreen">
   <div class="pin-logo">🍽 Meal<span>Track</span></div>
-  <div class="pin-sub">Admin Panel • A.G. Rhodes Atlanta</div>
+  <div class="pin-sub">Admin Panel · A.G. Rhodes Atlanta</div>
   <div class="pin-card">
     <h2>Enter Admin PIN</h2>
     <input type="password" class="pin-input" id="pinInput" placeholder="••••" maxlength="6" inputmode="numeric" autocomplete="off"/>
@@ -274,7 +274,7 @@
   <div class="topbar">
     <div>
       <div class="topbar-logo">🍽 Meal<span>Track</span></div>
-      <div class="topbar-facility">A.G. Rhodes Atlanta • Admin</div>
+      <div class="topbar-facility">A.G. Rhodes Atlanta · Admin</div>
     </div>
     <button class="logout-btn" onclick="logout()">Lock</button>
   </div>
@@ -362,17 +362,33 @@
           <div class="card-title">Payroll Deduction Report</div>
           <button class="btn-sm btn-accent" onclick="exportCSV()">Export CSV</button>
         </div>
-        <div class="toolbar">
-          <select class="filter" id="reportPeriod" onchange="loadReport()">
-            <option value="">Select pay period…</option>
+        <div class="toolbar" style="flex-wrap:wrap;gap:8px">
+          <!-- Quick filters -->
+          <div style="display:flex;gap:6px;flex-wrap:wrap;width:100%">
+            <button class="btn-sm btn-outline-sm" onclick="setReportRange('today', this)">Today</button>
+            <button class="btn-sm btn-outline-sm" onclick="setReportRange('yesterday', this)">Yesterday</button>
+            <button class="btn-sm btn-outline-sm" onclick="setReportRange('7days', this)">Last 7 days</button>
+            <button class="btn-sm btn-outline-sm" onclick="setReportRange('30days', this)">Last 30 days</button>
+            <button class="btn-sm btn-outline-sm" onclick="setReportRange('month', this)">This month</button>
+            <button class="btn-sm btn-outline-sm" onclick="setReportRange('custom', this)">Custom</button>
+          </div>
+          <!-- Custom date range — hidden until custom selected -->
+          <div id="customRangeWrap" style="display:none;display:flex;gap:8px;width:100%;align-items:center">
+            <input type="date" class="filter" id="reportFrom" onchange="loadReport()"/>
+            <span style="font-size:.8rem;color:var(--text2);font-weight:600">to</span>
+            <input type="date" class="filter" id="reportTo" onchange="loadReport()"/>
+          </div>
+          <!-- Pay period selector -->
+          <select class="filter" id="reportPeriod" onchange="loadByPeriod()">
+            <option value="">Or select pay period…</option>
           </select>
-          <input type="text" class="search-box" id="reportSearch" placeholder="Search employee…" oninput="filterReport()"/>
+          <input type="text" class="search-box" id="reportSearch" placeholder="Search employee…" oninput="filterReport()" style="min-width:160px"/>
         </div>
         <div class="result-count" id="reportSummary"></div>
         <div class="tbl-wrap">
           <table>
             <thead><tr><th>Employee</th><th>ID</th><th>Unit</th><th>Meals</th><th>Bundles</th><th>Deduction</th></tr></thead>
-            <tbody id="reportTbody"><tr><td colspan="6"><div class="empty"><div class="empty-icon">📊</div>Select a pay period above</div></td></tr></tbody>
+            <tbody id="reportTbody"><tr><td colspan="6"><div class="empty"><div class="empty-icon">📊</div>Select a date range above</div></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -741,18 +757,109 @@ async function voidLog(id) {
 }
 
 // ─── REPORTS ───────────────────────────────────────────────
+let reportDateFrom = null;
+let reportDateTo   = null;
+
 async function loadPayrollPeriods() {
   const periods = await sb(`payroll_periods?facility_id=eq.${facilityId}&select=*&order=period_start.desc`);
   const sel = document.getElementById('reportPeriod');
-  sel.innerHTML = '<option value="">Select pay period…</option>' +
-    periods.map(p => `<option value="${p.id}">${fmtDate(p.period_start)} – ${fmtDate(p.period_end)}${p.is_closed?' (closed)':' (active)'}</option>`).join('');
+  sel.innerHTML = '<option value="">Or select pay period…</option>' +
+    periods.map(p => `<option value="${p.id}" data-start="${p.period_start}" data-end="${p.period_end}">${fmtDate(p.period_start)} – ${fmtDate(p.period_end)}${p.is_closed?' (closed)':' (active)'}</option>`).join('');
+}
+
+function setReportRange(range, el) {
+  const today = new Date();
+  let from, to;
+
+  // Highlight active button
+  document.querySelectorAll('#sec-reports .btn-outline-sm').forEach(b => {
+    b.style.borderColor = '';
+    b.style.color = '';
+    b.style.background = '';
+  });
+  if (el) {
+    el.style.borderColor = 'var(--accent)';
+    el.style.color = 'var(--accent)';
+    el.style.background = 'var(--accent-l)';
+  }
+
+  const customWrap = document.getElementById('customRangeWrap');
+
+  if (range === 'custom') {
+    customWrap.style.display = 'flex';
+    return;
+  }
+
+  customWrap.style.display = 'none';
+  document.getElementById('reportPeriod').value = '';
+
+  switch(range) {
+    case 'today':
+      from = to = today;
+      break;
+    case 'yesterday':
+      from = to = new Date(today - 86400000);
+      break;
+    case '7days':
+      from = new Date(today - 6*86400000);
+      to   = today;
+      break;
+    case '30days':
+      from = new Date(today - 29*86400000);
+      to   = today;
+      break;
+    case 'month':
+      from = new Date(today.getFullYear(), today.getMonth(), 1);
+      to   = today;
+      break;
+  }
+
+  reportDateFrom = from.toISOString().split('T')[0];
+  reportDateTo   = to.toISOString().split('T')[0];
+  loadReport();
+}
+
+async function loadByPeriod() {
+  const sel = document.getElementById('reportPeriod');
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt.value) return;
+
+  // Clear quick filter highlights
+  document.querySelectorAll('#sec-reports .btn-outline-sm').forEach(b => {
+    b.style.borderColor = '';
+    b.style.color = '';
+    b.style.background = '';
+  });
+  document.getElementById('customRangeWrap').style.display = 'none';
+
+  reportDateFrom = opt.dataset.start;
+  reportDateTo   = opt.dataset.end;
+  loadReport();
 }
 
 async function loadReport() {
-  const pid = document.getElementById('reportPeriod').value;
-  if (!pid) return;
+  // Handle custom date range
+  const customFrom = document.getElementById('reportFrom').value;
+  const customTo   = document.getElementById('reportTo').value;
+  if (document.getElementById('customRangeWrap').style.display !== 'none') {
+    if (!customFrom || !customTo) return;
+    reportDateFrom = customFrom;
+    reportDateTo   = customTo;
+  }
+
+  if (!reportDateFrom || !reportDateTo || !facilityId) return;
+
+  const start = reportDateFrom + 'T00:00:00';
+  const end   = reportDateTo   + 'T23:59:59';
+
   document.getElementById('reportTbody').innerHTML = '<tr><td colspan="6"><div class="loading"><div class="spinner"></div><br>Loading…</div></td></tr>';
-  const logs = await sb(`meal_logs?facility_id=eq.${facilityId}&payroll_period_id=eq.${pid}&is_voided=eq.false&select=*,employees(employee_number,first_name,last_name,unit)`);
+
+  const logs = await sb(
+    `meal_logs?facility_id=eq.${facilityId}&is_voided=eq.false` +
+    `&checked_in_at=gte.${new Date(start).toISOString()}` +
+    `&checked_in_at=lte.${new Date(end).toISOString()}` +
+    `&select=*,employees(employee_number,first_name,last_name,unit)`
+  );
 
   // Group by employee
   const map = {};
@@ -767,8 +874,11 @@ async function loadReport() {
 
   allReport = Object.values(map);
   const grandTotal = allReport.reduce((s,r)=>s+r.total,0);
+  const rangeLabel = reportDateFrom === reportDateTo
+    ? fmtDate(reportDateFrom)
+    : `${fmtDate(reportDateFrom)} – ${fmtDate(reportDateTo)}`;
   document.getElementById('reportSummary').textContent =
-    `${allReport.length} employees • ${logs.length} total meals • $${grandTotal.toFixed(2)} total deductions`;
+    `${rangeLabel} · ${allReport.length} employees · ${logs.length} total meals · $${grandTotal.toFixed(2)} deductions`;
   filterReport();
 }
 
@@ -799,14 +909,17 @@ function exportCSV() {
     return !q || name.includes(q);
   });
   if (!rows.length) { showToast('No data to export'); return; }
-  const header = 'Employee,Employee ID,Unit,Total Meals,Bundles,Free Meals,Deduction\n';
+  const rangeLabel = reportDateFrom === reportDateTo
+    ? fmtDate(reportDateFrom)
+    : `${fmtDate(reportDateFrom)} – ${fmtDate(reportDateTo)}`;
+  const header = `Payroll Deduction Report: ${rangeLabel}\nEmployee,Employee ID,Unit,Total Meals,Bundles,Free Meals,Deduction\n`;
   const csv = header + rows.map(r =>
     `"${r.emp?r.emp.first_name+' '+r.emp.last_name:'Unknown'}",${r.emp?.employee_number||''},${r.emp?.unit||''},${r.meals},${r.bundles},${r.free},$${r.total.toFixed(2)}`
   ).join('\n');
   const blob = new Blob([csv], {type:'text/csv'});
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href = url; a.download = 'payroll-deductions.csv'; a.click();
+  a.href = url; a.download = `payroll-deductions-${reportDateFrom}-${reportDateTo}.csv`; a.click();
   URL.revokeObjectURL(url);
   showToast('CSV downloaded');
 }
@@ -821,7 +934,7 @@ async function loadGuests() {
   // Guest logs have employee_id = null
   const logs = await sb(`meal_logs?facility_id=eq.${facilityId}&employee_id=is.null&checked_in_at=gte.${start}&checked_in_at=lte.${end}&select=*&order=checked_in_at.desc`);
   const tbody = document.getElementById('guestTbody');
-  if (!logs.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty"><div class="empty-icon">🧑🤝🧑</div>No guest logs for this date</div></td></tr>'; return; }
+  if (!logs.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty"><div class="empty-icon">🧑‍🤝‍🧑</div>No guest logs for this date</div></td></tr>'; return; }
   tbody.innerHTML = logs.map(l => {
     // Guest name + payment stored in void_reason field
     const parts   = (l.void_reason||'').split('|');
@@ -876,7 +989,7 @@ function filterFeedback() {
     return;
   }
   const stars = n => '⭐'.repeat(n) + '☆'.repeat(5-n);
-  const whoLabel = { patient:'🛏 Patient', caregiver:'🧑🤝🧑 Caregiver', staff:'👔 Staff' };
+  const whoLabel = { patient:'🛏 Patient', caregiver:'🧑‍🤝‍🧑 Caregiver', staff:'👔 Staff' };
   const ynaLabel = { yes:'✅ Yes', no:'❌ No', na:'N/A' };
   tbody.innerHTML = rows.map(f => {
     const date = new Date(f.submitted_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
@@ -925,4 +1038,3 @@ function showToast(msg) {
 </script>
 </body>
 </html>
-
