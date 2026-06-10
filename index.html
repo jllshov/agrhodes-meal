@@ -501,15 +501,19 @@ async function getTodayLogs(employeeId) {
 }
 
 // ─── Get bundle credits remaining ───────────────────────────
-// Bundle credit = purchased a bundle earlier today but hasn't used all 5 meals yet
+// Bundle = 1 purchase covers 5 meals. Credits = bundleSize - meals used after purchase.
+// meal_type 'bundle' = the purchase (counts as 1 meal use)
+// meal_type 'credit' = subsequent uses of that bundle
 function getBundleCredits(todayLogs, config) {
-  const bundleLog = todayLogs.find(l => l.meal_type === 'bundle');
-  if (!bundleLog) return 0;
-  const usedAfterBundle = todayLogs.filter(l =>
-    l.meal_type === 'credit' || (l.meal_type === 'bundle')
-  ).length;
   const bundleSize = config ? config.bundle_meal_count : 5;
-  return Math.max(0, bundleSize - usedAfterBundle);
+  // Count how many bundle purchases today
+  const bundlePurchases = todayLogs.filter(l => l.meal_type === 'bundle').length;
+  if (!bundlePurchases) return 0;
+  // Count total meals charged against bundles (bundle + credit logs)
+  const bundleMealsUsed = todayLogs.filter(l => l.meal_type === 'bundle' || l.meal_type === 'credit').length;
+  // Total entitlement = purchases * bundleSize
+  const totalEntitlement = bundlePurchases * bundleSize;
+  return Math.max(0, totalEntitlement - bundleMealsUsed);
 }
 
 // ─── Lookup employee (Step 1 → Step 2) ──────────────────────
@@ -673,8 +677,10 @@ async function doCheckin() {
     // Calculate bundle remaining
     let bundleRemaining = 0;
     if (selOpt === 'bundle') {
-      bundleRemaining = bundleSize - 1; // just bought, used 1
+      // Just bought a bundle - used 1 of bundleSize
+      bundleRemaining = bundleSize - 1;
     } else if (selOpt === 'credit') {
+      // Used one credit from existing bundle
       bundleRemaining = Math.max(0, (emp.bundleCredits || 1) - 1);
     }
 
