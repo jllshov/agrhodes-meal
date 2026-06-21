@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A.G. Rhodes — Zone Round QR Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F8F9FA;--surface:#FFFFFF;--surface-2:#F3F4F6;--border:#E5E7EB;
+  --text:#0F1117;--text-2:#6B7280;--text-3:#9CA3AF;
+  --blue:#3B82F6;--brand:#7C6FF0;--green:#059669;--red:#DC2626;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;}
+.wrap{max-width:1100px;margin:0 auto;padding:32px 24px 80px;}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
+h1{font-size:24px;font-weight:800;letter-spacing:-0.02em;margin:0;}
+.sub{font-size:13px;color:var(--text-2);margin-top:4px;}
+.tabs{display:flex;gap:4px;background:var(--surface-2);border-radius:10px;padding:4px;margin-bottom:24px;width:fit-content;}
+.tab-btn{padding:8px 16px;border-radius:8px;border:none;background:none;font-family:inherit;
+  font-size:13px;font-weight:600;color:var(--text-2);cursor:pointer;}
+.tab-btn.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.panel{display:none;} .panel.active{display:block;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px;}
+.card-title{font-size:14px;font-weight:700;margin-bottom:12px;}
+.bulk-form{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--text-2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.03em;}
+.field input,.field select{width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;}
+.btn{background:var(--blue);color:white;border:none;border-radius:8px;padding:10px 18px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;}
+.btn.outline{background:transparent;border:1px solid var(--border);color:var(--text);}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;margin-top:16px;}
+.qr-tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;}
+.qr-tile canvas,.qr-tile img{width:100%;max-width:120px;margin:0 auto 8px;display:block;}
+.qr-tile-name{font-size:12.5px;font-weight:700;margin-bottom:2px;}
+.qr-tile-meta{font-size:10.5px;color:var(--text-3);}
+.qr-tile-id{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-3);margin-top:6px;word-break:break-all;}
+.dept-section{margin-bottom:28px;}
+.dept-header{font-size:13px;font-weight:700;color:var(--text-2);text-transform:uppercase;
+  letter-spacing:.05em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.stat-num{font-family:'DM Mono',monospace;font-size:26px;font-weight:500;}
+.stat-label{font-size:11px;color:var(--text-2);margin-top:2px;}
+.heatmap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;}
+.heat-tile{aspect-ratio:1;border-radius:10px;display:flex;align-items:center;
+  justify-content:center;cursor:pointer;font-size:11px;font-weight:700;color:white;padding:6px;text-align:center;}
+.heat-green{background:var(--green);} .heat-yellow{background:#D97706;}
+.heat-orange{background:#EA580C;} .heat-red{background:var(--red);}
+.heat-gray{background:#D1D5DB;color:#6B7280;}
+@media print {
+  .no-print{display:none!important;}
+  .grid{grid-template-columns:repeat(3,1fr);}
+  .qr-tile{break-inside:avoid;border:1px solid #000;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div>
+      <h1>Zone Round QR Manager</h1>
+      <div class="sub">Generate, print, and track scannable codes for resident rooms and Environment of Care areas</div>
+    </div>
+    <button class="btn outline no-print" onclick="window.print()">🖨 Print This View</button>
+  </div>
+
+  <div class="tabs no-print">
+    <button class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
+    <button class="tab-btn" onclick="switchTab('rooms')">Resident Rooms</button>
+    <button class="tab-btn" onclick="switchTab('eoc')">EOC Areas</button>
+  </div>
+
+  <div class="panel active" id="panel-dashboard">
+    <div class="stats-row" id="statsRow"></div>
+    <div class="card">
+      <div class="card-title">Today's Rounding Heat Map</div>
+      <div class="heatmap-grid" id="heatmapGrid"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-rooms">
+    <div class="card no-print">
+      <div class="card-title">Generate Room QR Codes in Bulk</div>
+      <div class="bulk-form">
+        <div class="field"><label>Unit</label>
+          <select id="bulk-unit">
+            <option>Taylor Hall</option><option>ICF Hall</option>
+            <option>Garden Hall</option><option>Victoria Court</option>
+          </select>
+        </div>
+        <div class="field"><label>Start Room #</label><input type="number" id="bulk-start" placeholder="101"></div>
+        <div class="field"><label>End Room #</label><input type="number" id="bulk-end" placeholder="140"></div>
+        <button class="btn" onclick="generateBulkRooms()">Generate</button>
+      </div>
+    </div>
+    <div id="roomsGrid"></div>
+  </div>
+
+  <div class="panel" id="panel-eoc">
+    <div class="card no-print">
+      <div class="card-title">Environment of Care Areas</div>
+      <div class="sub">These 9 standard areas are seeded automatically. QR codes are generated below.</div>
+    </div>
+    <div id="eocGrid"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ⚠ CONFIGURE: same Supabase project as your meal check-in app
+const SUPABASE_URL = 'https://gtbiatetqyuxwuehwilr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ⚠ CONFIGURE: your Atlanta facility's UUID (run: select id from facilities where subdomain='agrhodes';)
+const FACILITY_ID = '30f74349-3ab8-483b-a587-f372c0fbd413';
+
+var BASE_URL = window.location.origin + '/round.html#round=';
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+  event.target.classList.add('active');
+  document.getElementById('panel-'+tab).classList.add('active');
+  if (tab==='dashboard') loadDashboard();
+  if (tab==='rooms') loadRooms();
+  if (tab==='eoc') loadEOC();
+}
+
+function renderQRTile(loc, container) {
+  var tile = document.createElement('div');
+  tile.className = 'qr-tile';
+  var qrDiv = document.createElement('div');
+  tile.appendChild(qrDiv);
+  var nameDiv = document.createElement('div');
+  nameDiv.className = 'qr-tile-name'; nameDiv.textContent = loc.display_name;
+  tile.appendChild(nameDiv);
+  var metaDiv = document.createElement('div');
+  metaDiv.className = 'qr-tile-meta';
+  metaDiv.textContent = loc.location_type === 'room' ? (loc.unit||'') : (loc.eoc_department||'');
+  tile.appendChild(metaDiv);
+  var idDiv = document.createElement('div');
+  idDiv.className = 'qr-tile-id'; idDiv.textContent = loc.qr_identifier;
+  tile.appendChild(idDiv);
+  container.appendChild(tile);
+  new QRCode(qrDiv, { text: BASE_URL + loc.qr_identifier, width:120, height:120,
+    colorDark:'#0F1117', colorLight:'#FFFFFF' });
+}
+
+async function loadRooms() {
+  var grid = document.getElementById('roomsGrid');
+  grid.innerHTML = '<div class="sub">Loading…</div>';
+  var { data: rooms, error } = await sb.from('room_qr_codes').select('*')
+    .eq('facility_id', FACILITY_ID).eq('location_type','room').eq('is_active', true);
+  if (error) { grid.innerHTML = '<div class="card sub">Error: '+error.message+'</div>'; return; }
+  if (!rooms.length) { grid.innerHTML = '<div class="card sub">No rooms yet — generate some above.</div>'; return; }
+  var byUnit = {};
+  rooms.forEach(function(r){ (byUnit[r.unit]=byUnit[r.unit]||[]).push(r); });
+  grid.innerHTML = '';
+  Object.keys(byUnit).forEach(function(unit) {
+    var section = document.createElement('div');
+    section.className = 'dept-section';
+    section.innerHTML = '<div class="dept-header">'+unit+' ('+byUnit[unit].length+' rooms)</div>';
+    var gridDiv = document.createElement('div'); gridDiv.className = 'grid';
+    byUnit[unit].sort(function(a,b){return (+a.room_number)-(+b.room_number);})
+      .forEach(function(r){ renderQRTile(r, gridDiv); });
+    section.appendChild(gridDiv);
+    grid.appendChild(section);
+  });
+}
+
+async function generateBulkRooms() {
+  var unit = document.getElementById('bulk-unit').value;
+  var start = +document.getElementById('bulk-start').value;
+  var end = +document.getElementById('bulk-end').value;
+  if (!start || !end || end < start) { alert('Enter a valid room range'); return; }
+  var rows = [];
+  for (var n = start; n <= end; n++) {
+    rows.push({
+      facility_id: FACILITY_ID, location_type: 'room', room_number: String(n),
+      unit: unit, display_name: 'Room ' + n, qr_identifier: 'agrhodes-atl-room-' + n,
+    });
+  }
+  var { error } = await sb.from('room_qr_codes').upsert(rows, { onConflict: 'qr_identifier' });
+  if (error) { alert('Error: ' + error.message); return; }
+  alert('✓ Generated ' + rows.length + ' room QR codes');
+  loadRooms();
+}
+
+async function loadEOC() {
+  var grid = document.getElementById('eocGrid');
+  grid.innerHTML = '<div class="sub">Loading…</div>';
+  var { data: eoc, error } = await sb.from('room_qr_codes').select('*')
+    .eq('facility_id', FACILITY_ID).eq('location_type','eoc_area').eq('is_active', true);
+  if (error) { grid.innerHTML = '<div class="card sub">Error: '+error.message+'</div>'; return; }
+  var byDept = {};
+  eoc.forEach(function(e){ (byDept[e.eoc_department]=byDept[e.eoc_department]||[]).push(e); });
+  grid.innerHTML = '';
+  Object.keys(byDept).forEach(function(dept) {
+    var section = document.createElement('div');
+    section.className = 'dept-section';
+    section.innerHTML = '<div class="dept-header">'+dept+'</div>';
+    var gridDiv = document.createElement('div'); gridDiv.className = 'grid';
+    byDept[dept].forEach(function(loc){ renderQRTile(loc, gridDiv); });
+    section.appendChild(gridDiv);
+    grid.appendChild(section);
+  });
+}
+
+async function loadDashboard() {
+  var today = new Date().toISOString().split('T')[0];
+  var { data: locations } = await sb.from('room_qr_codes').select('*')
+    .eq('facility_id', FACILITY_ID).eq('is_active', true);
+  var { data: roundsToday } = await sb.from('zone_rounds').select('*')
+    .eq('facility_id', FACILITY_ID).gte('rounded_at', today);
+  var { data: openIssues } = await sb.from('zone_issues').select('*')
+    .eq('facility_id', FACILITY_ID).eq('status','Open');
+
+  var roundedIds = new Set((roundsToday||[]).map(function(r){return r.qr_identifier;}));
+  var highPriority = (openIssues||[]).filter(function(i){return i.priority==='High';}).length;
+  var completionRate = locations.length ? Math.round((roundedIds.size/locations.length)*100) : 0;
+
+  document.getElementById('statsRow').innerHTML =
+    statCard(roundedIds.size, 'Rounded Today') +
+    statCard(locations.length - roundedIds.size, 'Remaining') +
+    statCard((openIssues||[]).length, 'Issues Open') +
+    statCard(highPriority, 'High Priority') +
+    statCard(completionRate+'%', 'Completion Rate');
+
+  var hmGrid = document.getElementById('heatmapGrid');
+  hmGrid.innerHTML = '';
+  locations.forEach(function(loc) {
+    var todaysRound = (roundsToday||[]).filter(function(r){return r.qr_identifier===loc.qr_identifier;})
+      .sort(function(a,b){return new Date(b.rounded_at)-new Date(a.rounded_at);})[0];
+    var issuesForLoc = (openIssues||[]).filter(function(i){
+      return todaysRound && i.round_id === todaysRound.id;
+    });
+    var cls = 'heat-gray';
+    if (todaysRound) {
+      if (issuesForLoc.length) {
+        var hasHigh = issuesForLoc.some(function(i){return i.priority==='High';});
+        var hasMed = issuesForLoc.some(function(i){return i.priority==='Medium';});
+        cls = hasHigh ? 'heat-red' : hasMed ? 'heat-orange' : 'heat-yellow';
+      } else { cls = 'heat-green'; }
+    }
+    var tile = document.createElement('div');
+    tile.className = 'heat-tile ' + cls;
+    tile.textContent = loc.room_number || (loc.eoc_section||'').replace(/_/g,' ');
+    hmGrid.appendChild(tile);
+  });
+}
+
+function statCard(num, label) {
+  return '<div class="stat-card"><div class="stat-num">'+num+'</div><div class="stat-label">'+label+'</div></div>';
+}
+
+loadDashboard();
+</script>
+</body>
+</html>
