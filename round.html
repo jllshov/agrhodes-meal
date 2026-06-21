@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>A.G. Rhodes — Zone Round</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0D1117; --surface:#161B22; --surface-2:#1C2330;
+  --border:#2A3140; --text:#F0F2F5; --text-2:#A8B0BD; --text-3:#6B7280;
+  --blue:#3B82F6; --brand:#7C6FF0;
+  --green:#10B981; --amber:#F59E0B; --orange:#FB923C; --red:#EF4444;
+  --r:16px; --r-sm:10px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+  font-family:'Inter',sans-serif;min-height:100vh;overscroll-behavior:none;}
+body{padding-bottom:max(24px,env(safe-area-inset-bottom));}
+
+#scanScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;padding:24px;text-align:center;}
+.scan-logo{width:60px;height:60px;background:var(--brand);border-radius:16px;
+  display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;
+  font-size:26px;font-weight:500;color:white;margin-bottom:18px;}
+.scan-title{font-size:22px;font-weight:800;letter-spacing:-0.02em;margin-bottom:6px;}
+.scan-sub{font-size:13.5px;color:var(--text-2);margin-bottom:32px;max-width:270px;line-height:1.5;}
+#qrReaderWrap{width:min(300px,85vw);border-radius:var(--r);overflow:hidden;
+  border:2px solid var(--border);background:#000;aspect-ratio:1;position:relative;}
+#qrReader{width:100%;height:100%;}
+#qrReader video{object-fit:cover;}
+.scan-frame-corner{position:absolute;width:26px;height:26px;border-color:var(--brand);pointer-events:none;}
+.scan-tl{top:12px;left:12px;border-top:3px solid;border-left:3px solid;border-radius:6px 0 0 0;}
+.scan-tr{top:12px;right:12px;border-top:3px solid;border-right:3px solid;border-radius:0 6px 0 0;}
+.scan-bl{bottom:12px;left:12px;border-bottom:3px solid;border-left:3px solid;border-radius:0 0 0 6px;}
+.scan-br{bottom:12px;right:12px;border-bottom:3px solid;border-right:3px solid;border-radius:0 0 6px 0;}
+.scan-hint{margin-top:18px;font-size:11.5px;color:var(--text-3);}
+.scan-manual-btn{margin-top:22px;background:transparent;border:1px solid var(--border);
+  color:var(--text-2);padding:9px 18px;border-radius:999px;font-size:12.5px;font-weight:500;
+  font-family:inherit;cursor:pointer;}
+
+#formScreen{display:none;min-height:100vh;}
+.form-header{position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--border);
+  padding:16px 18px;z-index:10;}
+.fh-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.fh-back{background:none;border:none;color:var(--text-2);font-size:13.5px;font-weight:500;
+  display:flex;align-items:center;gap:6px;cursor:pointer;font-family:inherit;padding:4px 0;}
+.fh-name{font-size:20px;font-weight:800;letter-spacing:-0.02em;line-height:1.2;}
+.fh-meta{display:flex;gap:12px;margin-top:6px;font-size:12px;color:var(--text-2);flex-wrap:wrap;}
+
+.form-body{padding:18px;padding-bottom:100px;}
+.round-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px;margin-bottom:14px;}
+.rc-label{font-size:13.5px;font-weight:700;margin-bottom:2px;}
+.rc-sub{font-size:11.5px;color:var(--text-3);margin-bottom:14px;line-height:1.4;}
+.rc-options{display:grid;gap:8px;}
+.rc-options.cols-2{grid-template-columns:1fr 1fr;}
+.rc-options.cols-3{grid-template-columns:repeat(3,1fr);}
+.rc-options.cols-5{grid-template-columns:repeat(auto-fit,minmax(76px,1fr));}
+.rc-btn{min-height:46px;border-radius:var(--r-sm);border:1.5px solid var(--border);
+  background:var(--surface-2);color:var(--text);font-family:inherit;font-size:13px;
+  font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  gap:6px;padding:9px 8px;transition:all .12s;text-align:center;line-height:1.2;}
+.rc-btn:active{transform:scale(.97);}
+.rc-btn.sel-pass{background:rgba(16,185,129,.18);border-color:var(--green);color:var(--green);}
+.rc-btn.sel-fail{background:rgba(239,68,68,.18);border-color:var(--red);color:var(--red);}
+.rc-btn.sel-neutral{background:rgba(124,111,240,.18);border-color:var(--brand);color:var(--brand);}
+
+.issue-card{background:rgba(239,68,68,.08);border:1.5px solid rgba(239,68,68,.35);
+  border-radius:var(--r);padding:16px;margin-bottom:14px;animation:slideIn .25s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+.issue-card-title{font-size:13px;font-weight:700;color:var(--red);display:flex;
+  align-items:center;gap:6px;margin-bottom:12px;}
+.issue-field{margin-bottom:12px;}
+.issue-field label{display:block;font-size:11px;font-weight:600;color:var(--text-2);
+  margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;}
+.issue-select,.issue-textarea{width:100%;background:var(--surface-2);border:1.5px solid var(--border);
+  border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-family:inherit;font-size:13.5px;}
+.issue-textarea{resize:vertical;min-height:60px;}
+.quick-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+.quick-chip{background:var(--surface-2);border:1.5px solid var(--border);border-radius:999px;
+  padding:7px 13px;font-size:12px;font-weight:600;color:var(--text-2);cursor:pointer;font-family:inherit;}
+.quick-chip.active{background:rgba(124,111,240,.18);border-color:var(--brand);color:var(--brand);}
+
+.action-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);
+  border-top:1px solid var(--border);padding:14px 18px max(14px,env(safe-area-inset-bottom));z-index:20;}
+.complete-btn{width:100%;min-height:52px;border-radius:14px;border:none;
+  background:var(--green);color:white;font-family:inherit;font-size:15.5px;font-weight:700;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;}
+.complete-btn.has-issues{background:var(--red);}
+.complete-btn:active{transform:scale(.98);}
+.complete-btn:disabled{background:var(--text-3);opacity:.5;}
+
+#doneScreen{display:none;min-height:100vh;flex-direction:column;align-items:center;
+  justify-content:center;padding:24px;text-align:center;}
+.done-icon{width:76px;height:76px;border-radius:50%;background:rgba(16,185,129,.15);
+  display:flex;align-items:center;justify-content:center;font-size:38px;margin-bottom:18px;
+  animation:popIn .35s cubic-bezier(.34,1.56,.64,1);}
+@keyframes popIn{from{transform:scale(0);}to{transform:scale(1);}}
+.done-title{font-size:21px;font-weight:800;margin-bottom:8px;}
+.done-sub{font-size:13.5px;color:var(--text-2);margin-bottom:30px;}
+.done-btn{background:var(--brand);color:white;border:none;border-radius:999px;
+  padding:13px 30px;font-size:14.5px;font-weight:700;font-family:inherit;cursor:pointer;}
+
+#toast{position:fixed;top:env(safe-area-inset-top,0);left:50%;transform:translateX(-50%) translateY(-100%);
+  background:var(--surface-2);border:1px solid var(--border);border-radius:999px;
+  padding:10px 18px;font-size:12px;font-weight:600;z-index:100;transition:transform .25s;
+  margin-top:10px;white-space:nowrap;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+#toast.error{border-color:var(--red);color:var(--red);}
+#toast.success{border-color:var(--green);color:var(--green);}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:white;
+  border-radius:50%;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<div id="scanScreen">
+  <div class="scan-logo">AG</div>
+  <div class="scan-title">Scan to Round</div>
+  <div class="scan-sub">Point your camera at the QR code on the door or area sign to begin.</div>
+  <div id="qrReaderWrap">
+    <div id="qrReader"></div>
+    <div class="scan-frame-corner scan-tl"></div>
+    <div class="scan-frame-corner scan-tr"></div>
+    <div class="scan-frame-corner scan-bl"></div>
+    <div class="scan-frame-corner scan-br"></div>
+  </div>
+  <div class="scan-hint">Camera access is required to scan</div>
+  <button class="scan-manual-btn" onclick="showManualEntry()">Enter code manually</button>
+</div>
+
+<div id="formScreen">
+  <div class="form-header">
+    <div class="fh-top">
+      <button class="fh-back" onclick="backToScanner()">← Scan next</button>
+    </div>
+    <div class="fh-name" id="fh-name">—</div>
+    <div class="fh-meta" id="fh-meta"></div>
+  </div>
+  <div class="form-body" id="formBody"></div>
+  <div class="action-bar">
+    <button class="complete-btn" id="completeBtn" onclick="submitRound()">
+      <span id="completeBtnText">Complete Round</span>
+    </button>
+  </div>
+</div>
+
+<div id="doneScreen">
+  <div class="done-icon" id="doneIcon">✓</div>
+  <div class="done-title" id="doneTitle">Round Complete</div>
+  <div class="done-sub" id="doneSub">Saved and timestamped.</div>
+  <button class="done-btn" onclick="backToScanner()">Scan Next Room</button>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ════════════════════════════════════════════════════════════
+   A.G. RHODES ZONE ROUND — Supabase-backed mobile scan + form
+   Attaches to the existing meal app's Supabase project.
+════════════════════════════════════════════════════════════ */
+
+// ⚠ CONFIGURE: same Supabase project as your meal check-in app
+const SUPABASE_URL = 'https://gtbiatetqyuxwuehwilr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var currentLocation = null;
+var roundData = {};
+var issueData = [];
+var html5QrCode = null;
+
+var ROOM_ITEMS = [
+  { key:'resident_contacted', label:'Resident Contacted', sub:'How was the resident encountered?',
+    type:'choice', options:[
+      {v:'yes',label:'Yes'},{v:'no',label:'No'},{v:'sleeping',label:'Sleeping'},
+      {v:'out',label:'Out of Room'},{v:'refused',label:'Refused'}
+    ]},
+  { key:'cleanliness', label:'Cleanliness', sub:'Room is clean and free of clutter', type:'passfail' },
+  { key:'safety', label:'Safety', sub:'No fall or safety hazards present', type:'passfail' },
+  { key:'call_light', label:'Call Light Accessible', sub:'Within resident reach and functional', type:'passfail' },
+  { key:'odor_free', label:'Room Odor Free', sub:'No unpleasant odors detected', type:'passfail' },
+  { key:'temperature', label:'Temperature Comfortable', sub:'Room temp is comfortable for resident', type:'passfail' },
+  { key:'satisfaction', label:'Satisfied With Care', sub:'Resident expresses satisfaction', type:'yesno' },
+  { key:'no_concerns', label:'No Concerns Expressed', sub:'Resident has no current concerns', type:'yesno' },
+];
+
+var EOC_ITEMS = {
+  nurses_station: [
+    {key:'charts_secured', label:'Charts/Records Secured', sub:'Resident records not left unattended/visible'},
+    {key:'mar_current', label:'MAR/TAR Current', sub:'Medication records up to date'},
+    {key:'sharps_container', label:'Sharps Container', sub:'Less than 3/4 full, properly closed'},
+    {key:'hand_hygiene', label:'Hand Hygiene Supplies', sub:'Sanitizer/soap stocked and accessible'},
+    {key:'station_clutter', label:'Station Free of Clutter', sub:'Workspace organized, walkways clear'},
+  ],
+  med_room: [
+    {key:'locked_unattended', label:'Locked When Unattended', sub:'Med room/cart secured at all times'},
+    {key:'fridge_temp', label:'Refrigerator Temp Logged', sub:'Temperature log current and in range'},
+    {key:'expired_meds', label:'No Expired Medications', sub:'Stock checked, expired items removed'},
+    {key:'controlled_sub', label:'Controlled Substance Count', sub:'Count matches log, double-locked'},
+    {key:'labeling', label:'Proper Labeling', sub:'All meds labeled with resident/date'},
+  ],
+  code_cart: [
+    {key:'seal_intact', label:'Seal Intact', sub:'Tamper-evident seal unbroken'},
+    {key:'daily_check', label:'Daily Check Log Current', sub:'Checked and logged within 24 hours'},
+    {key:'defib_charged', label:'Defibrillator Charged', sub:'Battery indicator shows full charge'},
+    {key:'cart_accessible', label:'Cart Accessible', sub:'Not blocked, easily reachable'},
+    {key:'supplies_stocked', label:'Supplies Fully Stocked', sub:'No missing items per checklist'},
+  ],
+  nourishment_center: [
+    {key:'fridge_temp', label:'Refrigerator Temp Logged', sub:'Within safe range, logged today'},
+    {key:'expired_food', label:'No Expired Food', sub:'All items checked for expiration'},
+    {key:'labeled_dated', label:'Items Labeled & Dated', sub:'Resident name and date visible'},
+    {key:'cleanliness', label:'Area Clean', sub:'Counters, fridge, and floor clean'},
+    {key:'pest_free', label:'Free of Pests', sub:'No evidence of insects or pests'},
+  ],
+  clean_utility: [
+    {key:'separation', label:'Clean/Dirty Separation', sub:'No cross-contamination risk'},
+    {key:'ppe_stocked', label:'PPE Stocked', sub:'Gloves, gowns, masks available'},
+    {key:'supplies_organized', label:'Supplies Organized', sub:'Shelving neat, items labeled'},
+    {key:'door_locked', label:'Door Locked/Secured', sub:'Access restricted appropriately'},
+  ],
+  dirty_utility: [
+    {key:'separation', label:'Clean/Dirty Separation', sub:'No cross-contamination risk'},
+    {key:'biohazard_bins', label:'Biohazard Bins Not Overflowing', sub:'Waste disposed of timely'},
+    {key:'ppe_stocked', label:'PPE Available', sub:'Gloves and protective gear stocked'},
+    {key:'door_locked', label:'Door Locked/Secured', sub:'Access restricted appropriately'},
+  ],
+  housekeeping_closet: [
+    {key:'chemicals_labeled', label:'Chemicals Properly Labeled', sub:'SDS available, containers labeled'},
+    {key:'door_locked', label:'Locked When Unattended', sub:'Closet secured at all times'},
+    {key:'organized', label:'Supplies Organized', sub:'Equipment stored neatly'},
+    {key:'no_spills', label:'No Spills/Hazards', sub:'Floor clear of chemical hazards'},
+  ],
+  hallway_unit: [
+    {key:'clear_pathways', label:'Hallways Clear', sub:'No clutter blocking pathways'},
+    {key:'flooring_intact', label:'Flooring Intact', sub:'No trip hazards, loose tiles, or wet floors'},
+    {key:'lighting', label:'Lighting Functional', sub:'No burned-out or flickering bulbs'},
+    {key:'handrails', label:'Handrails Secure', sub:'Properly mounted, no damage'},
+    {key:'signage', label:'Signage Visible', sub:'Room numbers and exit signs visible'},
+  ],
+  safety_security: [
+    {key:'exits_clear', label:'Exits Clear & Unlocked', sub:'Emergency exits accessible (egress side)'},
+    {key:'doors_secured', label:'Designated Doors Locked', sub:'Per facility security policy'},
+    {key:'eyewash_log', label:'Eyewash Station Log Current', sub:'Weekly check documented'},
+    {key:'flashlights', label:'Flashlights Functional', sub:'Available and working on unit'},
+    {key:'staff_know_roles', label:'Staff Know Emergency Roles', sub:'Can state role in disaster/emergency'},
+  ],
+};
+
+var QUICK_ACTIONS = ['Trash','Call Light','Odor','Maintenance','Resident Concern','Temperature','Supplies Needed','Bathroom'];
+var ISSUE_TYPES = ['Nursing','Housekeeping','Maintenance','Dietary','Social Services','Activities','Infection Control','Safety','Other'];
+
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = type || '';
+  setTimeout(function() { t.classList.add('show'); }, 10);
+  setTimeout(function() { t.classList.remove('show'); }, 2200);
+}
+
+function startScanner() {
+  if (html5QrCode) return;
+  html5QrCode = new Html5Qrcode('qrReader');
+  html5QrCode.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: { width: 220, height: 220 } },
+    function(decodedText) { onScanSuccess(decodedText); },
+    function() {}
+  ).catch(function() { showToast('Camera access denied', 'error'); });
+}
+
+function stopScanner() {
+  if (html5QrCode) {
+    html5QrCode.stop().then(function() { html5QrCode.clear(); html5QrCode = null; }).catch(function() {});
+  }
+}
+
+function onScanSuccess(decodedText) {
+  var qrId = decodedText;
+  if (decodedText.includes('#round=')) qrId = decodedText.split('#round=')[1].split('&')[0];
+  else if (decodedText.includes('?qr=')) qrId = decodedText.split('?qr=')[1].split('&')[0];
+  stopScanner();
+  loadLocation(qrId);
+}
+
+function showManualEntry() {
+  var code = prompt('Enter QR code identifier (e.g. agrhodes-atl-room-112):');
+  if (code) loadLocation(code.trim());
+}
+
+async function loadLocation(qrIdentifier) {
+  showToast('Loading…', '');
+  try {
+    var { data, error } = await sb
+      .from('room_qr_codes')
+      .select('*')
+      .eq('qr_identifier', qrIdentifier)
+      .eq('is_active', true)
+      .single();
+    if (error || !data) throw new Error('Location not found');
+    currentLocation = data;
+    sb.from('room_qr_codes').update({ last_scan_at: new Date().toISOString() })
+      .eq('id', data.id).then(function(){});
+    renderForm();
+    document.getElementById('scanScreen').style.display = 'none';
+    document.getElementById('formScreen').style.display = 'block';
+  } catch (e) {
+    showToast('QR code not recognized', 'error');
+  }
+}
+
+function renderForm() {
+  roundData = {};
+  issueData = [];
+  var nameEl = document.getElementById('fh-name');
+  var metaEl = document.getElementById('fh-meta');
+  var body   = document.getElementById('formBody');
+
+  nameEl.textContent = currentLocation.display_name;
+  var metaHtml = '';
+  if (currentLocation.location_type === 'room') {
+    metaHtml = '<span>🏠 ' + (currentLocation.unit||'') + '</span>';
+    if (currentLocation.resident_name) metaHtml += '<span>👤 ' + currentLocation.resident_name + '</span>';
+  } else {
+    metaHtml = '<span>📋 ' + (currentLocation.eoc_department||'') + '</span>';
+  }
+  metaEl.innerHTML = metaHtml;
+  body.innerHTML = '';
+
+  if (currentLocation.location_type === 'room') {
+    ROOM_ITEMS.forEach(function(item) { body.appendChild(renderItem(item)); });
+  } else {
+    var items = EOC_ITEMS[currentLocation.eoc_section] || [];
+    items.forEach(function(item) { body.appendChild(renderItem(Object.assign({type:'passfail'}, item))); });
+  }
+  resetCompleteButton();
+}
+
+function renderItem(item) {
+  var card = document.createElement('div');
+  card.className = 'round-card';
+  var optsHtml = '';
+  if (item.type === 'passfail') {
+    optsHtml = '<div class="rc-options cols-2">' +
+      '<button class="rc-btn" onclick="selectOption(this,\''+item.key+'\',\'pass\')">✓ Pass</button>' +
+      '<button class="rc-btn" onclick="selectOption(this,\''+item.key+'\',\'fail\')">✕ Fail</button></div>';
+  } else if (item.type === 'yesno') {
+    optsHtml = '<div class="rc-options cols-2">' +
+      '<button class="rc-btn" onclick="selectOption(this,\''+item.key+'\',\'yes\')">Yes</button>' +
+      '<button class="rc-btn" onclick="selectOption(this,\''+item.key+'\',\'no\')">No</button></div>';
+  } else if (item.type === 'choice') {
+    optsHtml = '<div class="rc-options cols-5">';
+    item.options.forEach(function(o) {
+      optsHtml += '<button class="rc-btn" onclick="selectOption(this,\''+item.key+'\',\''+o.v+'\')">'+o.label+'</button>';
+    });
+    optsHtml += '</div>';
+  }
+  card.innerHTML = '<div class="rc-label">' + item.label + '</div><div class="rc-sub">' + item.sub + '</div>' + optsHtml;
+  return card;
+}
+
+function selectOption(btn, key, val) {
+  var group = btn.parentElement.querySelectorAll('.rc-btn');
+  group.forEach(function(b) { b.classList.remove('sel-pass','sel-fail','sel-neutral'); });
+  var cls = (val==='pass'||val==='yes') ? 'sel-pass' : (val==='fail'||val==='no') ? 'sel-fail' : 'sel-neutral';
+  btn.classList.add(cls);
+  roundData[key] = val;
+
+  var isFail = (val === 'fail' || val === 'no');
+  var issueCardId = 'issue-' + key;
+  var existingCard = document.getElementById(issueCardId);
+  if (isFail && !existingCard) insertIssueCard(key, btn.closest('.round-card'));
+  else if (!isFail && existingCard) {
+    existingCard.remove();
+    issueData = issueData.filter(function(i) { return i.sourceKey !== key; });
+  }
+  updateCompleteButton();
+}
+
+function insertIssueCard(sourceKey, afterEl) {
+  var card = document.createElement('div');
+  card.className = 'issue-card';
+  card.id = 'issue-' + sourceKey;
+  var chipsHtml = QUICK_ACTIONS.map(function(qa) {
+    return '<button type="button" class="quick-chip" onclick="applyQuickAction(this,\''+sourceKey+'\',\''+qa+'\')">'+qa+'</button>';
+  }).join('');
+  var typeOptsHtml = ISSUE_TYPES.map(function(t) { return '<option value="'+t+'">'+t+'</option>'; }).join('');
+  card.innerHTML =
+    '<div class="issue-card-title">⚠ Issue Detected — Document Exception</div>' +
+    '<div class="quick-chips">' + chipsHtml + '</div>' +
+    '<div class="issue-field"><label>Issue Type</label><select class="issue-select" id="itype-'+sourceKey+'">' + typeOptsHtml + '</select></div>' +
+    '<div class="issue-field"><label>Description</label><textarea class="issue-textarea" id="idesc-'+sourceKey+'" placeholder="Brief description…"></textarea></div>' +
+    '<div class="issue-field"><label>Priority</label><div class="rc-options cols-3">' +
+      '<button type="button" class="rc-btn" onclick="setPriority(this,\''+sourceKey+'\',\'High\')">High</button>' +
+      '<button type="button" class="rc-btn" onclick="setPriority(this,\''+sourceKey+'\',\'Medium\')">Medium</button>' +
+      '<button type="button" class="rc-btn" onclick="setPriority(this,\''+sourceKey+'\',\'Low\')">Low</button></div></div>';
+  afterEl.insertAdjacentElement('afterend', card);
+  issueData.push({ sourceKey: sourceKey, issue_type:'Nursing', issue_description:'', priority:'Medium', quick_action:null });
+  setTimeout(function() {
+    card.querySelectorAll('.rc-options.cols-3 .rc-btn')[1].classList.add('sel-neutral');
+  }, 0);
+}
+
+function applyQuickAction(chip, sourceKey, action) {
+  var card = document.getElementById('issue-'+sourceKey);
+  card.querySelectorAll('.quick-chip').forEach(function(c) { c.classList.remove('active'); });
+  chip.classList.add('active');
+  var descField = document.getElementById('idesc-'+sourceKey);
+  descField.value = action + ' — needs attention';
+  var iss = issueData.find(function(i){return i.sourceKey===sourceKey;});
+  if (iss) { iss.quick_action = action; iss.issue_description = descField.value; }
+}
+
+function setPriority(btn, sourceKey, priority) {
+  btn.parentElement.querySelectorAll('.rc-btn').forEach(function(b){b.classList.remove('sel-neutral','sel-fail','sel-pass');});
+  var cls = priority==='High'?'sel-fail':priority==='Low'?'sel-pass':'sel-neutral';
+  btn.classList.add(cls);
+  var iss = issueData.find(function(i){return i.sourceKey===sourceKey;});
+  if (iss) iss.priority = priority;
+}
+
+document.addEventListener('input', function(e) {
+  if (e.target.id && e.target.id.startsWith('idesc-')) {
+    var key = e.target.id.replace('idesc-','');
+    var iss = issueData.find(function(i){return i.sourceKey===key;});
+    if (iss) iss.issue_description = e.target.value;
+  }
+});
+document.addEventListener('change', function(e) {
+  if (e.target.id && e.target.id.startsWith('itype-')) {
+    var key = e.target.id.replace('itype-','');
+    var iss = issueData.find(function(i){return i.sourceKey===key;});
+    if (iss) iss.issue_type = e.target.value;
+  }
+});
+
+function updateCompleteButton() {
+  var btn = document.getElementById('completeBtn');
+  var txt = document.getElementById('completeBtnText');
+  var hasIssues = issueData.length > 0;
+  var answered = Object.keys(roundData).length;
+  btn.classList.toggle('has-issues', hasIssues);
+  txt.textContent = hasIssues
+    ? '⚠ Create Issue' + (issueData.length>1?'s':'') + ' & Complete Round'
+    : '✓ Save & Close';
+  btn.disabled = answered === 0;
+}
+
+function resetCompleteButton() {
+  document.getElementById('completeBtn').disabled = true;
+  document.getElementById('completeBtnText').textContent = 'Complete Round';
+  document.getElementById('completeBtn').classList.remove('has-issues');
+}
+
+async function submitRound() {
+  var btn = document.getElementById('completeBtn');
+  var txt = document.getElementById('completeBtnText');
+  btn.disabled = true;
+  txt.innerHTML = '<span class="spinner"></span>';
+
+  var staffName = localStorage.getItem('agrhodes_round_staff') || prompt('Your name (saved for future rounds):') || 'Staff';
+  localStorage.setItem('agrhodes_round_staff', staffName);
+
+  var allPass = true;
+  var eocCompliance = null;
+  var payload = {
+    facility_id: currentLocation.facility_id,
+    qr_id: currentLocation.id,
+    qr_identifier: currentLocation.qr_identifier,
+    round_type: currentLocation.location_type === 'room' ? 'room' : 'eoc',
+    rounded_by: staffName,
+  };
+
+  if (currentLocation.location_type === 'room') {
+    payload.room_number = currentLocation.room_number;
+    Object.assign(payload, roundData);
+    allPass = (roundData.cleanliness==='pass' && roundData.safety==='pass' &&
+               roundData.call_light==='pass' && roundData.odor_free==='pass' &&
+               roundData.temperature==='pass' && roundData.satisfaction==='yes' &&
+               roundData.no_concerns==='yes');
+  } else {
+    payload.eoc_section = currentLocation.eoc_section;
+    payload.eoc_scores = roundData;
+    var scores = Object.values(roundData);
+    var passes = scores.filter(function(v){return v==='pass';}).length;
+    eocCompliance = scores.length ? (passes/scores.length*100) : 100;
+    allPass = passes === scores.length;
+    payload.eoc_compliance_pct = eocCompliance;
+  }
+  payload.all_pass = allPass;
+
+  try {
+    var { data: roundRow, error: roundErr } = await sb.from('zone_rounds').insert(payload).select().single();
+    if (roundErr) throw roundErr;
+
+    if (issueData.length) {
+      var issuesPayload = issueData.map(function(i) {
+        return {
+          facility_id: currentLocation.facility_id,
+          round_id: roundRow.id,
+          round_type: payload.round_type,
+          room_number: payload.room_number || null,
+          eoc_section: payload.eoc_section || null,
+          issue_type: i.issue_type,
+          issue_description: i.issue_description || i.quick_action || 'Issue noted',
+          priority: i.priority,
+          quick_action: i.quick_action,
+        };
+      });
+      var { error: issueErr } = await sb.from('zone_issues').insert(issuesPayload);
+      if (issueErr) console.warn('Issue save error:', issueErr.message);
+    }
+    showDone(issueData.length > 0, issueData.length);
+  } catch (e) {
+    showToast('Save failed — saved locally', 'error');
+    queueOffline(payload, issueData);
+    showDone(issueData.length > 0, issueData.length);
+  }
+}
+
+function queueOffline(payload, issues) {
+  var q = JSON.parse(localStorage.getItem('agrhodes_round_queue') || '[]');
+  q.push({ payload: payload, issues: issues });
+  localStorage.setItem('agrhodes_round_queue', JSON.stringify(q));
+}
+
+async function flushOfflineQueue() {
+  var q = JSON.parse(localStorage.getItem('agrhodes_round_queue') || '[]');
+  if (!q.length) return;
+  var remaining = [];
+  for (var item of q) {
+    try {
+      var { data: roundRow, error } = await sb.from('zone_rounds').insert(item.payload).select().single();
+      if (error) { remaining.push(item); continue; }
+      if (item.issues && item.issues.length) {
+        var issuesPayload = item.issues.map(function(i) {
+          return { facility_id: item.payload.facility_id, round_id: roundRow.id,
+            round_type: item.payload.round_type, issue_type: i.issue_type,
+            issue_description: i.issue_description, priority: i.priority, quick_action: i.quick_action };
+        });
+        await sb.from('zone_issues').insert(issuesPayload);
+      }
+    } catch (e) { remaining.push(item); }
+  }
+  localStorage.setItem('agrhodes_round_queue', JSON.stringify(remaining));
+  if (remaining.length < q.length) showToast('Synced ' + (q.length-remaining.length) + ' offline round(s)', 'success');
+}
+window.addEventListener('online', flushOfflineQueue);
+
+function showDone(hasIssues, issueCount) {
+  document.getElementById('formScreen').style.display = 'none';
+  var icon = document.getElementById('doneIcon');
+  var title = document.getElementById('doneTitle');
+  var sub = document.getElementById('doneSub');
+  if (hasIssues) {
+    icon.textContent = '⚠'; icon.style.background = 'rgba(239,68,68,.15)';
+    title.textContent = issueCount + ' Issue' + (issueCount>1?'s':'') + ' Created';
+    sub.textContent = 'Saved, timestamped, and routed to the assigned department.';
+  } else {
+    icon.textContent = '✓'; icon.style.background = 'rgba(16,185,129,.15)';
+    title.textContent = 'Round Complete';
+    sub.textContent = 'Saved and timestamped — no issues found.';
+  }
+  document.getElementById('doneScreen').style.display = 'flex';
+}
+
+function backToScanner() {
+  document.getElementById('formScreen').style.display = 'none';
+  document.getElementById('doneScreen').style.display = 'none';
+  document.getElementById('scanScreen').style.display = 'flex';
+  currentLocation = null;
+  startScanner();
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+  if (location.hash.startsWith('#round=')) {
+    var qrId = location.hash.replace('#round=','').split('&')[0];
+    loadLocation(qrId);
+  } else {
+    startScanner();
+  }
+  flushOfflineQueue();
+});
+</script>
+</body>
+</html>
