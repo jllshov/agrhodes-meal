@@ -53,6 +53,49 @@ h1{font-size:24px;font-weight:800;letter-spacing:-0.02em;margin:0;}
   .grid{grid-template-columns:repeat(3,1fr);}
   .qr-tile{break-inside:avoid;border:1px solid #000;}
 }
+
+/* ── Round Detail Modal ── */
+#roundModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;
+  align-items:center;justify-content:center;padding:16px;}
+#roundModal.open{display:flex;}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  width:100%;max-width:560px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15);}
+.modal-header{padding:20px 20px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;position:sticky;top:0;
+  background:var(--surface);z-index:1;}
+.modal-title{font-size:17px;font-weight:800;letter-spacing:-0.01em;}
+.modal-meta{font-size:12px;color:var(--text-2);margin-top:3px;}
+.modal-close{background:none;border:1px solid var(--border);border-radius:8px;
+  width:32px;height:32px;cursor:pointer;font-size:18px;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;color:var(--text-2);}
+.modal-body{padding:20px;}
+.modal-section{margin-bottom:20px;}
+.modal-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--text-2);margin-bottom:10px;}
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.check-item{display:flex;align-items:center;justify-content:space-between;
+  background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
+.check-label{font-size:12.5px;font-weight:600;color:var(--text);}
+.check-val{font-size:12px;font-weight:700;padding:3px 8px;border-radius:999px;}
+.val-pass{background:rgba(5,150,105,.12);color:var(--green);}
+.val-fail{background:rgba(220,38,38,.12);color:var(--red);}
+.val-yes{background:rgba(5,150,105,.12);color:var(--green);}
+.val-no{background:rgba(220,38,38,.12);color:var(--red);}
+.val-other{background:var(--surface-2);color:var(--text-2);}
+.issue-row{background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.2);
+  border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+.issue-row-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.issue-type{font-size:12px;font-weight:700;color:var(--red);}
+.issue-priority{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;}
+.prio-High{background:rgba(220,38,38,.15);color:var(--red);}
+.prio-Medium{background:rgba(234,88,12,.15);color:#EA580C;}
+.prio-Low{background:rgba(5,150,105,.12);color:var(--green);}
+.issue-desc{font-size:12.5px;color:var(--text-2);}
+.no-round-msg{text-align:center;padding:32px;color:var(--text-2);font-size:13px;}
+.modal-compliance{display:flex;align-items:center;gap:10px;margin-bottom:16px;
+  background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.compliance-num{font-family:'DM Mono',monospace;font-size:28px;font-weight:500;}
+.compliance-label{font-size:12px;color:var(--text-2);}
 </style>
 </head>
 <body>
@@ -106,8 +149,210 @@ h1{font-size:24px;font-weight:800;letter-spacing:-0.02em;margin:0;}
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">
+function openRoundModal(loc, round, issues) {
+  document.getElementById('roundModal').classList.add('open');
+  document.getElementById('modalTitle').textContent = loc.display_name;
+
+  var metaParts = [];
+  if (loc.unit) metaParts.push(loc.unit);
+  if (loc.eoc_department) metaParts.push(loc.eoc_department);
+  if (round) {
+    var dt = new Date(round.rounded_at);
+    metaParts.push('Rounded at ' + dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}));
+    metaParts.push('By: ' + round.rounded_by);
+  }
+  document.getElementById('modalMeta').textContent = metaParts.join(' · ');
+
+  var body = document.getElementById('modalBody');
+  body.innerHTML = '';
+
+  if (!round) {
+    body.innerHTML = '<div class="no-round-msg">🔘 Not yet rounded today</div>';
+    return;
+  }
+
+  // EOC compliance score
+  if (round.round_type === 'eoc' && round.eoc_compliance_pct !== null) {
+    var compColor = round.eoc_compliance_pct >= 90 ? '#059669' :
+                    round.eoc_compliance_pct >= 70 ? '#D97706' : '#DC2626';
+    body.innerHTML += '<div class="modal-compliance">' +
+      '<div class="compliance-num" style="color:'+compColor+'">' +
+        Math.round(round.eoc_compliance_pct) + '%' +
+      '</div>' +
+      '<div><div style="font-size:13px;font-weight:700">EOC Compliance Score</div>' +
+      '<div class="compliance-label">Based on Pass/Fail items this round</div></div></div>';
+  }
+
+  // Checklist items
+  var checksHtml = '';
+  if (round.round_type === 'room') {
+    var ROOM_LABELS = {
+      resident_contacted:'Resident Contacted', cleanliness:'Cleanliness',
+      safety:'Safety', call_light:'Call Light', odor_free:'Odor Free',
+      temperature:'Temperature', satisfaction:'Satisfied', no_concerns:'No Concerns',
+    };
+    checksHtml = '<div class="check-grid">';
+    Object.keys(ROOM_LABELS).forEach(function(k) {
+      var val = round[k];
+      if (!val) return;
+      var cls = (val==='pass'||val==='yes') ? 'val-pass' : (val==='fail'||val==='no') ? 'val-fail' : 'val-other';
+      checksHtml += '<div class="check-item">' +
+        '<span class="check-label">' + ROOM_LABELS[k] + '</span>' +
+        '<span class="check-val ' + cls + '">' + val + '</span></div>';
+    });
+    checksHtml += '</div>';
+  } else if (round.eoc_scores) {
+    var scores = typeof round.eoc_scores === 'string' ? JSON.parse(round.eoc_scores) : round.eoc_scores;
+    checksHtml = '<div class="check-grid">';
+    Object.keys(scores).forEach(function(k) {
+      var val = scores[k];
+      var label = k.replace(/_/g,' ').replace(/\w/g,function(l){return l.toUpperCase();});
+      var cls = val==='pass' ? 'val-pass' : val==='fail' ? 'val-fail' : 'val-other';
+      checksHtml += '<div class="check-item">' +
+        '<span class="check-label">' + label + '</span>' +
+        '<span class="check-val ' + cls + '">' + val + '</span></div>';
+    });
+    checksHtml += '</div>';
+  }
+
+  if (checksHtml) {
+    body.innerHTML += '<div class="modal-section">' +
+      '<div class="modal-section-title">Checklist Results</div>' + checksHtml + '</div>';
+  }
+
+  // Issues
+  if (issues && issues.length) {
+    var issHtml = '<div class="modal-section"><div class="modal-section-title">Issues Created (' + issues.length + ')</div>';
+    issues.forEach(function(i) {
+      issHtml += '<div class="issue-row">' +
+        '<div class="issue-row-header">' +
+          '<span class="issue-type">⚠ ' + i.issue_type + '</span>' +
+          '<span class="issue-priority prio-' + i.priority + '">' + i.priority + '</span>' +
+        '</div>' +
+        '<div class="issue-desc">' + (i.issue_description || i.quick_action || '—') + '</div>' +
+        '</div>';
+    });
+    issHtml += '</div>';
+    body.innerHTML += issHtml;
+  } else {
+    body.innerHTML += '<div class="modal-section">' +
+      '<div class="modal-section-title">Issues</div>' +
+      '<div style="font-size:13px;color:var(--green);font-weight:600">✓ No issues documented</div>' +
+      '</div>';
+  }
+}
+
+function closeModal() {
+  document.getElementById('roundModal').classList.remove('open');
+}
+document.getElementById('roundModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+function openRoundModal(loc, round, issues) {
+  document.getElementById('roundModal').classList.add('open');
+  document.getElementById('modalTitle').textContent = loc.display_name;
+
+  var metaParts = [];
+  if (loc.unit) metaParts.push(loc.unit);
+  if (loc.eoc_department) metaParts.push(loc.eoc_department);
+  if (round) {
+    var dt = new Date(round.rounded_at);
+    metaParts.push('Rounded at ' + dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}));
+    metaParts.push('By: ' + round.rounded_by);
+  }
+  document.getElementById('modalMeta').textContent = metaParts.join(' · ');
+
+  var body = document.getElementById('modalBody');
+  body.innerHTML = '';
+
+  if (!round) {
+    body.innerHTML = '<div class="no-round-msg">🔘 Not yet rounded today</div>';
+    return;
+  }
+
+  // EOC compliance score
+  if (round.round_type === 'eoc' && round.eoc_compliance_pct !== null) {
+    var compColor = round.eoc_compliance_pct >= 90 ? '#059669' :
+                    round.eoc_compliance_pct >= 70 ? '#D97706' : '#DC2626';
+    body.innerHTML += '<div class="modal-compliance">' +
+      '<div class="compliance-num" style="color:'+compColor+'">' +
+        Math.round(round.eoc_compliance_pct) + '%' +
+      '</div>' +
+      '<div><div style="font-size:13px;font-weight:700">EOC Compliance Score</div>' +
+      '<div class="compliance-label">Based on Pass/Fail items this round</div></div></div>';
+  }
+
+  // Checklist items
+  var checksHtml = '';
+  if (round.round_type === 'room') {
+    var ROOM_LABELS = {
+      resident_contacted:'Resident Contacted', cleanliness:'Cleanliness',
+      safety:'Safety', call_light:'Call Light', odor_free:'Odor Free',
+      temperature:'Temperature', satisfaction:'Satisfied', no_concerns:'No Concerns',
+    };
+    checksHtml = '<div class="check-grid">';
+    Object.keys(ROOM_LABELS).forEach(function(k) {
+      var val = round[k];
+      if (!val) return;
+      var cls = (val==='pass'||val==='yes') ? 'val-pass' : (val==='fail'||val==='no') ? 'val-fail' : 'val-other';
+      checksHtml += '<div class="check-item">' +
+        '<span class="check-label">' + ROOM_LABELS[k] + '</span>' +
+        '<span class="check-val ' + cls + '">' + val + '</span></div>';
+    });
+    checksHtml += '</div>';
+  } else if (round.eoc_scores) {
+    var scores = typeof round.eoc_scores === 'string' ? JSON.parse(round.eoc_scores) : round.eoc_scores;
+    checksHtml = '<div class="check-grid">';
+    Object.keys(scores).forEach(function(k) {
+      var val = scores[k];
+      var label = k.replace(/_/g,' ').replace(/\w/g,function(l){return l.toUpperCase();});
+      var cls = val==='pass' ? 'val-pass' : val==='fail' ? 'val-fail' : 'val-other';
+      checksHtml += '<div class="check-item">' +
+        '<span class="check-label">' + label + '</span>' +
+        '<span class="check-val ' + cls + '">' + val + '</span></div>';
+    });
+    checksHtml += '</div>';
+  }
+
+  if (checksHtml) {
+    body.innerHTML += '<div class="modal-section">' +
+      '<div class="modal-section-title">Checklist Results</div>' + checksHtml + '</div>';
+  }
+
+  // Issues
+  if (issues && issues.length) {
+    var issHtml = '<div class="modal-section"><div class="modal-section-title">Issues Created (' + issues.length + ')</div>';
+    issues.forEach(function(i) {
+      issHtml += '<div class="issue-row">' +
+        '<div class="issue-row-header">' +
+          '<span class="issue-type">⚠ ' + i.issue_type + '</span>' +
+          '<span class="issue-priority prio-' + i.priority + '">' + i.priority + '</span>' +
+        '</div>' +
+        '<div class="issue-desc">' + (i.issue_description || i.quick_action || '—') + '</div>' +
+        '</div>';
+    });
+    issHtml += '</div>';
+    body.innerHTML += issHtml;
+  } else {
+    body.innerHTML += '<div class="modal-section">' +
+      '<div class="modal-section-title">Issues</div>' +
+      '<div style="font-size:13px;color:var(--green);font-weight:600">✓ No issues documented</div>' +
+      '</div>';
+  }
+}
+
+function closeModal() {
+  document.getElementById('roundModal').classList.remove('open');
+}
+document.getElementById('roundModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+</script>
 <script>
 // ⚠ CONFIGURE: same Supabase project as your meal check-in app
 const SUPABASE_URL = 'https://gtbiatetqyuxwuehwilr.supabase.co';
@@ -248,6 +493,9 @@ async function loadDashboard() {
     var tile = document.createElement('div');
     tile.className = 'heat-tile ' + cls;
     tile.textContent = loc.room_number || (loc.eoc_section||'').replace(/_/g,' ');
+    tile.onclick = (function(l, r, issues) {
+      return function() { openRoundModal(l, r, issues); };
+    })(loc, todaysRound, issuesForLoc);
     hmGrid.appendChild(tile);
   });
 }
@@ -257,6 +505,122 @@ function statCard(num, label) {
 }
 
 loadDashboard();
+
+function openRoundModal(loc, round, issues) {
+  document.getElementById('roundModal').classList.add('open');
+  document.getElementById('modalTitle').textContent = loc.display_name;
+
+  var metaParts = [];
+  if (loc.unit) metaParts.push(loc.unit);
+  if (loc.eoc_department) metaParts.push(loc.eoc_department);
+  if (round) {
+    var dt = new Date(round.rounded_at);
+    metaParts.push('Rounded at ' + dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}));
+    metaParts.push('By: ' + round.rounded_by);
+  }
+  document.getElementById('modalMeta').textContent = metaParts.join(' · ');
+
+  var body = document.getElementById('modalBody');
+  body.innerHTML = '';
+
+  if (!round) {
+    body.innerHTML = '<div class="no-round-msg">🔘 Not yet rounded today</div>';
+    return;
+  }
+
+  // EOC compliance score
+  if (round.round_type === 'eoc' && round.eoc_compliance_pct !== null) {
+    var compColor = round.eoc_compliance_pct >= 90 ? '#059669' :
+                    round.eoc_compliance_pct >= 70 ? '#D97706' : '#DC2626';
+    body.innerHTML += '<div class="modal-compliance">' +
+      '<div class="compliance-num" style="color:'+compColor+'">' +
+        Math.round(round.eoc_compliance_pct) + '%' +
+      '</div>' +
+      '<div><div style="font-size:13px;font-weight:700">EOC Compliance Score</div>' +
+      '<div class="compliance-label">Based on Pass/Fail items this round</div></div></div>';
+  }
+
+  // Checklist items
+  var checksHtml = '';
+  if (round.round_type === 'room') {
+    var ROOM_LABELS = {
+      resident_contacted:'Resident Contacted', cleanliness:'Cleanliness',
+      safety:'Safety', call_light:'Call Light', odor_free:'Odor Free',
+      temperature:'Temperature', satisfaction:'Satisfied', no_concerns:'No Concerns',
+    };
+    checksHtml = '<div class="check-grid">';
+    Object.keys(ROOM_LABELS).forEach(function(k) {
+      var val = round[k];
+      if (!val) return;
+      var cls = (val==='pass'||val==='yes') ? 'val-pass' : (val==='fail'||val==='no') ? 'val-fail' : 'val-other';
+      checksHtml += '<div class="check-item">' +
+        '<span class="check-label">' + ROOM_LABELS[k] + '</span>' +
+        '<span class="check-val ' + cls + '">' + val + '</span></div>';
+    });
+    checksHtml += '</div>';
+  } else if (round.eoc_scores) {
+    var scores = typeof round.eoc_scores === 'string' ? JSON.parse(round.eoc_scores) : round.eoc_scores;
+    checksHtml = '<div class="check-grid">';
+    Object.keys(scores).forEach(function(k) {
+      var val = scores[k];
+      var label = k.replace(/_/g,' ').replace(/\w/g,function(l){return l.toUpperCase();});
+      var cls = val==='pass' ? 'val-pass' : val==='fail' ? 'val-fail' : 'val-other';
+      checksHtml += '<div class="check-item">' +
+        '<span class="check-label">' + label + '</span>' +
+        '<span class="check-val ' + cls + '">' + val + '</span></div>';
+    });
+    checksHtml += '</div>';
+  }
+
+  if (checksHtml) {
+    body.innerHTML += '<div class="modal-section">' +
+      '<div class="modal-section-title">Checklist Results</div>' + checksHtml + '</div>';
+  }
+
+  // Issues
+  if (issues && issues.length) {
+    var issHtml = '<div class="modal-section"><div class="modal-section-title">Issues Created (' + issues.length + ')</div>';
+    issues.forEach(function(i) {
+      issHtml += '<div class="issue-row">' +
+        '<div class="issue-row-header">' +
+          '<span class="issue-type">⚠ ' + i.issue_type + '</span>' +
+          '<span class="issue-priority prio-' + i.priority + '">' + i.priority + '</span>' +
+        '</div>' +
+        '<div class="issue-desc">' + (i.issue_description || i.quick_action || '—') + '</div>' +
+        '</div>';
+    });
+    issHtml += '</div>';
+    body.innerHTML += issHtml;
+  } else {
+    body.innerHTML += '<div class="modal-section">' +
+      '<div class="modal-section-title">Issues</div>' +
+      '<div style="font-size:13px;color:var(--green);font-weight:600">✓ No issues documented</div>' +
+      '</div>';
+  }
+}
+
+function closeModal() {
+  document.getElementById('roundModal').classList.remove('open');
+}
+document.getElementById('roundModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
 </script>
+
+<!-- Round Detail Modal -->
+<div id="roundModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modalTitle">—</div>
+        <div class="modal-meta" id="modalMeta"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
 </body>
 </html>
