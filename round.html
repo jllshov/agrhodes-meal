@@ -113,6 +113,34 @@ body{padding-bottom:max(24px,env(safe-area-inset-bottom));}
 .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:white;
   border-radius:50%;animation:spin .6s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
+
+.section-divider{display:flex;align-items:center;gap:10px;margin:20px 0 10px;}
+.section-divider span{font-size:10.5px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--text-3);white-space:nowrap;}
+.section-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* Environmental score pill */
+.env-score-bar{border-radius:var(--r);padding:16px;margin-bottom:14px;text-align:center;
+  border:1.5px solid;}
+.env-score-bar.green{background:rgba(16,185,129,.1);border-color:var(--green);}
+.env-score-bar.amber{background:rgba(245,158,11,.1);border-color:var(--amber);}
+.env-score-bar.red{background:rgba(239,68,68,.1);border-color:var(--red);}
+.env-score-num{font-family:'DM Mono',monospace;font-size:32px;font-weight:500;line-height:1;}
+.env-score-label{font-size:12.5px;font-weight:700;margin-top:4px;}
+.env-score-sub{font-size:11px;color:var(--text-3);margin-top:2px;}
+
+/* Follow-up card */
+.followup-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px;margin-bottom:14px;}
+.followup-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+.followup-toggle-label{font-size:13.5px;font-weight:700;}
+.followup-body{margin-top:14px;display:none;}
+.followup-body.open{display:block;}
+.photo-btn{width:100%;min-height:44px;border-radius:var(--r-sm);border:1.5px dashed var(--border);
+  background:var(--surface-2);color:var(--text-2);font-family:inherit;font-size:13px;font-weight:600;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;}
+.photo-preview{width:100%;border-radius:var(--r-sm);margin-top:8px;display:none;}
+
 </style>
 </head>
 <body>
@@ -176,18 +204,48 @@ var issueData = [];
 var html5QrCode = null;
 
 var ROOM_ITEMS = [
+  // ── Resident Status ──
   { key:'resident_contacted', label:'Resident Contacted', sub:'How was the resident encountered?',
-    type:'choice', options:[
+    section:'Resident Status', type:'choice', options:[
       {v:'yes',label:'Yes'},{v:'no',label:'No'},{v:'sleeping',label:'Sleeping'},
       {v:'out',label:'Out of Room'},{v:'refused',label:'Refused'}
     ]},
-  { key:'cleanliness', label:'Cleanliness', sub:'Room is clean and free of clutter', type:'passfail' },
-  { key:'safety', label:'Safety', sub:'No fall or safety hazards present', type:'passfail' },
-  { key:'call_light', label:'Call Light Accessible', sub:'Within resident reach and functional', type:'passfail' },
-  { key:'odor_free', label:'Room Odor Free', sub:'No unpleasant odors detected', type:'passfail' },
-  { key:'temperature', label:'Temperature Comfortable', sub:'Room temp is comfortable for resident', type:'passfail' },
-  { key:'satisfaction', label:'Satisfied With Care', sub:'Resident expresses satisfaction', type:'yesno' },
-  { key:'no_concerns', label:'No Concerns Expressed', sub:'Resident has no current concerns', type:'yesno' },
+  { key:'satisfaction', label:'Satisfied With Care', sub:'Resident expresses satisfaction with care',
+    section:'Resident Status', type:'yesno' },
+  { key:'no_concerns', label:'No Concerns Expressed', sub:'Resident has no current concerns',
+    section:'Resident Status', type:'yesno' },
+
+  // ── Safety ──
+  { key:'call_light', label:'Call Light Within Reach', sub:'Call light accessible and within resident reach',
+    section:'Safety', type:'passfail' },
+  { key:'bed_low_locked', label:'Bed Low / Locked', sub:'Bed is in lowest position and wheels are locked',
+    section:'Safety', type:'passfail' },
+  { key:'room_clutter', label:'Room Free of Clutter', sub:'No fall hazards or clutter on pathways',
+    section:'Safety', type:'passfail' },
+
+  // ── Cleanliness ──
+  { key:'floor_clean', label:'Floor Clean', sub:'Floor is clean, dry, and free of debris',
+    section:'Cleanliness', type:'passfail' },
+  { key:'bathroom_clean', label:'Bathroom Clean', sub:'Toilet, sink, and shower/tub clean and odor-free',
+    section:'Cleanliness', type:'passfail' },
+  { key:'trash_removed', label:'Trash Removed', sub:'Trash cans emptied and liners intact',
+    section:'Cleanliness', type:'passfail' },
+
+  // ── Environment ──
+  { key:'curtains_clean', label:'Curtains Clean', sub:'Privacy and window curtains free of stains/soiling',
+    section:'Environment', type:'passfail' },
+  { key:'odor_free', label:'No Offensive Odors', sub:'Room is odor-free',
+    section:'Environment', type:'passfail' },
+  { key:'lighting', label:'Adequate Lighting', sub:'Room lighting is functional and appropriate',
+    section:'Environment', type:'passfail' },
+
+  // ── Equipment ──
+  { key:'furniture_intact', label:'Furniture Intact', sub:'Furniture is in good repair, no sharp edges or damage',
+    section:'Equipment', type:'passfail' },
+  { key:'equipment_functioning', label:'Wheelchair / Bed Functioning', sub:'Mobility equipment in working order',
+    section:'Equipment', type:'passfail' },
+  { key:'no_maintenance', label:'No Maintenance Concerns', sub:'No broken fixtures, outlets, or structural issues',
+    section:'Equipment', type:'passfail' },
 ];
 
 var EOC_ITEMS = {
@@ -318,6 +376,7 @@ async function loadLocation(qrIdentifier) {
 function renderForm() {
   roundData = {};
   issueData = [];
+  followUpData = { issue: false, category: '', notes: '', photoUrl: null };
   var nameEl = document.getElementById('fh-name');
   var metaEl = document.getElementById('fh-meta');
   var body   = document.getElementById('formBody');
@@ -334,7 +393,19 @@ function renderForm() {
   body.innerHTML = '';
 
   if (currentLocation.location_type === 'room') {
-    ROOM_ITEMS.forEach(function(item) { body.appendChild(renderItem(item)); });
+    var currentSection = null;
+    ROOM_ITEMS.forEach(function(item) {
+      if (item.section && item.section !== currentSection) {
+        currentSection = item.section;
+        var divider = document.createElement('div');
+        divider.className = 'section-divider';
+        divider.innerHTML = '<span>' + currentSection + '</span>';
+        body.appendChild(divider);
+      }
+      body.appendChild(renderItem(item));
+    });
+    // Follow-Up section
+    body.appendChild(buildFollowUpCard());
   } else {
     var items = EOC_ITEMS[currentLocation.eoc_section] || [];
     items.forEach(function(item) { body.appendChild(renderItem(Object.assign({type:'passfail'}, item))); });
@@ -381,6 +452,7 @@ function selectOption(btn, key, val) {
     issueData = issueData.filter(function(i) { return i.sourceKey !== key; });
   }
   updateCompleteButton();
+  if (currentLocation && currentLocation.location_type === 'room') renderScoreBar();
 }
 
 function insertIssueCard(sourceKey, afterEl) {
@@ -458,6 +530,108 @@ function resetCompleteButton() {
   document.getElementById('completeBtn').classList.remove('has-issues');
 }
 
+
+/* ── Follow-Up Card ── */
+var followUpData = { issue: false, category: '', notes: '', photoUrl: null };
+
+function buildFollowUpCard() {
+  var card = document.createElement('div');
+  card.className = 'followup-card';
+  card.id = 'followUpCard';
+  card.innerHTML =
+    '<div class="followup-toggle" onclick="toggleFollowUp()">' +
+      '<span class="followup-toggle-label">📋 Follow-Up</span>' +
+      '<span id="followup-arrow" style="color:var(--text-3);font-size:18px">﹀</span>' +
+    '</div>' +
+    '<div class="followup-body" id="followup-body">' +
+      '<div class="issue-field" style="margin-top:0">' +
+        '<label>Issue Found?</label>' +
+        '<div class="rc-options cols-2">' +
+          '<button type="button" class="rc-btn" onclick="setFollowUpIssue(this,true)">Yes</button>' +
+          '<button type="button" class="rc-btn" onclick="setFollowUpIssue(this,false)">No</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="issue-field" id="followup-details" style="display:none">' +
+        '<label>Category</label>' +
+        '<select class="issue-select" id="followup-category" onchange="followUpData.category=this.value">' +
+          '<option value="">Select…</option>' +
+          '<option>Maintenance</option><option>Housekeeping</option>' +
+          '<option>Nursing</option><option>Other</option>' +
+        '</select>' +
+        '<label style="margin-top:10px;display:block">Notes</label>' +
+        '<textarea class="issue-textarea" id="followup-notes" placeholder="Describe the issue…"' +
+          ' oninput="followUpData.notes=this.value"></textarea>' +
+        '<label style="margin-top:10px;display:block">Photo</label>' +
+        '<button type="button" class="photo-btn" onclick="triggerPhotoUpload()">📷 Take / Upload Photo</button>' +
+        '<input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">' +
+        '<img id="photoPreview" class="photo-preview">' +
+      '</div>' +
+    '</div>';
+  return card;
+}
+
+function toggleFollowUp() {
+  var body = document.getElementById('followup-body');
+  var arrow = document.getElementById('followup-arrow');
+  body.classList.toggle('open');
+  arrow.textContent = body.classList.contains('open') ? '︿' : '﹀';
+}
+
+function setFollowUpIssue(btn, hasIssue) {
+  btn.parentElement.querySelectorAll('.rc-btn').forEach(function(b){
+    b.classList.remove('sel-pass','sel-fail');
+  });
+  btn.classList.add(hasIssue ? 'sel-fail' : 'sel-pass');
+  followUpData.issue = hasIssue;
+  document.getElementById('followup-details').style.display = hasIssue ? 'block' : 'none';
+}
+
+function triggerPhotoUpload() {
+  document.getElementById('photoInput').click();
+}
+
+function handlePhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    followUpData.photoUrl = e.target.result;
+    var preview = document.getElementById('photoPreview');
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+/* ── Environmental Score (computed on submit) ── */
+function computeEnvScore() {
+  var ENV_KEYS = ['call_light','bed_low_locked','room_clutter','floor_clean','bathroom_clean',
+    'trash_removed','curtains_clean','odor_free','lighting','furniture_intact',
+    'equipment_functioning','no_maintenance'];
+  var answered = ENV_KEYS.filter(function(k){ return roundData[k]; });
+  if (!answered.length) return null;
+  var passes = answered.filter(function(k){ return roundData[k] === 'pass'; }).length;
+  return Math.round((passes / answered.length) * 100);
+}
+
+function renderScoreBar() {
+  var pct = computeEnvScore();
+  if (pct === null) return;
+  var existing = document.getElementById('env-score-bar');
+  if (existing) existing.remove();
+  var cls = pct >= 90 ? 'green' : pct >= 75 ? 'amber' : 'red';
+  var emoji = pct >= 90 ? '🟢' : pct >= 75 ? '🟡' : '🔴';
+  var label = pct >= 90 ? 'Pass' : pct >= 75 ? 'Needs Attention' : 'Immediate Action Required';
+  var bar = document.createElement('div');
+  bar.id = 'env-score-bar';
+  bar.className = 'env-score-bar ' + cls;
+  bar.innerHTML =
+    '<div class="env-score-num">' + emoji + ' ' + pct + '%</div>' +
+    '<div class="env-score-label">' + label + '</div>' +
+    '<div class="env-score-sub">Environmental Score — ' + (pct >= 90 ? 'No action required' : pct >= 75 ? 'Follow up recommended' : 'Immediate correction needed') + '</div>';
+  var actionBar = document.querySelector('.action-bar');
+  actionBar.insertAdjacentElement('beforebegin', bar);
+}
+
 async function submitRound() {
   var btn = document.getElementById('completeBtn');
   var txt = document.getElementById('completeBtnText');
@@ -480,10 +654,26 @@ async function submitRound() {
   if (currentLocation.location_type === 'room') {
     payload.room_number = currentLocation.room_number;
     Object.assign(payload, roundData);
-    allPass = (roundData.cleanliness==='pass' && roundData.safety==='pass' &&
-               roundData.call_light==='pass' && roundData.odor_free==='pass' &&
-               roundData.temperature==='pass' && roundData.satisfaction==='yes' &&
-               roundData.no_concerns==='yes');
+    // Environmental score
+    var envScore = computeEnvScore();
+    payload.eoc_compliance_pct = envScore;
+    // Build allPass from all passfail/yesno items
+    var passFailKeys = ROOM_ITEMS.filter(function(i){return i.type==='passfail';}).map(function(i){return i.key;});
+    var yesNoKeys    = ['satisfaction','no_concerns'];
+    var pfAnswered   = passFailKeys.filter(function(k){return roundData[k];});
+    var ynAnswered   = yesNoKeys.filter(function(k){return roundData[k];});
+    allPass = pfAnswered.every(function(k){return roundData[k]==='pass';}) &&
+              ynAnswered.every(function(k){return roundData[k]==='yes';});
+    // Add follow-up issue if flagged
+    if (followUpData.issue && followUpData.category) {
+      issueData.push({
+        sourceKey: 'followup',
+        issue_type: followUpData.category,
+        issue_description: followUpData.notes || 'Issue documented during room round',
+        priority: 'Medium',
+        quick_action: null,
+      });
+    }
   } else {
     payload.eoc_section = currentLocation.eoc_section;
     payload.eoc_scores = roundData;
