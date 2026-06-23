@@ -3,128 +3,351 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>A.G. Rhodes — Zone Round QR Manager</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<title>A.G. Rhodes — Zone Rounds</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#F8F9FA;--surface:#FFFFFF;--surface-2:#F3F4F6;--border:#E5E7EB;
-  --text:#0F1117;--text-2:#6B7280;--text-3:#9CA3AF;
-  --blue:#3B82F6;--brand:#7C6FF0;--green:#059669;--red:#DC2626;
+:root {
+  --bg: #EAEEF2;
+  --surface: #EEF1F5;
+  --orange: #F5A623;
+  --orange-light: #FFF3DC;
+  --black: #1A1A1A;
+  --gray: #6B7280;
+  --gray-light: #9CA3AF;
+  --green: #22C55E;
+  --red: #EF4444;
+  --amber: #F59E0B;
+  --shadow-out: 6px 6px 14px #C8CDD5, -6px -6px 14px #FFFFFF;
+  --shadow-in: inset 4px 4px 10px #C8CDD5, inset -4px -4px 10px #FFFFFF;
+  --shadow-card: 8px 8px 20px #C5CAD1, -8px -8px 20px #FFFFFF;
+  --r: 20px;
+  --r-sm: 12px;
+  --r-pill: 999px;
 }
-*{box-sizing:border-box;}
-body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;}
-.wrap{max-width:1100px;margin:0 auto;padding:32px 24px 80px;}
-.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
-h1{font-size:24px;font-weight:800;letter-spacing:-0.02em;margin:0;}
-.sub{font-size:13px;color:var(--text-2);margin-top:4px;}
-.tabs{display:flex;gap:4px;background:var(--surface-2);border-radius:10px;padding:4px;margin-bottom:24px;width:fit-content;}
-.tab-btn{padding:8px 16px;border-radius:8px;border:none;background:none;font-family:inherit;
-  font-size:13px;font-weight:600;color:var(--text-2);cursor:pointer;}
-.tab-btn.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08);}
-.panel{display:none;} .panel.active{display:block;}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px;}
-.card-title{font-size:14px;font-weight:700;margin-bottom:12px;}
-.bulk-form{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;}
-.field label{display:block;font-size:11px;font-weight:600;color:var(--text-2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.03em;}
-.field input,.field select{width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;}
-.btn{background:var(--blue);color:white;border:none;border-radius:8px;padding:10px 18px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;}
-.btn.outline{background:transparent;border:1px solid var(--border);color:var(--text);}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;margin-top:16px;}
-.qr-tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;}
-.qr-tile canvas,.qr-tile img{width:100%;max-width:120px;margin:0 auto 8px;display:block;}
-.qr-tile-name{font-size:12.5px;font-weight:700;margin-bottom:2px;}
-.qr-tile-meta{font-size:10.5px;color:var(--text-3);}
-.qr-tile-id{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-3);margin-top:6px;word-break:break-all;}
-.dept-section{margin-bottom:28px;}
-.dept-header{font-size:13px;font-weight:700;color:var(--text-2);text-transform:uppercase;
-  letter-spacing:.05em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);}
-.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;}
-.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;}
-.stat-num{font-family:'DM Mono',monospace;font-size:26px;font-weight:500;}
-.stat-label{font-size:11px;color:var(--text-2);margin-top:2px;}
-.heatmap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;}
-.heat-tile{aspect-ratio:1;border-radius:10px;display:flex;align-items:center;
-  justify-content:center;cursor:pointer;font-size:11px;font-weight:700;color:white;padding:6px;text-align:center;}
-.heat-green{background:var(--green);} .heat-yellow{background:#D97706;}
-.heat-orange{background:#EA580C;} .heat-red{background:var(--red);}
-.heat-gray{background:#D1D5DB;color:#6B7280;}
-@media print {
-  .no-print{display:none!important;}
-  .grid{grid-template-columns:repeat(3,1fr);}
-  .qr-tile{break-inside:avoid;border:1px solid #000;}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--black); min-height: 100vh; display: flex; }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 220px; min-height: 100vh; background: var(--surface);
+  box-shadow: var(--shadow-card); padding: 28px 16px;
+  display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; position: sticky; top: 0;
+}
+.sidebar-logo {
+  display: flex; align-items: center; gap: 10px; padding: 0 8px 24px;
+  border-bottom: 1px solid rgba(0,0,0,.06); margin-bottom: 10px;
+}
+.sidebar-logo-icon {
+  width: 40px; height: 40px; border-radius: 12px; background: var(--orange);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 14px; color: white; letter-spacing: .5px;
+}
+.sidebar-logo-name { font-size: 13px; font-weight: 700; line-height: 1.3; }
+.sidebar-logo-sub  { font-size: 10px; color: var(--gray); }
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px; padding: 11px 14px;
+  border-radius: var(--r-sm); cursor: pointer; font-size: 13px; font-weight: 500;
+  color: var(--gray); transition: all .15s; border: none; background: none;
+  font-family: inherit; width: 100%; text-align: left;
+}
+.nav-item:hover { background: var(--bg); color: var(--black); }
+.nav-item.active {
+  background: var(--orange); color: white;
+  box-shadow: 4px 4px 12px rgba(245,166,35,.4), -2px -2px 8px rgba(245,166,35,.2);
+}
+.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+.sidebar-bottom { margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(0,0,0,.06); }
+.sidebar-user { display: flex; align-items: center; gap: 10px; padding: 10px 8px; }
+.user-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--orange);
+  display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: white; }
+.user-name { font-size: 12.5px; font-weight: 600; }
+.user-role { font-size: 10.5px; color: var(--gray); }
+
+/* ── Main ── */
+.main { flex: 1; padding: 28px 32px; overflow-y: auto; }
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; }
+.page-title { font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
+.page-sub { font-size: 13px; color: var(--gray); margin-top: 3px; }
+.header-actions { display: flex; gap: 10px; }
+
+/* ── Neu button ── */
+.neu-btn {
+  padding: 10px 20px; border-radius: var(--r-pill); border: none; cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  background: var(--surface); box-shadow: var(--shadow-out);
+  color: var(--black); transition: all .15s;
+}
+.neu-btn:active { box-shadow: var(--shadow-in); }
+.neu-btn.primary { background: var(--orange); color: white;
+  box-shadow: 4px 4px 12px rgba(245,166,35,.5), -2px -2px 8px rgba(245,166,35,.2); }
+.neu-btn.primary:active { box-shadow: inset 3px 3px 8px rgba(0,0,0,.15); }
+
+/* ── Tab pills ── */
+.tab-row { display: flex; gap: 8px; margin-bottom: 24px; }
+.tab-pill {
+  padding: 8px 18px; border-radius: var(--r-pill); border: none; cursor: pointer;
+  font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--gray);
+  background: var(--surface); box-shadow: var(--shadow-out); transition: all .15s;
+}
+.tab-pill.active { background: var(--orange); color: white;
+  box-shadow: 4px 4px 12px rgba(245,166,35,.4); }
+
+/* ── Stat cards row ── */
+.stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  background: var(--surface); border-radius: var(--r);
+  box-shadow: var(--shadow-card); padding: 20px 18px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.stat-card.accent { background: var(--orange); }
+.stat-num {
+  font-family: 'DM Mono', monospace; font-size: 30px; font-weight: 500; line-height: 1;
+  color: var(--black);
+}
+.stat-card.accent .stat-num { color: white; }
+.stat-label { font-size: 11px; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: .04em; }
+.stat-card.accent .stat-label { color: rgba(255,255,255,.8); }
+.stat-pill {
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px;
+  border-radius: var(--r-pill); font-size: 11px; font-weight: 700; margin-top: 2px;
+  width: fit-content;
+}
+.pill-orange { background: var(--orange-light); color: var(--orange); }
+.pill-green  { background: rgba(34,197,94,.12); color: var(--green); }
+.pill-red    { background: rgba(239,68,68,.12); color: var(--red); }
+.pill-gray   { background: rgba(107,114,128,.1); color: var(--gray); }
+
+/* ── Content grid ── */
+.content-grid { display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
+.content-grid.full { grid-template-columns: 1fr; }
+
+/* ── Cards ── */
+.card {
+  background: var(--surface); border-radius: var(--r);
+  box-shadow: var(--shadow-card); padding: 22px;
+}
+.card-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.card-sub { font-size: 12px; color: var(--gray); margin-bottom: 18px; }
+
+/* ── Heat map ── */
+.heatmap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 10px; }
+.heat-tile {
+  aspect-ratio: 1; border-radius: 14px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; cursor: pointer;
+  font-size: 10.5px; font-weight: 700; padding: 6px; text-align: center;
+  transition: transform .12s, box-shadow .12s;
+}
+.heat-tile:active { transform: scale(.95); }
+.heat-green  { background: rgba(34,197,94,.15); color: #16A34A; box-shadow: 3px 3px 8px rgba(34,197,94,.2), -2px -2px 6px #FFFFFF; }
+.heat-yellow { background: rgba(245,158,11,.15); color: #B45309; box-shadow: 3px 3px 8px rgba(245,158,11,.2), -2px -2px 6px #FFFFFF; }
+.heat-orange { background: rgba(234,88,12,.15); color: #C2410C; box-shadow: 3px 3px 8px rgba(234,88,12,.2), -2px -2px 6px #FFFFFF; }
+.heat-red    { background: rgba(239,68,68,.15); color: #DC2626; box-shadow: 3px 3px 8px rgba(239,68,68,.2), -2px -2px 6px #FFFFFF; }
+.heat-gray   { background: rgba(107,114,128,.1); color: var(--gray-light); box-shadow: var(--shadow-out); }
+
+/* ── Issues list ── */
+.issue-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px; border-radius: var(--r-sm); margin-bottom: 8px;
+  background: var(--bg); box-shadow: var(--shadow-out);
+}
+.issue-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+.issue-dot.High { background: var(--red); box-shadow: 0 0 6px rgba(239,68,68,.5); }
+.issue-dot.Medium { background: var(--amber); }
+.issue-dot.Low { background: var(--green); }
+.issue-info { flex: 1; min-width: 0; }
+.issue-type-label { font-size: 12px; font-weight: 700; }
+.issue-desc-label { font-size: 11.5px; color: var(--gray); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.issue-badge { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: var(--r-pill); flex-shrink: 0; }
+.badge-High { background: rgba(239,68,68,.12); color: var(--red); }
+.badge-Medium { background: rgba(245,158,11,.12); color: var(--amber); }
+.badge-Low { background: rgba(34,197,94,.12); color: var(--green); }
+
+/* ── Donut chart ── */
+.donut-wrap { display: flex; align-items: center; justify-content: center; gap: 24px; margin-top: 8px; }
+.donut-legend { display: flex; flex-direction: column; gap: 8px; }
+.legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── QR grid (rooms/eoc) ── */
+.qr-section { margin-bottom: 28px; }
+.qr-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--gray); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(0,0,0,.07); }
+.qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+.qr-tile { background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow-card); padding: 16px; text-align: center; }
+.qr-tile canvas, .qr-tile img { width: 100%; max-width: 120px; margin: 0 auto 10px; display: block; border-radius: 8px; }
+.qr-tile-name { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+.qr-tile-meta { font-size: 10.5px; color: var(--gray); }
+.qr-tile-id { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--gray-light); margin-top: 6px; word-break: break-all; }
+
+/* ── Bulk form ── */
+.bulk-form { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: end; margin-bottom: 24px; }
+.field label { display: block; font-size: 11px; font-weight: 600; color: var(--gray); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .03em; }
+.field select, .field input {
+  width: 100%; padding: 10px 12px; border: none; border-radius: var(--r-sm);
+  background: var(--surface); box-shadow: var(--shadow-in);
+  font-family: inherit; font-size: 13px; color: var(--black);
 }
 
-/* ── Round Detail Modal ── */
-#roundModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;
-  align-items:center;justify-content:center;padding:16px;}
-#roundModal.open{display:flex;}
-.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;
-  width:100%;max-width:560px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15);}
-.modal-header{padding:20px 20px 16px;border-bottom:1px solid var(--border);
-  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;position:sticky;top:0;
-  background:var(--surface);z-index:1;}
-.modal-title{font-size:17px;font-weight:800;letter-spacing:-0.01em;}
-.modal-meta{font-size:12px;color:var(--text-2);margin-top:3px;}
-.modal-close{background:none;border:1px solid var(--border);border-radius:8px;
-  width:32px;height:32px;cursor:pointer;font-size:18px;display:flex;align-items:center;
-  justify-content:center;flex-shrink:0;color:var(--text-2);}
-.modal-body{padding:20px;}
-.modal-section{margin-bottom:20px;}
-.modal-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
-  color:var(--text-2);margin-bottom:10px;}
-.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.check-item{display:flex;align-items:center;justify-content:space-between;
-  background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
-.check-label{font-size:12.5px;font-weight:600;color:var(--text);}
-.check-val{font-size:12px;font-weight:700;padding:3px 8px;border-radius:999px;}
-.val-pass{background:rgba(5,150,105,.12);color:var(--green);}
-.val-fail{background:rgba(220,38,38,.12);color:var(--red);}
-.val-yes{background:rgba(5,150,105,.12);color:var(--green);}
-.val-no{background:rgba(220,38,38,.12);color:var(--red);}
-.val-other{background:var(--surface-2);color:var(--text-2);}
-.issue-row{background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.2);
-  border-radius:10px;padding:12px 14px;margin-bottom:8px;}
-.issue-row-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
-.issue-type{font-size:12px;font-weight:700;color:var(--red);}
-.issue-priority{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;}
-.prio-High{background:rgba(220,38,38,.15);color:var(--red);}
-.prio-Medium{background:rgba(234,88,12,.15);color:#EA580C;}
-.prio-Low{background:rgba(5,150,105,.12);color:var(--green);}
-.issue-desc{font-size:12.5px;color:var(--text-2);}
-.no-round-msg{text-align:center;padding:32px;color:var(--text-2);font-size:13px;}
-.modal-compliance{display:flex;align-items:center;gap:10px;margin-bottom:16px;
-  background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:14px;}
-.compliance-num{font-family:'DM Mono',monospace;font-size:28px;font-weight:500;}
-.compliance-label{font-size:12px;color:var(--text-2);}
+/* ── Modal ── */
+#roundModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.3);
+  backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
+#roundModal.open { display: flex; }
+.modal-box { background: var(--surface); border-radius: 24px; width: 100%; max-width: 540px;
+  max-height: 85vh; overflow-y: auto; box-shadow: 20px 20px 50px rgba(0,0,0,.2), -10px -10px 30px #FFFFFF; }
+.modal-header { padding: 22px 22px 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  position: sticky; top: 0; background: var(--surface); z-index: 1; border-radius: 24px 24px 0 0; }
+.modal-title { font-size: 18px; font-weight: 800; }
+.modal-meta-text { font-size: 12px; color: var(--gray); margin-top: 3px; }
+.modal-close { background: var(--bg); border: none; border-radius: 10px; width: 34px; height: 34px;
+  cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; box-shadow: var(--shadow-out); color: var(--gray); }
+.modal-body { padding: 0 22px 22px; }
+.modal-section { margin-bottom: 20px; }
+.modal-section-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--gray); margin-bottom: 10px; }
+.check-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.check-item { display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg); border-radius: 10px; padding: 10px 12px; box-shadow: var(--shadow-out); }
+.check-label { font-size: 12px; font-weight: 600; }
+.check-val { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: var(--r-pill); }
+.val-pass, .val-yes { background: rgba(34,197,94,.12); color: var(--green); }
+.val-fail, .val-no { background: rgba(239,68,68,.12); color: var(--red); }
+.val-other { background: rgba(107,114,128,.1); color: var(--gray); }
+.env-score-modal { border-radius: 14px; padding: 16px 18px; display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.env-score-modal.green { background: rgba(34,197,94,.1); }
+.env-score-modal.amber { background: rgba(245,158,11,.1); }
+.env-score-modal.red   { background: rgba(239,68,68,.1); }
+.env-score-modal-num { font-family: 'DM Mono', monospace; font-size: 36px; font-weight: 500; }
+.modal-issue-row { background: var(--bg); border-radius: 12px; padding: 12px 14px;
+  margin-bottom: 8px; box-shadow: var(--shadow-out); }
+.modal-issue-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.modal-issue-type { font-size: 12px; font-weight: 700; color: var(--red); }
+.modal-issue-desc { font-size: 12px; color: var(--gray); }
+.no-round-msg { text-align: center; padding: 36px; color: var(--gray); font-size: 13px; }
+
+/* ── Progress ring ── */
+.progress-ring-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+.progress-ring-label { position: absolute; text-align: center; }
+.progress-ring-num { font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 500; }
+.progress-ring-sub { font-size: 10px; color: var(--gray); }
+
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .content-grid { grid-template-columns: 1fr; }
+  .bulk-form { grid-template-columns: 1fr 1fr; }
+}
+@media print {
+  .sidebar, .tab-row, .no-print { display: none !important; }
+  .main { padding: 0; }
+  .qr-grid { grid-template-columns: repeat(3, 1fr); }
+  .qr-tile { break-inside: avoid; }
+}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="header">
+
+<!-- ════ SIDEBAR ════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">AG</div>
     <div>
-      <h1>Zone Round QR Manager</h1>
-      <div class="sub">Generate, print, and track scannable codes for resident rooms and Environment of Care areas</div>
-    </div>
-    <button class="btn outline no-print" onclick="window.print()">🖨 Print This View</button>
-  </div>
-
-  <div class="tabs no-print">
-    <button class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
-    <button class="tab-btn" onclick="switchTab('rooms')">Resident Rooms</button>
-    <button class="tab-btn" onclick="switchTab('eoc')">EOC Areas</button>
-  </div>
-
-  <div class="panel active" id="panel-dashboard">
-    <div class="stats-row" id="statsRow"></div>
-    <div class="card">
-      <div class="card-title">Today's Rounding Heat Map</div>
-      <div class="heatmap-grid" id="heatmapGrid"></div>
+      <div class="sidebar-logo-name">A.G. Rhodes</div>
+      <div class="sidebar-logo-sub">Zone Rounding</div>
     </div>
   </div>
 
-  <div class="panel" id="panel-rooms">
-    <div class="card no-print">
-      <div class="card-title">Generate Room QR Codes in Bulk</div>
+  <button class="nav-item active" onclick="switchTab('dashboard')">
+    <span class="nav-icon">📊</span> Dashboard
+  </button>
+  <button class="nav-item" onclick="switchTab('rooms')">
+    <span class="nav-icon">🚪</span> Resident Rooms
+  </button>
+  <button class="nav-item" onclick="switchTab('eoc')">
+    <span class="nav-icon">📋</span> EOC Areas
+  </button>
+  <button class="nav-item" onclick="switchTab('issues')">
+    <span class="nav-icon">⚠</span> Open Issues
+  </button>
+  <button class="nav-item no-print" onclick="window.print()">
+    <span class="nav-icon">🖨</span> Print QR Codes
+  </button>
+
+  <div class="sidebar-bottom">
+    <div class="sidebar-user">
+      <div class="user-avatar">N</div>
+      <div>
+        <div class="user-name">Nursaio</div>
+        <div class="user-role">Atlanta · Admin</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ════ MAIN ════ -->
+<main class="main">
+
+  <!-- ── Dashboard ── -->
+  <div id="panel-dashboard">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Zone Stats</div>
+        <div class="page-sub" id="dash-date">Today's rounding overview</div>
+      </div>
+      <div class="header-actions no-print">
+        <button class="neu-btn" onclick="loadDashboard()">↻ Refresh</button>
+      </div>
+    </div>
+
+    <div class="stats-row" id="statsRow">
+      <!-- populated by JS -->
+    </div>
+
+    <div class="content-grid">
+      <div class="card">
+        <div class="card-title">Rounding Heat Map</div>
+        <div class="card-sub">Click any tile to view round details</div>
+        <div class="heatmap-grid" id="heatmapGrid"></div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card">
+          <div class="card-title">Completion</div>
+          <div class="card-sub">Today's progress</div>
+          <div class="donut-wrap">
+            <svg width="110" height="110" viewBox="0 0 110 110">
+              <circle cx="55" cy="55" r="42" fill="none" stroke="#E5E7EB" stroke-width="14"/>
+              <circle id="donutArc" cx="55" cy="55" r="42" fill="none" stroke="#F5A623" stroke-width="14"
+                stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="264"
+                transform="rotate(-90 55 55)" style="transition:stroke-dashoffset .8s ease"/>
+            </svg>
+            <div class="donut-legend">
+              <div style="font-family:'DM Mono',monospace;font-size:28px;font-weight:500" id="donut-pct">—</div>
+              <div style="font-size:11px;color:var(--gray)">Complete</div>
+              <div class="legend-item" style="margin-top:8px"><div class="legend-dot" style="background:var(--orange)"></div><span>Rounded</span></div>
+              <div class="legend-item"><div class="legend-dot" style="background:#E5E7EB"></div><span>Remaining</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="recentIssuesCard">
+          <div class="card-title">Recent Issues</div>
+          <div class="card-sub">Open items needing attention</div>
+          <div id="recentIssuesList"><div class="no-round-msg" style="padding:16px">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Rooms ── -->
+  <div id="panel-rooms" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Resident Rooms</div><div class="page-sub">Generate QR codes for each room door</div></div>
+    </div>
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title">Generate in Bulk</div>
+      <div class="card-sub">Enter a unit and room number range to create QR codes at once</div>
       <div class="bulk-form">
         <div class="field"><label>Unit</label>
           <select id="bulk-unit">
@@ -134,432 +357,109 @@ h1{font-size:24px;font-weight:800;letter-spacing:-0.02em;margin:0;}
         </div>
         <div class="field"><label>Start Room #</label><input type="number" id="bulk-start" placeholder="101"></div>
         <div class="field"><label>End Room #</label><input type="number" id="bulk-end" placeholder="140"></div>
-        <button class="btn" onclick="generateBulkRooms()">Generate</button>
+        <button class="neu-btn primary" onclick="generateBulkRooms()">Generate</button>
       </div>
     </div>
     <div id="roomsGrid"></div>
   </div>
 
-  <div class="panel" id="panel-eoc">
-    <div class="card no-print">
-      <div class="card-title">Environment of Care Areas</div>
-      <div class="sub">These 9 standard areas are seeded automatically. QR codes are generated below.</div>
+  <!-- ── EOC ── -->
+  <div id="panel-eoc" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">EOC Areas</div><div class="page-sub">Environment of Care — 9 standard areas seeded automatically</div></div>
     </div>
     <div id="eocGrid"></div>
   </div>
+
+  <!-- ── Issues ── -->
+  <div id="panel-issues" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Open Issues</div><div class="page-sub">All unresolved items across the facility</div></div>
+      <button class="neu-btn" onclick="loadIssues()">↻ Refresh</button>
+    </div>
+    <div id="issuesList"></div>
+  </div>
+
+</main>
+
+<!-- ════ ROUND DETAIL MODAL ════ -->
+<div id="roundModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modalTitle">—</div>
+        <div class="modal-meta-text" id="modalMeta"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">
-function openRoundModal(loc, round, issues) {
-  document.getElementById('roundModal').classList.add('open');
-  document.getElementById('modalTitle').textContent = loc.display_name;
-
-  var metaParts = [];
-  if (loc.unit) metaParts.push(loc.unit);
-  if (loc.eoc_department) metaParts.push(loc.eoc_department);
-  if (round) {
-    var dt = new Date(round.rounded_at);
-    metaParts.push('Rounded at ' + dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}));
-    metaParts.push('By: ' + round.rounded_by);
-  }
-  document.getElementById('modalMeta').textContent = metaParts.join(' · ');
-
-  var body = document.getElementById('modalBody');
-  body.innerHTML = '';
-
-  if (!round) {
-    body.innerHTML = '<div class="no-round-msg">🔘 Not yet rounded today</div>';
-    return;
-  }
-
-  // EOC compliance score
-  if (round.round_type === 'eoc' && round.eoc_compliance_pct !== null) {
-    var compColor = round.eoc_compliance_pct >= 90 ? '#059669' :
-                    round.eoc_compliance_pct >= 70 ? '#D97706' : '#DC2626';
-    body.innerHTML += '<div class="modal-compliance">' +
-      '<div class="compliance-num" style="color:'+compColor+'">' +
-        Math.round(round.eoc_compliance_pct) + '%' +
-      '</div>' +
-      '<div><div style="font-size:13px;font-weight:700">EOC Compliance Score</div>' +
-      '<div class="compliance-label">Based on Pass/Fail items this round</div></div></div>';
-  }
-
-  // Checklist items
-  var checksHtml = '';
-  if (round.round_type === 'room') {
-    var ROOM_LABELS = {
-      // Resident Status
-      resident_contacted:'Resident Contacted', satisfaction:'Satisfied With Care',
-      no_concerns:'No Concerns Expressed',
-      // Safety
-      call_light:'Call Light Within Reach', bed_low_locked:'Bed Low / Locked',
-      room_clutter:'Room Free of Clutter',
-      // Cleanliness
-      floor_clean:'Floor Clean', bathroom_clean:'Bathroom Clean', trash_removed:'Trash Removed',
-      // Environment
-      curtains_clean:'Curtains Clean', odor_free:'No Offensive Odors', lighting:'Adequate Lighting',
-      // Equipment
-      furniture_intact:'Furniture Intact', equipment_functioning:'Wheelchair / Bed Functioning',
-      no_maintenance:'No Maintenance Concerns',
-    };
-    // Environmental score
-    var ENV_KEYS = ['call_light','bed_low_locked','room_clutter','floor_clean','bathroom_clean',
-      'trash_removed','curtains_clean','odor_free','lighting','furniture_intact',
-      'equipment_functioning','no_maintenance'];
-    var answered = ENV_KEYS.filter(function(k){ return round[k]; });
-    if (answered.length) {
-      var passes = answered.filter(function(k){ return round[k]==='pass'; }).length;
-      var pct = Math.round((passes/answered.length)*100);
-      var cls2 = pct>=90?'green':pct>=75?'amber':'red';
-      var emoji = pct>=90?'🟢':pct>=75?'🟡':'🔴';
-      var label2 = pct>=90?'Pass':pct>=75?'Needs Attention':'Immediate Action Required';
-      body.innerHTML += '<div class="modal-compliance" style="border-radius:10px;padding:14px;margin-bottom:16px;' +
-        'background:'+(pct>=90?'rgba(5,150,105,.08)':pct>=75?'rgba(245,158,11,.08)':'rgba(220,38,38,.08)')+';' +
-        'border:1.5px solid '+(pct>=90?'#059669':pct>=75?'#D97706':'#DC2626')+';">' +
-        '<div class="compliance-num" style="color:'+(pct>=90?'#059669':pct>=75?'#D97706':'#DC2626')+'">'+emoji+' '+pct+'%</div>' +
-        '<div><div style="font-size:13px;font-weight:700">Environmental Score — '+label2+'</div>' +
-        '<div class="compliance-label">'+passes+' of '+answered.length+' items passed</div></div></div>';
-    }
-    checksHtml = '<div class="check-grid">';
-    var SECTIONS = {
-      'Resident Status':['resident_contacted','satisfaction','no_concerns'],
-      'Safety':['call_light','bed_low_locked','room_clutter'],
-      'Cleanliness':['floor_clean','bathroom_clean','trash_removed'],
-      'Environment':['curtains_clean','odor_free','lighting'],
-      'Equipment':['furniture_intact','equipment_functioning','no_maintenance'],
-    };
-    Object.keys(SECTIONS).forEach(function(section) {
-      var keys = SECTIONS[section].filter(function(k){ return round[k]; });
-      if (!keys.length) return;
-      checksHtml += '<div style="grid-column:1/-1;font-size:10.5px;font-weight:700;' +
-        'text-transform:uppercase;letter-spacing:.05em;color:#6B7280;margin:8px 0 4px">'+section+'</div>';
-      keys.forEach(function(k) {
-        var val = round[k];
-        var cls = (val==='pass'||val==='yes') ? 'val-pass' : (val==='fail'||val==='no') ? 'val-fail' : 'val-other';
-        checksHtml += '<div class="check-item">' +
-          '<span class="check-label">' + ROOM_LABELS[k] + '</span>' +
-          '<span class="check-val ' + cls + '">' + val + '</span></div>';
-      });
-    });
-    checksHtml += '</div>';
-  } else if (round.eoc_scores) {
-    var scores = typeof round.eoc_scores === 'string' ? JSON.parse(round.eoc_scores) : round.eoc_scores;
-    checksHtml = '<div class="check-grid">';
-    Object.keys(scores).forEach(function(k) {
-      var val = scores[k];
-      var label = k.replace(/_/g,' ').replace(/\w/g,function(l){return l.toUpperCase();});
-      var cls = val==='pass' ? 'val-pass' : val==='fail' ? 'val-fail' : 'val-other';
-      checksHtml += '<div class="check-item">' +
-        '<span class="check-label">' + label + '</span>' +
-        '<span class="check-val ' + cls + '">' + val + '</span></div>';
-    });
-    checksHtml += '</div>';
-  }
-
-  if (checksHtml) {
-    body.innerHTML += '<div class="modal-section">' +
-      '<div class="modal-section-title">Checklist Results</div>' + checksHtml + '</div>';
-  }
-
-  // Issues
-  if (issues && issues.length) {
-    var issHtml = '<div class="modal-section"><div class="modal-section-title">Issues Created (' + issues.length + ')</div>';
-    issues.forEach(function(i) {
-      issHtml += '<div class="issue-row">' +
-        '<div class="issue-row-header">' +
-          '<span class="issue-type">⚠ ' + i.issue_type + '</span>' +
-          '<span class="issue-priority prio-' + i.priority + '">' + i.priority + '</span>' +
-        '</div>' +
-        '<div class="issue-desc">' + (i.issue_description || i.quick_action || '—') + '</div>' +
-        (i.photo_url ? '<img src="' + i.photo_url + '" style="width:100%;border-radius:8px;margin-top:8px;max-height:200px;object-fit:cover;" onclick="window.open(this.src)">' : '') +
-        '</div>';
-    });
-    issHtml += '</div>';
-    body.innerHTML += issHtml;
-  } else {
-    body.innerHTML += '<div class="modal-section">' +
-      '<div class="modal-section-title">Issues</div>' +
-      '<div style="font-size:13px;color:var(--green);font-weight:600">✓ No issues documented</div>' +
-      '</div>';
-  }
-}
-
-function closeModal() {
-  document.getElementById('roundModal').classList.remove('open');
-}
-document.getElementById('roundModal').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
-});
-
-</script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-function openRoundModal(loc, round, issues) {
-  document.getElementById('roundModal').classList.add('open');
-  document.getElementById('modalTitle').textContent = loc.display_name;
-
-  var metaParts = [];
-  if (loc.unit) metaParts.push(loc.unit);
-  if (loc.eoc_department) metaParts.push(loc.eoc_department);
-  if (round) {
-    var dt = new Date(round.rounded_at);
-    metaParts.push('Rounded at ' + dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}));
-    metaParts.push('By: ' + round.rounded_by);
-  }
-  document.getElementById('modalMeta').textContent = metaParts.join(' · ');
-
-  var body = document.getElementById('modalBody');
-  body.innerHTML = '';
-
-  if (!round) {
-    body.innerHTML = '<div class="no-round-msg">🔘 Not yet rounded today</div>';
-    return;
-  }
-
-  // EOC compliance score
-  if (round.round_type === 'eoc' && round.eoc_compliance_pct !== null) {
-    var compColor = round.eoc_compliance_pct >= 90 ? '#059669' :
-                    round.eoc_compliance_pct >= 70 ? '#D97706' : '#DC2626';
-    body.innerHTML += '<div class="modal-compliance">' +
-      '<div class="compliance-num" style="color:'+compColor+'">' +
-        Math.round(round.eoc_compliance_pct) + '%' +
-      '</div>' +
-      '<div><div style="font-size:13px;font-weight:700">EOC Compliance Score</div>' +
-      '<div class="compliance-label">Based on Pass/Fail items this round</div></div></div>';
-  }
-
-  // Checklist items
-  var checksHtml = '';
-  if (round.round_type === 'room') {
-    var ROOM_LABELS = {
-      // Resident Status
-      resident_contacted:'Resident Contacted', satisfaction:'Satisfied With Care',
-      no_concerns:'No Concerns Expressed',
-      // Safety
-      call_light:'Call Light Within Reach', bed_low_locked:'Bed Low / Locked',
-      room_clutter:'Room Free of Clutter',
-      // Cleanliness
-      floor_clean:'Floor Clean', bathroom_clean:'Bathroom Clean', trash_removed:'Trash Removed',
-      // Environment
-      curtains_clean:'Curtains Clean', odor_free:'No Offensive Odors', lighting:'Adequate Lighting',
-      // Equipment
-      furniture_intact:'Furniture Intact', equipment_functioning:'Wheelchair / Bed Functioning',
-      no_maintenance:'No Maintenance Concerns',
-    };
-    // Environmental score
-    var ENV_KEYS = ['call_light','bed_low_locked','room_clutter','floor_clean','bathroom_clean',
-      'trash_removed','curtains_clean','odor_free','lighting','furniture_intact',
-      'equipment_functioning','no_maintenance'];
-    var answered = ENV_KEYS.filter(function(k){ return round[k]; });
-    if (answered.length) {
-      var passes = answered.filter(function(k){ return round[k]==='pass'; }).length;
-      var pct = Math.round((passes/answered.length)*100);
-      var cls2 = pct>=90?'green':pct>=75?'amber':'red';
-      var emoji = pct>=90?'🟢':pct>=75?'🟡':'🔴';
-      var label2 = pct>=90?'Pass':pct>=75?'Needs Attention':'Immediate Action Required';
-      body.innerHTML += '<div class="modal-compliance" style="border-radius:10px;padding:14px;margin-bottom:16px;' +
-        'background:'+(pct>=90?'rgba(5,150,105,.08)':pct>=75?'rgba(245,158,11,.08)':'rgba(220,38,38,.08)')+';' +
-        'border:1.5px solid '+(pct>=90?'#059669':pct>=75?'#D97706':'#DC2626')+';">' +
-        '<div class="compliance-num" style="color:'+(pct>=90?'#059669':pct>=75?'#D97706':'#DC2626')+'">'+emoji+' '+pct+'%</div>' +
-        '<div><div style="font-size:13px;font-weight:700">Environmental Score — '+label2+'</div>' +
-        '<div class="compliance-label">'+passes+' of '+answered.length+' items passed</div></div></div>';
-    }
-    checksHtml = '<div class="check-grid">';
-    var SECTIONS = {
-      'Resident Status':['resident_contacted','satisfaction','no_concerns'],
-      'Safety':['call_light','bed_low_locked','room_clutter'],
-      'Cleanliness':['floor_clean','bathroom_clean','trash_removed'],
-      'Environment':['curtains_clean','odor_free','lighting'],
-      'Equipment':['furniture_intact','equipment_functioning','no_maintenance'],
-    };
-    Object.keys(SECTIONS).forEach(function(section) {
-      var keys = SECTIONS[section].filter(function(k){ return round[k]; });
-      if (!keys.length) return;
-      checksHtml += '<div style="grid-column:1/-1;font-size:10.5px;font-weight:700;' +
-        'text-transform:uppercase;letter-spacing:.05em;color:#6B7280;margin:8px 0 4px">'+section+'</div>';
-      keys.forEach(function(k) {
-        var val = round[k];
-        var cls = (val==='pass'||val==='yes') ? 'val-pass' : (val==='fail'||val==='no') ? 'val-fail' : 'val-other';
-        checksHtml += '<div class="check-item">' +
-          '<span class="check-label">' + ROOM_LABELS[k] + '</span>' +
-          '<span class="check-val ' + cls + '">' + val + '</span></div>';
-      });
-    });
-    checksHtml += '</div>';
-  } else if (round.eoc_scores) {
-    var scores = typeof round.eoc_scores === 'string' ? JSON.parse(round.eoc_scores) : round.eoc_scores;
-    checksHtml = '<div class="check-grid">';
-    Object.keys(scores).forEach(function(k) {
-      var val = scores[k];
-      var label = k.replace(/_/g,' ').replace(/\w/g,function(l){return l.toUpperCase();});
-      var cls = val==='pass' ? 'val-pass' : val==='fail' ? 'val-fail' : 'val-other';
-      checksHtml += '<div class="check-item">' +
-        '<span class="check-label">' + label + '</span>' +
-        '<span class="check-val ' + cls + '">' + val + '</span></div>';
-    });
-    checksHtml += '</div>';
-  }
-
-  if (checksHtml) {
-    body.innerHTML += '<div class="modal-section">' +
-      '<div class="modal-section-title">Checklist Results</div>' + checksHtml + '</div>';
-  }
-
-  // Issues
-  if (issues && issues.length) {
-    var issHtml = '<div class="modal-section"><div class="modal-section-title">Issues Created (' + issues.length + ')</div>';
-    issues.forEach(function(i) {
-      issHtml += '<div class="issue-row">' +
-        '<div class="issue-row-header">' +
-          '<span class="issue-type">⚠ ' + i.issue_type + '</span>' +
-          '<span class="issue-priority prio-' + i.priority + '">' + i.priority + '</span>' +
-        '</div>' +
-        '<div class="issue-desc">' + (i.issue_description || i.quick_action || '—') + '</div>' +
-        (i.photo_url ? '<img src="' + i.photo_url + '" style="width:100%;border-radius:8px;margin-top:8px;max-height:200px;object-fit:cover;" onclick="window.open(this.src)">' : '') +
-        '</div>';
-    });
-    issHtml += '</div>';
-    body.innerHTML += issHtml;
-  } else {
-    body.innerHTML += '<div class="modal-section">' +
-      '<div class="modal-section-title">Issues</div>' +
-      '<div style="font-size:13px;color:var(--green);font-weight:600">✓ No issues documented</div>' +
-      '</div>';
-  }
-}
-
-function closeModal() {
-  document.getElementById('roundModal').classList.remove('open');
-}
-document.getElementById('roundModal').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
-});
-
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// ⚠ CONFIGURE: same Supabase project as your meal check-in app
-const SUPABASE_URL = 'https://gtbiatetqyuxwuehwilr.supabase.co';
+const SUPABASE_URL  = 'https://gtbiatetqyuxwuehwilr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34';
+const FACILITY_ID   = '30f74349-3ab8-483b-a587-f372c0fbd413';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const BASE_URL = window.location.origin + '/round.html#round=';
 
-// ⚠ CONFIGURE: your Atlanta facility's UUID (run: select id from facilities where subdomain='agrhodes';)
-const FACILITY_ID = '30f74349-3ab8-483b-a587-f372c0fbd413';
-
-var BASE_URL = window.location.origin + '/round.html#round=';
+var currentPanel = 'dashboard';
 
 function switchTab(tab) {
-  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
-  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
-  event.target.classList.add('active');
-  document.getElementById('panel-'+tab).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.remove('active'); });
+  event.currentTarget.classList.add('active');
+  ['dashboard','rooms','eoc','issues'].forEach(function(p){
+    document.getElementById('panel-'+p).style.display = p===tab ? 'block' : 'none';
+  });
+  currentPanel = tab;
   if (tab==='dashboard') loadDashboard();
   if (tab==='rooms') loadRooms();
   if (tab==='eoc') loadEOC();
+  if (tab==='issues') loadIssues();
 }
 
-function renderQRTile(loc, container) {
-  var tile = document.createElement('div');
-  tile.className = 'qr-tile';
-  var qrDiv = document.createElement('div');
-  tile.appendChild(qrDiv);
-  var nameDiv = document.createElement('div');
-  nameDiv.className = 'qr-tile-name'; nameDiv.textContent = loc.display_name;
-  tile.appendChild(nameDiv);
-  var metaDiv = document.createElement('div');
-  metaDiv.className = 'qr-tile-meta';
-  metaDiv.textContent = loc.location_type === 'room' ? (loc.unit||'') : (loc.eoc_department||'');
-  tile.appendChild(metaDiv);
-  var idDiv = document.createElement('div');
-  idDiv.className = 'qr-tile-id'; idDiv.textContent = loc.qr_identifier;
-  tile.appendChild(idDiv);
-  container.appendChild(tile);
-  new QRCode(qrDiv, { text: BASE_URL + loc.qr_identifier, width:120, height:120,
-    colorDark:'#0F1117', colorLight:'#FFFFFF' });
-}
-
-async function loadRooms() {
-  var grid = document.getElementById('roomsGrid');
-  grid.innerHTML = '<div class="sub">Loading…</div>';
-  var { data: rooms, error } = await sb.from('room_qr_codes').select('*')
-    .eq('facility_id', FACILITY_ID).eq('location_type','room').eq('is_active', true);
-  if (error) { grid.innerHTML = '<div class="card sub">Error: '+error.message+'</div>'; return; }
-  if (!rooms.length) { grid.innerHTML = '<div class="card sub">No rooms yet — generate some above.</div>'; return; }
-  var byUnit = {};
-  rooms.forEach(function(r){ (byUnit[r.unit]=byUnit[r.unit]||[]).push(r); });
-  grid.innerHTML = '';
-  Object.keys(byUnit).forEach(function(unit) {
-    var section = document.createElement('div');
-    section.className = 'dept-section';
-    section.innerHTML = '<div class="dept-header">'+unit+' ('+byUnit[unit].length+' rooms)</div>';
-    var gridDiv = document.createElement('div'); gridDiv.className = 'grid';
-    byUnit[unit].sort(function(a,b){return (+a.room_number)-(+b.room_number);})
-      .forEach(function(r){ renderQRTile(r, gridDiv); });
-    section.appendChild(gridDiv);
-    grid.appendChild(section);
-  });
-}
-
-async function generateBulkRooms() {
-  var unit = document.getElementById('bulk-unit').value;
-  var start = +document.getElementById('bulk-start').value;
-  var end = +document.getElementById('bulk-end').value;
-  if (!start || !end || end < start) { alert('Enter a valid room range'); return; }
-  var rows = [];
-  for (var n = start; n <= end; n++) {
-    rows.push({
-      facility_id: FACILITY_ID, location_type: 'room', room_number: String(n),
-      unit: unit, display_name: 'Room ' + n, qr_identifier: 'agrhodes-atl-room-' + n,
-    });
-  }
-  var { error } = await sb.from('room_qr_codes').upsert(rows, { onConflict: 'qr_identifier' });
-  if (error) { alert('Error: ' + error.message); return; }
-  alert('✓ Generated ' + rows.length + ' room QR codes');
-  loadRooms();
-}
-
-async function loadEOC() {
-  var grid = document.getElementById('eocGrid');
-  grid.innerHTML = '<div class="sub">Loading…</div>';
-  var { data: eoc, error } = await sb.from('room_qr_codes').select('*')
-    .eq('facility_id', FACILITY_ID).eq('location_type','eoc_area').eq('is_active', true);
-  if (error) { grid.innerHTML = '<div class="card sub">Error: '+error.message+'</div>'; return; }
-  var byDept = {};
-  eoc.forEach(function(e){ (byDept[e.eoc_department]=byDept[e.eoc_department]||[]).push(e); });
-  grid.innerHTML = '';
-  Object.keys(byDept).forEach(function(dept) {
-    var section = document.createElement('div');
-    section.className = 'dept-section';
-    section.innerHTML = '<div class="dept-header">'+dept+'</div>';
-    var gridDiv = document.createElement('div'); gridDiv.className = 'grid';
-    byDept[dept].forEach(function(loc){ renderQRTile(loc, gridDiv); });
-    section.appendChild(gridDiv);
-    grid.appendChild(section);
-  });
-}
-
+/* ── Dashboard ── */
 async function loadDashboard() {
-  var today = new Date().toISOString().split('T')[0];
+  var today = new Date();
+  document.getElementById('dash-date').textContent =
+    today.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+
   var { data: locations } = await sb.from('room_qr_codes').select('*')
     .eq('facility_id', FACILITY_ID).eq('is_active', true);
+  var todayStr = today.toISOString().split('T')[0];
   var { data: roundsToday } = await sb.from('zone_rounds').select('*')
-    .eq('facility_id', FACILITY_ID).gte('rounded_at', today);
+    .eq('facility_id', FACILITY_ID).gte('rounded_at', todayStr);
   var { data: openIssues } = await sb.from('zone_issues').select('*')
-    .eq('facility_id', FACILITY_ID).eq('status','Open');
+    .eq('facility_id', FACILITY_ID).eq('status','Open').order('created_at',{ascending:false});
 
   var roundedIds = new Set((roundsToday||[]).map(function(r){return r.qr_identifier;}));
   var highPriority = (openIssues||[]).filter(function(i){return i.priority==='High';}).length;
-  var completionRate = locations.length ? Math.round((roundedIds.size/locations.length)*100) : 0;
+  var completionRate = (locations||[]).length
+    ? Math.round((roundedIds.size / locations.length) * 100) : 0;
+  var remaining = (locations||[]).length - roundedIds.size;
 
+  // Stat cards
   document.getElementById('statsRow').innerHTML =
-    statCard(roundedIds.size, 'Rounded Today') +
-    statCard(locations.length - roundedIds.size, 'Remaining') +
-    statCard((openIssues||[]).length, 'Issues Open') +
-    statCard(highPriority, 'High Priority') +
-    statCard(completionRate+'%', 'Completion Rate');
+    statCard(roundedIds.size, 'Rounded Today', 'pill-orange', '🟢 On Track') +
+    statCard(remaining, 'Remaining', remaining>0?'pill-gray':'pill-green', remaining>0?'↻ In Progress':'✓ Done') +
+    statCard((openIssues||[]).length, 'Issues Open', 'pill-orange', '⚠ Needs Review') +
+    statCard(highPriority, 'High Priority', highPriority>0?'pill-red':'pill-green', highPriority>0?'🔴 Urgent':'✓ Clear') +
+    statCardAccent(completionRate+'%', 'Completion Rate', 'Today\'s Progress');
 
+  // Donut
+  var arc = document.getElementById('donutArc');
+  var circumference = 264;
+  arc.style.strokeDashoffset = circumference - (completionRate/100)*circumference;
+  document.getElementById('donut-pct').textContent = completionRate + '%';
+
+  // Heat map
   var hmGrid = document.getElementById('heatmapGrid');
   hmGrid.innerHTML = '';
-  locations.forEach(function(loc) {
-    var todaysRound = (roundsToday||[]).filter(function(r){return r.qr_identifier===loc.qr_identifier;})
+  (locations||[]).forEach(function(loc) {
+    var todaysRound = (roundsToday||[])
+      .filter(function(r){return r.qr_identifier===loc.qr_identifier;})
       .sort(function(a,b){return new Date(b.rounded_at)-new Date(a.rounded_at);})[0];
     var issuesForLoc = (openIssues||[]).filter(function(i){
       return todaysRound && i.round_id === todaysRound.id;
@@ -568,39 +468,154 @@ async function loadDashboard() {
     if (todaysRound) {
       if (issuesForLoc.length) {
         var hasHigh = issuesForLoc.some(function(i){return i.priority==='High';});
-        var hasMed = issuesForLoc.some(function(i){return i.priority==='Medium';});
+        var hasMed  = issuesForLoc.some(function(i){return i.priority==='Medium';});
         cls = hasHigh ? 'heat-red' : hasMed ? 'heat-orange' : 'heat-yellow';
       } else { cls = 'heat-green'; }
     }
     var tile = document.createElement('div');
     tile.className = 'heat-tile ' + cls;
     tile.textContent = loc.room_number || (loc.eoc_section||'').replace(/_/g,' ');
-    tile.onclick = (function(l, r, issues) {
-      return function() { openRoundModal(l, r, issues); };
-    })(loc, todaysRound, issuesForLoc);
+    tile.onclick = (function(l,r,issues){ return function(){ openRoundModal(l,r,issues); }; })(loc, todaysRound, issuesForLoc);
     hmGrid.appendChild(tile);
+  });
+
+  // Recent issues sidebar
+  var issueList = document.getElementById('recentIssuesList');
+  var recent = (openIssues||[]).slice(0,5);
+  if (!recent.length) {
+    issueList.innerHTML = '<div class="no-round-msg" style="padding:16px;font-size:12px;color:var(--green)">✓ No open issues</div>';
+  } else {
+    issueList.innerHTML = recent.map(function(i){
+      return '<div class="issue-item">' +
+        '<div class="issue-dot '+i.priority+'"></div>' +
+        '<div class="issue-info">' +
+          '<div class="issue-type-label">'+i.issue_type+'</div>' +
+          '<div class="issue-desc-label">'+(i.issue_description||'—')+'</div>' +
+        '</div>' +
+        '<span class="issue-badge badge-'+i.priority+'">'+i.priority+'</span>' +
+        '</div>';
+    }).join('');
+  }
+}
+
+function statCard(num, label, pillCls, pillText) {
+  return '<div class="stat-card">' +
+    '<div class="stat-label">'+label+'</div>' +
+    '<div class="stat-num">'+num+'</div>' +
+    '<span class="stat-pill '+pillCls+'">'+pillText+'</span>' +
+    '</div>';
+}
+function statCardAccent(num, label, sub) {
+  return '<div class="stat-card accent">' +
+    '<div class="stat-label">'+label+'</div>' +
+    '<div class="stat-num">'+num+'</div>' +
+    '<span style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">'+sub+'</span>' +
+    '</div>';
+}
+
+/* ── Rooms ── */
+async function loadRooms() {
+  var grid = document.getElementById('roomsGrid');
+  grid.innerHTML = '<div style="padding:20px;color:var(--gray)">Loading…</div>';
+  var { data: rooms } = await sb.from('room_qr_codes').select('*')
+    .eq('facility_id', FACILITY_ID).eq('location_type','room').eq('is_active', true);
+  if (!rooms||!rooms.length) { grid.innerHTML = '<div class="card" style="padding:24px;color:var(--gray)">No rooms yet — generate some above.</div>'; return; }
+  var byUnit = {};
+  rooms.forEach(function(r){ (byUnit[r.unit]=byUnit[r.unit]||[]).push(r); });
+  grid.innerHTML = '';
+  Object.keys(byUnit).forEach(function(unit) {
+    var section = document.createElement('div'); section.className = 'qr-section';
+    section.innerHTML = '<div class="qr-section-title">'+unit+' — '+byUnit[unit].length+' rooms</div>';
+    var g = document.createElement('div'); g.className = 'qr-grid';
+    byUnit[unit].sort(function(a,b){return (+a.room_number)-(+b.room_number);})
+      .forEach(function(r){ renderQRTile(r,g); });
+    section.appendChild(g); grid.appendChild(section);
   });
 }
 
-function statCard(num, label) {
-  return '<div class="stat-card"><div class="stat-num">'+num+'</div><div class="stat-label">'+label+'</div></div>';
+async function generateBulkRooms() {
+  var unit = document.getElementById('bulk-unit').value;
+  var start = +document.getElementById('bulk-start').value;
+  var end = +document.getElementById('bulk-end').value;
+  if (!start||!end||end<start) { alert('Enter a valid room range'); return; }
+  var rows = [];
+  for (var n=start; n<=end; n++) {
+    rows.push({ facility_id:FACILITY_ID, location_type:'room', room_number:String(n),
+      unit:unit, display_name:'Room '+n, qr_identifier:'agrhodes-atl-room-'+n });
+  }
+  var { error } = await sb.from('room_qr_codes').upsert(rows, {onConflict:'qr_identifier'});
+  if (error) { alert('Error: '+error.message); return; }
+  alert('✓ Generated '+rows.length+' QR codes for '+unit);
+  loadRooms();
 }
 
-loadDashboard();
+/* ── EOC ── */
+async function loadEOC() {
+  var grid = document.getElementById('eocGrid');
+  grid.innerHTML = '<div style="padding:20px;color:var(--gray)">Loading…</div>';
+  var { data: eoc } = await sb.from('room_qr_codes').select('*')
+    .eq('facility_id', FACILITY_ID).eq('location_type','eoc_area').eq('is_active', true);
+  var byDept = {};
+  (eoc||[]).forEach(function(e){ (byDept[e.eoc_department]=byDept[e.eoc_department]||[]).push(e); });
+  grid.innerHTML = '';
+  Object.keys(byDept).forEach(function(dept) {
+    var section = document.createElement('div'); section.className = 'qr-section';
+    section.innerHTML = '<div class="qr-section-title">'+dept+'</div>';
+    var g = document.createElement('div'); g.className = 'qr-grid';
+    byDept[dept].forEach(function(loc){ renderQRTile(loc,g); });
+    section.appendChild(g); grid.appendChild(section);
+  });
+}
 
+function renderQRTile(loc, container) {
+  var tile = document.createElement('div'); tile.className = 'qr-tile';
+  var qrDiv = document.createElement('div'); tile.appendChild(qrDiv);
+  tile.innerHTML += '<div class="qr-tile-name">'+loc.display_name+'</div>' +
+    '<div class="qr-tile-meta">'+(loc.unit||loc.eoc_department||'')+'</div>' +
+    '<div class="qr-tile-id">'+loc.qr_identifier+'</div>';
+  container.appendChild(tile);
+  new QRCode(qrDiv, { text: BASE_URL+loc.qr_identifier, width:120, height:120,
+    colorDark:'#1A1A1A', colorLight:'#EEF1F5' });
+}
+
+/* ── Issues panel ── */
+async function loadIssues() {
+  var list = document.getElementById('issuesList');
+  list.innerHTML = '<div style="padding:20px;color:var(--gray)">Loading…</div>';
+  var { data: issues } = await sb.from('zone_issues').select('*')
+    .eq('facility_id', FACILITY_ID).eq('status','Open')
+    .order('created_at',{ascending:false});
+  if (!issues||!issues.length) {
+    list.innerHTML = '<div class="card" style="padding:32px;text-align:center;color:var(--green);font-weight:600">✓ No open issues</div>';
+    return;
+  }
+  list.innerHTML = issues.map(function(i){
+    return '<div class="card" style="margin-bottom:12px;display:flex;align-items:flex-start;gap:14px;">' +
+      '<div class="issue-dot '+i.priority+'" style="margin-top:4px;width:12px;height:12px;border-radius:50%;flex-shrink:0;background:'+(i.priority==='High'?'var(--red)':i.priority==='Medium'?'var(--amber)':'var(--green)')+';"></div>' +
+      '<div style="flex:1">' +
+        '<div style="font-size:13px;font-weight:700">'+i.issue_type+'</div>' +
+        '<div style="font-size:12px;color:var(--gray);margin-top:2px">'+(i.issue_description||'—')+'</div>' +
+        '<div style="font-size:11px;color:var(--gray-light);margin-top:4px">'+(i.room_number?'Room '+i.room_number:i.eoc_section||'')+ ' · '+new Date(i.created_at).toLocaleString()+'</div>' +
+        (i.photo_url ? '<img src="'+i.photo_url+'" style="width:100%;max-width:260px;border-radius:10px;margin-top:8px;cursor:pointer" onclick="window.open(this.src)">' : '') +
+      '</div>' +
+      '<span class="issue-badge badge-'+i.priority+'">'+i.priority+'</span>' +
+      '</div>';
+  }).join('');
+}
+
+/* ── Modal ── */
 function openRoundModal(loc, round, issues) {
   document.getElementById('roundModal').classList.add('open');
   document.getElementById('modalTitle').textContent = loc.display_name;
-
-  var metaParts = [];
-  if (loc.unit) metaParts.push(loc.unit);
-  if (loc.eoc_department) metaParts.push(loc.eoc_department);
+  var meta = [];
+  if (loc.unit) meta.push(loc.unit);
+  if (loc.eoc_department) meta.push(loc.eoc_department);
   if (round) {
     var dt = new Date(round.rounded_at);
-    metaParts.push('Rounded at ' + dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}));
-    metaParts.push('By: ' + round.rounded_by);
+    meta.push('Rounded ' + dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}));
+    meta.push('By: ' + round.rounded_by);
   }
-  document.getElementById('modalMeta').textContent = metaParts.join(' · ');
+  document.getElementById('modalMeta').textContent = meta.join(' · ');
 
   var body = document.getElementById('modalBody');
   body.innerHTML = '';
@@ -610,140 +625,82 @@ function openRoundModal(loc, round, issues) {
     return;
   }
 
-  // EOC compliance score
-  if (round.round_type === 'eoc' && round.eoc_compliance_pct !== null) {
-    var compColor = round.eoc_compliance_pct >= 90 ? '#059669' :
-                    round.eoc_compliance_pct >= 70 ? '#D97706' : '#DC2626';
-    body.innerHTML += '<div class="modal-compliance">' +
-      '<div class="compliance-num" style="color:'+compColor+'">' +
-        Math.round(round.eoc_compliance_pct) + '%' +
-      '</div>' +
-      '<div><div style="font-size:13px;font-weight:700">EOC Compliance Score</div>' +
-      '<div class="compliance-label">Based on Pass/Fail items this round</div></div></div>';
+  // Env score
+  if (round.eoc_compliance_pct !== null && round.eoc_compliance_pct !== undefined) {
+    var pct = Math.round(round.eoc_compliance_pct);
+    var cls = pct>=90?'green':pct>=75?'amber':'red';
+    var emoji = pct>=90?'🟢':pct>=75?'🟡':'🔴';
+    var lbl = pct>=90?'Pass':pct>=75?'Needs Attention':'Immediate Action Required';
+    body.innerHTML += '<div class="env-score-modal '+cls+'">' +
+      '<div class="env-score-modal-num" style="color:'+(pct>=90?'var(--green)':pct>=75?'var(--amber)':'var(--red)')+'">'+emoji+' '+pct+'%</div>' +
+      '<div><div style="font-size:13px;font-weight:700">'+lbl+'</div>' +
+      '<div style="font-size:11.5px;color:var(--gray)">'+(round.round_type==='eoc'?'EOC Compliance':'Environmental Score')+'</div></div></div>';
   }
 
-  // Checklist items
+  // Checklist
+  var ROOM_LABELS = {
+    resident_contacted:'Resident Contacted', satisfaction:'Satisfied With Care', no_concerns:'No Concerns',
+    call_light:'Call Light', bed_low_locked:'Bed Low/Locked', room_clutter:'Room Free of Clutter',
+    floor_clean:'Floor Clean', bathroom_clean:'Bathroom Clean', trash_removed:'Trash Removed',
+    curtains_clean:'Curtains Clean', odor_free:'No Odors', lighting:'Lighting',
+    furniture_intact:'Furniture Intact', equipment_functioning:'Equipment OK', no_maintenance:'No Maintenance Issues',
+  };
+  var SECTIONS = {
+    'Resident Status':['resident_contacted','satisfaction','no_concerns'],
+    'Safety':['call_light','bed_low_locked','room_clutter'],
+    'Cleanliness':['floor_clean','bathroom_clean','trash_removed'],
+    'Environment':['curtains_clean','odor_free','lighting'],
+    'Equipment':['furniture_intact','equipment_functioning','no_maintenance'],
+  };
+
   var checksHtml = '';
   if (round.round_type === 'room') {
-    var ROOM_LABELS = {
-      // Resident Status
-      resident_contacted:'Resident Contacted', satisfaction:'Satisfied With Care',
-      no_concerns:'No Concerns Expressed',
-      // Safety
-      call_light:'Call Light Within Reach', bed_low_locked:'Bed Low / Locked',
-      room_clutter:'Room Free of Clutter',
-      // Cleanliness
-      floor_clean:'Floor Clean', bathroom_clean:'Bathroom Clean', trash_removed:'Trash Removed',
-      // Environment
-      curtains_clean:'Curtains Clean', odor_free:'No Offensive Odors', lighting:'Adequate Lighting',
-      // Equipment
-      furniture_intact:'Furniture Intact', equipment_functioning:'Wheelchair / Bed Functioning',
-      no_maintenance:'No Maintenance Concerns',
-    };
-    // Environmental score
-    var ENV_KEYS = ['call_light','bed_low_locked','room_clutter','floor_clean','bathroom_clean',
-      'trash_removed','curtains_clean','odor_free','lighting','furniture_intact',
-      'equipment_functioning','no_maintenance'];
-    var answered = ENV_KEYS.filter(function(k){ return round[k]; });
-    if (answered.length) {
-      var passes = answered.filter(function(k){ return round[k]==='pass'; }).length;
-      var pct = Math.round((passes/answered.length)*100);
-      var cls2 = pct>=90?'green':pct>=75?'amber':'red';
-      var emoji = pct>=90?'🟢':pct>=75?'🟡':'🔴';
-      var label2 = pct>=90?'Pass':pct>=75?'Needs Attention':'Immediate Action Required';
-      body.innerHTML += '<div class="modal-compliance" style="border-radius:10px;padding:14px;margin-bottom:16px;' +
-        'background:'+(pct>=90?'rgba(5,150,105,.08)':pct>=75?'rgba(245,158,11,.08)':'rgba(220,38,38,.08)')+';' +
-        'border:1.5px solid '+(pct>=90?'#059669':pct>=75?'#D97706':'#DC2626')+';">' +
-        '<div class="compliance-num" style="color:'+(pct>=90?'#059669':pct>=75?'#D97706':'#DC2626')+'">'+emoji+' '+pct+'%</div>' +
-        '<div><div style="font-size:13px;font-weight:700">Environmental Score — '+label2+'</div>' +
-        '<div class="compliance-label">'+passes+' of '+answered.length+' items passed</div></div></div>';
-    }
-    checksHtml = '<div class="check-grid">';
-    var SECTIONS = {
-      'Resident Status':['resident_contacted','satisfaction','no_concerns'],
-      'Safety':['call_light','bed_low_locked','room_clutter'],
-      'Cleanliness':['floor_clean','bathroom_clean','trash_removed'],
-      'Environment':['curtains_clean','odor_free','lighting'],
-      'Equipment':['furniture_intact','equipment_functioning','no_maintenance'],
-    };
     Object.keys(SECTIONS).forEach(function(section) {
       var keys = SECTIONS[section].filter(function(k){ return round[k]; });
       if (!keys.length) return;
-      checksHtml += '<div style="grid-column:1/-1;font-size:10.5px;font-weight:700;' +
-        'text-transform:uppercase;letter-spacing:.05em;color:#6B7280;margin:8px 0 4px">'+section+'</div>';
+      checksHtml += '<div style="grid-column:1/-1;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gray);margin:10px 0 4px">'+section+'</div>';
       keys.forEach(function(k) {
         var val = round[k];
-        var cls = (val==='pass'||val==='yes') ? 'val-pass' : (val==='fail'||val==='no') ? 'val-fail' : 'val-other';
-        checksHtml += '<div class="check-item">' +
-          '<span class="check-label">' + ROOM_LABELS[k] + '</span>' +
-          '<span class="check-val ' + cls + '">' + val + '</span></div>';
+        var cls2 = (val==='pass'||val==='yes')?'val-pass':(val==='fail'||val==='no')?'val-fail':'val-other';
+        checksHtml += '<div class="check-item"><span class="check-label">'+ROOM_LABELS[k]+'</span><span class="check-val '+cls2+'">'+val+'</span></div>';
       });
     });
-    checksHtml += '</div>';
   } else if (round.eoc_scores) {
-    var scores = typeof round.eoc_scores === 'string' ? JSON.parse(round.eoc_scores) : round.eoc_scores;
-    checksHtml = '<div class="check-grid">';
+    var scores = typeof round.eoc_scores==='string' ? JSON.parse(round.eoc_scores) : round.eoc_scores;
     Object.keys(scores).forEach(function(k) {
       var val = scores[k];
-      var label = k.replace(/_/g,' ').replace(/\w/g,function(l){return l.toUpperCase();});
-      var cls = val==='pass' ? 'val-pass' : val==='fail' ? 'val-fail' : 'val-other';
-      checksHtml += '<div class="check-item">' +
-        '<span class="check-label">' + label + '</span>' +
-        '<span class="check-val ' + cls + '">' + val + '</span></div>';
+      var lbl2 = k.replace(/_/g,' ').replace(/\b\w/g,function(l){return l.toUpperCase();});
+      var cls2 = val==='pass'?'val-pass':val==='fail'?'val-fail':'val-other';
+      checksHtml += '<div class="check-item"><span class="check-label">'+lbl2+'</span><span class="check-val '+cls2+'">'+val+'</span></div>';
     });
-    checksHtml += '</div>';
   }
 
   if (checksHtml) {
-    body.innerHTML += '<div class="modal-section">' +
-      '<div class="modal-section-title">Checklist Results</div>' + checksHtml + '</div>';
+    body.innerHTML += '<div class="modal-section"><div class="modal-section-title">Checklist</div><div class="check-grid">'+checksHtml+'</div></div>';
   }
 
   // Issues
+  body.innerHTML += '<div class="modal-section"><div class="modal-section-title">Issues ('+(issues&&issues.length?issues.length:0)+')</div>';
   if (issues && issues.length) {
-    var issHtml = '<div class="modal-section"><div class="modal-section-title">Issues Created (' + issues.length + ')</div>';
     issues.forEach(function(i) {
-      issHtml += '<div class="issue-row">' +
-        '<div class="issue-row-header">' +
-          '<span class="issue-type">⚠ ' + i.issue_type + '</span>' +
-          '<span class="issue-priority prio-' + i.priority + '">' + i.priority + '</span>' +
-        '</div>' +
-        '<div class="issue-desc">' + (i.issue_description || i.quick_action || '—') + '</div>' +
-        (i.photo_url ? '<img src="' + i.photo_url + '" style="width:100%;border-radius:8px;margin-top:8px;max-height:200px;object-fit:cover;" onclick="window.open(this.src)">' : '') +
+      body.innerHTML += '<div class="modal-issue-row">' +
+        '<div class="modal-issue-header"><span class="modal-issue-type">⚠ '+i.issue_type+'</span>' +
+        '<span class="issue-badge badge-'+i.priority+'">'+i.priority+'</span></div>' +
+        '<div class="modal-issue-desc">'+(i.issue_description||'—')+'</div>' +
+        (i.photo_url?'<img src="'+i.photo_url+'" style="width:100%;border-radius:8px;margin-top:8px;max-height:180px;object-fit:cover;cursor:pointer" onclick="window.open(this.src)">':'') +
         '</div>';
     });
-    issHtml += '</div>';
-    body.innerHTML += issHtml;
   } else {
-    body.innerHTML += '<div class="modal-section">' +
-      '<div class="modal-section-title">Issues</div>' +
-      '<div style="font-size:13px;color:var(--green);font-weight:600">✓ No issues documented</div>' +
-      '</div>';
+    body.innerHTML += '<div style="font-size:12.5px;color:var(--green);font-weight:600">✓ No issues documented</div>';
   }
+  body.innerHTML += '</div>';
 }
 
-function closeModal() {
-  document.getElementById('roundModal').classList.remove('open');
-}
-document.getElementById('roundModal').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
-});
+function closeModal() { document.getElementById('roundModal').classList.remove('open'); }
+document.getElementById('roundModal').addEventListener('click', function(e) { if (e.target===this) closeModal(); });
 
+// Boot
+loadDashboard();
 </script>
-
-<!-- Round Detail Modal -->
-<div id="roundModal">
-  <div class="modal-box">
-    <div class="modal-header">
-      <div>
-        <div class="modal-title" id="modalTitle">—</div>
-        <div class="modal-meta" id="modalMeta"></div>
-      </div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div class="modal-body" id="modalBody"></div>
-  </div>
-</div>
-
 </body>
 </html>
