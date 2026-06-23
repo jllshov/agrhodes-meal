@@ -634,40 +634,100 @@ async function loadIssues() {
     (byDept[dept] = byDept[dept] || []).push(i);
   });
 
-  var html2 = '';
+  list.innerHTML = '';
   Object.keys(byDept).sort().forEach(function(dept) {
-    html2 += '<div style="margin-bottom:24px">' +
-      '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;' +
-      'color:var(--gray);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,.07)">' +
-      dept + ' — ' + byDept[dept].length + ' issue' + (byDept[dept].length>1?'s':'') + '</div>';
+    var section = document.createElement('div');
+    section.style.marginBottom = '24px';
+
+    var header = document.createElement('div');
+    header.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gray);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,.07)';
+    header.textContent = dept + ' — ' + byDept[dept].length + ' issue' + (byDept[dept].length>1?'s':'');
+    section.appendChild(header);
 
     byDept[dept].forEach(function(i) {
-      var dotColor = i.priority==='High'?'var(--red)':i.priority==='Medium'?'var(--amber)':'var(--green)';
-      var location = i.room_number ? 'Room '+i.room_number : (i.eoc_section||'').replace(/_/g,' ');
-      var created  = new Date(i.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
-      html2 += '<div class="card" id="issue-card-'+i.id+'" style="margin-bottom:10px;">' +
-        '<div style="display:flex;align-items:flex-start;gap:12px;">' +
-          '<div style="width:11px;height:11px;border-radius:50%;flex-shrink:0;margin-top:3px;background:'+dotColor+'"></div>' +
-          '<div style="flex:1;min-width:0;">' +
-            '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">' +
-              '<div style="font-size:13px;font-weight:700;">'+i.issue_description+'</div>' +
-              '<span class="issue-badge badge-'+i.priority+'">'+i.priority+'</span>' +
-            '</div>' +
-            '<div style="font-size:11.5px;color:var(--gray);margin-top:3px;">'+location+' · '+created+'</div>' +
-            (i.photo_url ? '<img src="'+i.photo_url+'" style="width:100%;max-width:240px;border-radius:10px;margin-top:8px;cursor:pointer;object-fit:cover;max-height:140px;" onclick="window.open(this.src)">' : '') +
-            (statusFilter === 'Resolved' ?
-              '<div style="margin-top:8px;font-size:11.5px;color:var(--green);font-weight:600">✓ Resolved' + (i.resolved_by ? ' by '+i.resolved_by : '') + (i.resolved_at ? ' · '+new Date(i.resolved_at).toLocaleDateString() : '') + '</div>' :
-              '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;" id="issue-actions-'+i.id+'">' +
-              (statusFilter !== 'In Progress' ? '<button class="neu-btn" style="font-size:12px;padding:8px 14px;" onclick="updateIssueStatus(''+i.id+'','In Progress')">⏳ Mark In Progress</button>' : '<span style="font-size:12px;font-weight:600;color:var(--amber)">⏳ In Progress</span>') +
-              '<button class="neu-btn primary" style="font-size:12px;padding:8px 14px;" onclick="resolveIssue(''+i.id+'')">✓ Mark Resolved</button>' +
-            '</div>') +
-          '</div>' +
-        '</div>' +
-      '</div>';
+      var card = document.createElement('div');
+      card.className = 'card';
+      card.id = 'issue-card-' + i.id;
+      card.style.marginBottom = '10px';
+
+      var dotColor = i.priority==='High' ? 'var(--red)' : i.priority==='Medium' ? 'var(--amber)' : 'var(--green)';
+      var location = i.room_number ? 'Room ' + i.room_number : (i.eoc_section||'').replace(/_/g,' ');
+      var created = new Date(i.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+
+      var inner = document.createElement('div');
+      inner.style.cssText = 'display:flex;align-items:flex-start;gap:12px';
+
+      var dot = document.createElement('div');
+      dot.style.cssText = 'width:11px;height:11px;border-radius:50%;flex-shrink:0;margin-top:3px;background:'+dotColor;
+      inner.appendChild(dot);
+
+      var info = document.createElement('div');
+      info.style.cssText = 'flex:1;min-width:0';
+
+      var topRow = document.createElement('div');
+      topRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap';
+      var desc = document.createElement('div');
+      desc.style.cssText = 'font-size:13px;font-weight:700';
+      desc.textContent = i.issue_description || '—';
+      var badge = document.createElement('span');
+      badge.className = 'issue-badge badge-' + i.priority;
+      badge.textContent = i.priority;
+      topRow.appendChild(desc);
+      topRow.appendChild(badge);
+      info.appendChild(topRow);
+
+      var meta = document.createElement('div');
+      meta.style.cssText = 'font-size:11.5px;color:var(--gray);margin-top:3px';
+      meta.textContent = location + ' · ' + created;
+      info.appendChild(meta);
+
+      if (i.photo_url) {
+        var img = document.createElement('img');
+        img.src = i.photo_url;
+        img.style.cssText = 'width:100%;max-width:240px;border-radius:10px;margin-top:8px;cursor:pointer;object-fit:cover;max-height:140px';
+        img.onclick = function() { window.open(this.src); };
+        info.appendChild(img);
+      }
+
+      var actions = document.createElement('div');
+      actions.id = 'issue-actions-' + i.id;
+      actions.style.cssText = 'margin-top:12px;display:flex;gap:8px;flex-wrap:wrap';
+
+      if (statusFilter === 'Resolved') {
+        var resolvedNote = document.createElement('div');
+        resolvedNote.style.cssText = 'font-size:11.5px;color:var(--green);font-weight:600;margin-top:8px';
+        resolvedNote.textContent = '✓ Resolved' + (i.resolved_by ? ' by ' + i.resolved_by : '') + (i.resolved_at ? ' · ' + new Date(i.resolved_at).toLocaleDateString() : '');
+        info.appendChild(resolvedNote);
+      } else {
+        if (statusFilter !== 'In Progress') {
+          var inProgressBtn = document.createElement('button');
+          inProgressBtn.className = 'neu-btn';
+          inProgressBtn.style.cssText = 'font-size:12px;padding:8px 14px';
+          inProgressBtn.textContent = '⏳ Mark In Progress';
+          inProgressBtn.onclick = (function(id){ return function(){ updateIssueStatus(id,'In Progress'); }; })(i.id);
+          actions.appendChild(inProgressBtn);
+        } else {
+          var inProgLabel = document.createElement('span');
+          inProgLabel.style.cssText = 'font-size:12px;font-weight:600;color:var(--amber);display:flex;align-items:center';
+          inProgLabel.textContent = '⏳ In Progress';
+          actions.appendChild(inProgLabel);
+        }
+        var resolveBtn = document.createElement('button');
+        resolveBtn.className = 'neu-btn primary';
+        resolveBtn.style.cssText = 'font-size:12px;padding:8px 14px';
+        resolveBtn.textContent = '✓ Mark Resolved';
+        resolveBtn.onclick = (function(id){ return function(){ resolveIssue(id); }; })(i.id);
+        actions.appendChild(resolveBtn);
+        info.appendChild(actions);
+      }
+
+      inner.appendChild(info);
+      card.appendChild(inner);
+      section.appendChild(card);
     });
-    html2 += '</div>';
+
+    list.appendChild(section);
   });
-  list.innerHTML = html2;
 }
 
 /* ── Modal ── */
@@ -758,7 +818,7 @@ function openRoundModal(loc, round, issues) {
         '<div class="modal-issue-desc">'+(i.issue_description||'—')+'</div>' +
         (i.photo_url?'<img src="'+i.photo_url+'" style="width:100%;border-radius:8px;margin-top:8px;max-height:180px;object-fit:cover;cursor:pointer" onclick="window.open(this.src)">':'') +
         '<div style="margin-top:10px;display:flex;gap:8px;">' +
-          '<button onclick="resolveIssueFromModal(''+i.id+'')" style="flex:1;padding:9px;border-radius:10px;border:none;background:var(--orange);color:white;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">✓ Mark Resolved</button>' +
+          '<button class="modal-resolve-btn" data-issue-id="' + i.id + '" style="flex:1;padding:9px;border-radius:10px;border:none;background:var(--orange);color:white;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">✓ Mark Resolved</button>' +
         '</div>' +
         '</div>';
     });
@@ -790,9 +850,18 @@ async function updateIssueStatus(issueId, status) {
     // Update button state
     var actionsDiv = document.getElementById('issue-actions-'+issueId);
     if (actionsDiv) {
-      actionsDiv.innerHTML =
-        '<span style="font-size:12px;font-weight:600;color:var(--amber)">⏳ In Progress</span>' +
-        '<button class="neu-btn primary" style="font-size:12px;padding:8px 14px;" onclick="resolveIssue(''+issueId+'')">✓ Mark Resolved</button>';
+      // Replace with DOM elements to avoid quote issues
+      actionsDiv.innerHTML = '';
+      var inProgSpan = document.createElement('span');
+      inProgSpan.style.cssText = 'font-size:12px;font-weight:600;color:var(--amber);display:flex;align-items:center';
+      inProgSpan.textContent = '⏳ In Progress';
+      actionsDiv.appendChild(inProgSpan);
+      var resBtn = document.createElement('button');
+      resBtn.className = 'neu-btn primary';
+      resBtn.style.cssText = 'font-size:12px;padding:8px 14px';
+      resBtn.textContent = '✓ Mark Resolved';
+      resBtn.onclick = (function(id){ return function(){ resolveIssue(id); }; })(issueId);
+      actionsDiv.appendChild(resBtn);
     }
   }
 }
@@ -834,6 +903,11 @@ async function resolveIssueFromModal(issueId) {
   closeModal();
   loadDashboard();
 }
+
+document.getElementById('modalBody').addEventListener('click', function(e) {
+  var btn = e.target.closest('.modal-resolve-btn');
+  if (btn) resolveIssueFromModal(btn.dataset.issueId);
+});
 
 function closeModal() { document.getElementById('roundModal').classList.remove('open'); }
 document.getElementById('roundModal').addEventListener('click', function(e) { if (e.target===this) closeModal(); });
