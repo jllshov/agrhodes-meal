@@ -374,8 +374,13 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   <!-- ── Issues ── -->
   <div id="panel-issues" style="display:none;">
     <div class="page-header">
-      <div><div class="page-title">Open Issues</div><div class="page-sub">All unresolved items across the facility</div></div>
+      <div><div class="page-title">Open Issues</div><div class="page-sub">All unresolved items — grouped by department</div></div>
       <button class="neu-btn" onclick="loadIssues()">↻ Refresh</button>
+    </div>
+    <div class="tab-row" style="margin-bottom:20px;">
+      <button class="tab-pill active" id="filter-Open" onclick="setIssueFilter(this,'Open')">Open</button>
+      <button class="tab-pill" id="filter-In Progress" onclick="setIssueFilter(this,'In Progress')">In Progress</button>
+      <button class="tab-pill" id="filter-Resolved" onclick="setIssueFilter(this,'Resolved')">Resolved</button>
     </div>
     <div id="issuesList"></div>
   </div>
@@ -393,6 +398,11 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body" id="modalBody"></div>
+    <div id="modalFooter" style="padding:0 22px 22px;display:none;">
+      <button onclick="clearRound()" style="width:100%;padding:12px;border-radius:12px;border:1.5px solid var(--red);background:rgba(239,68,68,.06);color:var(--red);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">
+        🗑 Delete This Round
+      </button>
+    </div>
   </div>
 </div>
 
@@ -605,30 +615,66 @@ function renderQRTile(loc, container) {
 async function loadIssues() {
   var list = document.getElementById('issuesList');
   list.innerHTML = '<div style="padding:20px;color:var(--gray)">Loading…</div>';
+  var currentFilter = document.querySelector('.tab-pill.active[id^="filter-"]');
+  var statusFilter = currentFilter ? currentFilter.id.replace('filter-','') : 'Open';
+
   var { data: issues } = await sb.from('zone_issues').select('*')
-    .eq('facility_id', FACILITY_ID).eq('status','Open')
+    .eq('facility_id', FACILITY_ID).eq('status', statusFilter)
     .order('created_at',{ascending:false});
   if (!issues||!issues.length) {
-    list.innerHTML = '<div class="card" style="padding:32px;text-align:center;color:var(--green);font-weight:600">✓ No open issues</div>';
+    var emptyMsg = statusFilter==='Resolved'?'No resolved issues yet':statusFilter==='In Progress'?'Nothing in progress':'✓ No open issues';
+    var emptyColor = statusFilter==='Open'?'var(--green)':'var(--gray)';
+    list.innerHTML = '<div class="card" style="padding:32px;text-align:center;color:'+emptyColor+';font-weight:600">'+emptyMsg+'</div>';
     return;
   }
-  list.innerHTML = issues.map(function(i){
-    return '<div class="card" style="margin-bottom:12px;display:flex;align-items:flex-start;gap:14px;">' +
-      '<div class="issue-dot '+i.priority+'" style="margin-top:4px;width:12px;height:12px;border-radius:50%;flex-shrink:0;background:'+(i.priority==='High'?'var(--red)':i.priority==='Medium'?'var(--amber)':'var(--green)')+';"></div>' +
-      '<div style="flex:1">' +
-        '<div style="font-size:13px;font-weight:700">'+i.issue_type+'</div>' +
-        '<div style="font-size:12px;color:var(--gray);margin-top:2px">'+(i.issue_description||'—')+'</div>' +
-        '<div style="font-size:11px;color:var(--gray-light);margin-top:4px">'+(i.room_number?'Room '+i.room_number:i.eoc_section||'')+ ' · '+new Date(i.created_at).toLocaleString()+'</div>' +
-        (i.photo_url ? '<img src="'+i.photo_url+'" style="width:100%;max-width:260px;border-radius:10px;margin-top:8px;cursor:pointer" onclick="window.open(this.src)">' : '') +
-      '</div>' +
-      '<span class="issue-badge badge-'+i.priority+'">'+i.priority+'</span>' +
+  // Group by department
+  var byDept = {};
+  issues.forEach(function(i) {
+    var dept = i.issue_type || 'Other';
+    (byDept[dept] = byDept[dept] || []).push(i);
+  });
+
+  var html2 = '';
+  Object.keys(byDept).sort().forEach(function(dept) {
+    html2 += '<div style="margin-bottom:24px">' +
+      '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;' +
+      'color:var(--gray);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,.07)">' +
+      dept + ' — ' + byDept[dept].length + ' issue' + (byDept[dept].length>1?'s':'') + '</div>';
+
+    byDept[dept].forEach(function(i) {
+      var dotColor = i.priority==='High'?'var(--red)':i.priority==='Medium'?'var(--amber)':'var(--green)';
+      var location = i.room_number ? 'Room '+i.room_number : (i.eoc_section||'').replace(/_/g,' ');
+      var created  = new Date(i.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+      html2 += '<div class="card" id="issue-card-'+i.id+'" style="margin-bottom:10px;">' +
+        '<div style="display:flex;align-items:flex-start;gap:12px;">' +
+          '<div style="width:11px;height:11px;border-radius:50%;flex-shrink:0;margin-top:3px;background:'+dotColor+'"></div>' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">' +
+              '<div style="font-size:13px;font-weight:700;">'+i.issue_description+'</div>' +
+              '<span class="issue-badge badge-'+i.priority+'">'+i.priority+'</span>' +
+            '</div>' +
+            '<div style="font-size:11.5px;color:var(--gray);margin-top:3px;">'+location+' · '+created+'</div>' +
+            (i.photo_url ? '<img src="'+i.photo_url+'" style="width:100%;max-width:240px;border-radius:10px;margin-top:8px;cursor:pointer;object-fit:cover;max-height:140px;" onclick="window.open(this.src)">' : '') +
+            (statusFilter === 'Resolved' ?
+              '<div style="margin-top:8px;font-size:11.5px;color:var(--green);font-weight:600">✓ Resolved' + (i.resolved_by ? ' by '+i.resolved_by : '') + (i.resolved_at ? ' · '+new Date(i.resolved_at).toLocaleDateString() : '') + '</div>' :
+              '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;" id="issue-actions-'+i.id+'">' +
+              (statusFilter !== 'In Progress' ? '<button class="neu-btn" style="font-size:12px;padding:8px 14px;" onclick="updateIssueStatus(''+i.id+'','In Progress')">⏳ Mark In Progress</button>' : '<span style="font-size:12px;font-weight:600;color:var(--amber)">⏳ In Progress</span>') +
+              '<button class="neu-btn primary" style="font-size:12px;padding:8px 14px;" onclick="resolveIssue(''+i.id+'')">✓ Mark Resolved</button>' +
+            '</div>') +
+          '</div>' +
+        '</div>' +
       '</div>';
-  }).join('');
+    });
+    html2 += '</div>';
+  });
+  list.innerHTML = html2;
 }
 
 /* ── Modal ── */
 function openRoundModal(loc, round, issues) {
   document.getElementById('roundModal').classList.add('open');
+  document.getElementById('roundModal').dataset.roundId = round ? round.id : '';
+  document.getElementById('modalFooter').style.display = round ? 'block' : 'none';
   document.getElementById('modalTitle').textContent = loc.display_name;
   var meta = [];
   if (loc.unit) meta.push(loc.unit);
@@ -711,12 +757,82 @@ function openRoundModal(loc, round, issues) {
         '<span class="issue-badge badge-'+i.priority+'">'+i.priority+'</span></div>' +
         '<div class="modal-issue-desc">'+(i.issue_description||'—')+'</div>' +
         (i.photo_url?'<img src="'+i.photo_url+'" style="width:100%;border-radius:8px;margin-top:8px;max-height:180px;object-fit:cover;cursor:pointer" onclick="window.open(this.src)">':'') +
+        '<div style="margin-top:10px;display:flex;gap:8px;">' +
+          '<button onclick="resolveIssueFromModal(''+i.id+'')" style="flex:1;padding:9px;border-radius:10px;border:none;background:var(--orange);color:white;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">✓ Mark Resolved</button>' +
+        '</div>' +
         '</div>';
     });
   } else {
     body.innerHTML += '<div style="font-size:12.5px;color:var(--green);font-weight:600">✓ No issues documented</div>';
   }
   body.innerHTML += '</div>';
+}
+
+async function updateIssueStatus(issueId, status) {
+  var btn = document.querySelector('#issue-actions-'+issueId+' button');
+  if (btn) btn.textContent = 'Updating…';
+  var resolvedBy = localStorage.getItem('agrhodes_round_staff') || prompt('Your name:') || 'Staff';
+  localStorage.setItem('agrhodes_round_staff', resolvedBy);
+
+  var update = { status: status };
+  if (status === 'Resolved') {
+    update.resolved_at = new Date().toISOString();
+    update.resolved_by = resolvedBy;
+  }
+  var { error } = await sb.from('zone_issues').update(update).eq('id', issueId);
+  if (error) { alert('Error: ' + error.message); return; }
+
+  if (status === 'Resolved') {
+    // Animate out
+    var card = document.getElementById('issue-card-'+issueId);
+    if (card) { card.style.opacity='0'; card.style.transition='opacity .3s'; setTimeout(function(){ loadIssues(); }, 300); }
+  } else {
+    // Update button state
+    var actionsDiv = document.getElementById('issue-actions-'+issueId);
+    if (actionsDiv) {
+      actionsDiv.innerHTML =
+        '<span style="font-size:12px;font-weight:600;color:var(--amber)">⏳ In Progress</span>' +
+        '<button class="neu-btn primary" style="font-size:12px;padding:8px 14px;" onclick="resolveIssue(''+issueId+'')">✓ Mark Resolved</button>';
+    }
+  }
+}
+
+function resolveIssue(issueId) {
+  var resolvedBy = localStorage.getItem('agrhodes_round_staff') || prompt('Your name (resolver):') || 'Staff';
+  localStorage.setItem('agrhodes_round_staff', resolvedBy);
+  updateIssueStatus(issueId, 'Resolved');
+}
+
+function setIssueFilter(btn, status) {
+  document.querySelectorAll('.tab-pill[id^="filter-"]').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  loadIssues();
+}
+
+async function clearRound() {
+  var roundId = document.getElementById('roundModal').dataset.roundId;
+  if (!roundId) return;
+  if (!confirm('Delete this round and all its issues? This cannot be undone.')) return;
+
+  // Delete issues first (foreign key)
+  await sb.from('zone_issues').delete().eq('round_id', roundId);
+  // Delete the round
+  var { error } = await sb.from('zone_rounds').delete().eq('id', roundId);
+
+  if (error) { alert('Error: ' + error.message); return; }
+  closeModal();
+  loadDashboard();
+}
+
+async function resolveIssueFromModal(issueId) {
+  var resolvedBy = localStorage.getItem('agrhodes_round_staff') || prompt('Your name:') || 'Staff';
+  localStorage.setItem('agrhodes_round_staff', resolvedBy);
+  var { error } = await sb.from('zone_issues').update({
+    status:'Resolved', resolved_at: new Date().toISOString(), resolved_by: resolvedBy
+  }).eq('id', issueId);
+  if (error) { alert('Error: '+error.message); return; }
+  closeModal();
+  loadDashboard();
 }
 
 function closeModal() { document.getElementById('roundModal').classList.remove('open'); }
