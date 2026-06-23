@@ -376,7 +376,7 @@ async function loadLocation(qrIdentifier) {
 function renderForm() {
   roundData = {};
   issueData = [];
-  followUpData = { issue: false, category: '', notes: '', photoUrl: null };
+  followUpData = { issue: false, category: '', notes: '', photoUrl: null, photoFile: null };
   var nameEl = document.getElementById('fh-name');
   var metaEl = document.getElementById('fh-meta');
   var body   = document.getElementById('formBody');
@@ -532,7 +532,7 @@ function resetCompleteButton() {
 
 
 /* ── Follow-Up Card ── */
-var followUpData = { issue: false, category: '', notes: '', photoUrl: null };
+var followUpData = { issue: false, category: '', notes: '', photoUrl: null, photoFile: null };
 
 function buildFollowUpCard() {
   var card = document.createElement('div');
@@ -592,14 +592,26 @@ function triggerPhotoUpload() {
 
 function handlePhoto(input) {
   if (!input.files || !input.files[0]) return;
+  followUpData.photoFile = input.files[0];
   var reader = new FileReader();
   reader.onload = function(e) {
-    followUpData.photoUrl = e.target.result;
     var preview = document.getElementById('photoPreview');
     preview.src = e.target.result;
     preview.style.display = 'block';
   };
   reader.readAsDataURL(input.files[0]);
+}
+
+async function uploadPhoto(file, roundId) {
+  if (!file) return null;
+  var ext = file.name.split('.').pop() || 'jpg';
+  var path = 'rounds/' + roundId + '.' + ext;
+  var { data, error } = await sb.storage.from('round-photos').upload(path, file, {
+    cacheControl: '3600', upsert: true, contentType: file.type,
+  });
+  if (error) { console.warn('Photo upload failed:', error.message); return null; }
+  var { data: urlData } = sb.storage.from('round-photos').getPublicUrl(path);
+  return urlData.publicUrl;
 }
 
 /* ── Environmental Score (computed on submit) ── */
@@ -689,6 +701,16 @@ async function submitRound() {
     var { data: roundRow, error: roundErr } = await sb.from('zone_rounds').insert(payload).select().single();
     if (roundErr) throw roundErr;
 
+    // Upload photo if taken
+    var photoUrl = null;
+    if (followUpData.photoFile) {
+      photoUrl = await uploadPhoto(followUpData.photoFile, roundRow.id);
+      // Update the round with the photo URL
+      if (photoUrl) {
+        await sb.from('zone_rounds').update({ followup_photo_url: photoUrl }).eq('id', roundRow.id);
+      }
+    }
+
     if (issueData.length) {
       var issuesPayload = issueData.map(function(i) {
         return {
@@ -701,6 +723,7 @@ async function submitRound() {
           issue_description: i.issue_description || i.quick_action || 'Issue noted',
           priority: i.priority,
           quick_action: i.quick_action,
+          photo_url: i.sourceKey === 'followup' ? photoUrl : null,
         };
       });
       var { error: issueErr } = await sb.from('zone_issues').insert(issuesPayload);
