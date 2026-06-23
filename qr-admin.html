@@ -271,6 +271,7 @@ function openRoundModal(loc, round, issues) {
           '<span class="issue-priority prio-' + i.priority + '">' + i.priority + '</span>' +
         '</div>' +
         '<div class="issue-desc">' + (i.issue_description || i.quick_action || '—') + '</div>' +
+        (i.photo_url ? '<img src="' + i.photo_url + '" style="width:100%;border-radius:8px;margin-top:8px;max-height:200px;object-fit:cover;" onclick="window.open(this.src)">' : '') +
         '</div>';
     });
     issHtml += '</div>';
@@ -413,6 +414,7 @@ function openRoundModal(loc, round, issues) {
           '<span class="issue-priority prio-' + i.priority + '">' + i.priority + '</span>' +
         '</div>' +
         '<div class="issue-desc">' + (i.issue_description || i.quick_action || '—') + '</div>' +
+        (i.photo_url ? '<img src="' + i.photo_url + '" style="width:100%;border-radius:8px;margin-top:8px;max-height:200px;object-fit:cover;" onclick="window.open(this.src)">' : '') +
         '</div>';
     });
     issHtml += '</div>';
@@ -707,6 +709,7 @@ function openRoundModal(loc, round, issues) {
           '<span class="issue-priority prio-' + i.priority + '">' + i.priority + '</span>' +
         '</div>' +
         '<div class="issue-desc">' + (i.issue_description || i.quick_action || '—') + '</div>' +
+        (i.photo_url ? '<img src="' + i.photo_url + '" style="width:100%;border-radius:8px;margin-top:8px;max-height:200px;object-fit:cover;" onclick="window.open(this.src)">' : '') +
         '</div>';
     });
     issHtml += '</div>';
