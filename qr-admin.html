@@ -569,13 +569,36 @@ async function loadEOC() {
 
 function renderQRTile(loc, container) {
   var tile = document.createElement('div'); tile.className = 'qr-tile';
-  var qrDiv = document.createElement('div'); tile.appendChild(qrDiv);
-  tile.innerHTML += '<div class="qr-tile-name">'+loc.display_name+'</div>' +
-    '<div class="qr-tile-meta">'+(loc.unit||loc.eoc_department||'')+'</div>' +
-    '<div class="qr-tile-id">'+loc.qr_identifier+'</div>';
+
+  // QR code container — must be appended before QRCode renders into it
+  var qrDiv = document.createElement('div');
+  qrDiv.style.cssText = 'width:120px;margin:0 auto 10px;';
+  tile.appendChild(qrDiv);
+
+  // Text info — built with DOM, not innerHTML, to avoid wiping qrDiv
+  var nameDiv = document.createElement('div');
+  nameDiv.className = 'qr-tile-name';
+  nameDiv.textContent = loc.display_name;
+  tile.appendChild(nameDiv);
+
+  var metaDiv = document.createElement('div');
+  metaDiv.className = 'qr-tile-meta';
+  metaDiv.textContent = loc.unit || loc.eoc_department || '';
+  tile.appendChild(metaDiv);
+
+  var idDiv = document.createElement('div');
+  idDiv.className = 'qr-tile-id';
+  idDiv.textContent = loc.qr_identifier;
+  tile.appendChild(idDiv);
+
   container.appendChild(tile);
-  new QRCode(qrDiv, { text: BASE_URL+loc.qr_identifier, width:120, height:120,
-    colorDark:'#1A1A1A', colorLight:'#EEF1F5' });
+
+  // Render QR code AFTER tile is in the DOM
+  new QRCode(qrDiv, {
+    text: BASE_URL + loc.qr_identifier,
+    width: 120, height: 120,
+    colorDark: '#1A1A1A', colorLight: '#EEF1F5'
+  });
 }
 
 /* ── Issues panel ── */
