@@ -387,8 +387,8 @@
         <div class="result-count" id="reportSummary"></div>
         <div class="tbl-wrap">
           <table>
-            <thead><tr><th>Employee</th><th>ID</th><th>Unit</th><th>Meals</th><th>Bundles</th><th>Deduction</th></tr></thead>
-            <tbody id="reportTbody"><tr><td colspan="6"><div class="empty"><div class="empty-icon">📊</div>Select a date range above</div></td></tr></tbody>
+            <thead><tr><th>Employee</th><th>ID</th><th>Unit</th><th>Date</th><th>Time</th><th>Type</th><th>Amount</th><th>Ticket #</th></tr></thead>
+            <tbody id="reportTbody"><tr><td colspan="8"><div class="empty"><div class="empty-icon">📊</div>Select a date range above</div></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -861,65 +861,70 @@ async function loadReport() {
     `&select=*,employees(employee_number,first_name,last_name,unit)`
   );
 
-  // Group by employee
-  const map = {};
-  logs.forEach(l => {
-    const eid = l.employee_id;
-    if (!map[eid]) map[eid] = { emp: l.employees, meals:0, bundles:0, free:0, total:0 };
-    map[eid].meals++;
-    if (l.meal_type==='bundle') map[eid].bundles++;
-    if (l.is_free_meal) map[eid].free++;
-    map[eid].total += parseFloat(l.amount_charged);
-  });
-
-  allReport = Object.values(map);
-  const grandTotal = allReport.reduce((s,r)=>s+r.total,0);
+  allReport = logs;
+  const grandTotal = logs.reduce((s,l) => s + parseFloat(l.amount_charged), 0);
   const rangeLabel = reportDateFrom === reportDateTo
     ? fmtDate(reportDateFrom)
-    : `${fmtDate(reportDateFrom)} – ${fmtDate(reportDateTo)}`;
+    : `${reportDateFrom} – ${reportDateTo}`;
   document.getElementById('reportSummary').textContent =
-    `${rangeLabel} · ${allReport.length} employees · ${logs.length} total meals · $${grandTotal.toFixed(2)} deductions`;
+    `${rangeLabel} · ${logs.length} transactions · $${grandTotal.toFixed(2)} total`;
   filterReport();
 }
 
 function filterReport() {
   const q = document.getElementById('reportSearch').value.toLowerCase();
-  let rows = allReport.filter(r => {
-    const name = r.emp ? (r.emp.first_name+' '+r.emp.last_name).toLowerCase() : '';
-    return !q || name.includes(q) || (r.emp?.employee_number||'').includes(q);
+  let rows = allReport.filter(l => {
+    const name = l.employees ? (l.employees.first_name+' '+l.employees.last_name).toLowerCase() : '';
+    return !q || name.includes(q) || (l.employees?.employee_number||'').includes(q);
   });
   const tbody = document.getElementById('reportTbody');
-  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-icon">📊</div>No data found</div></td></tr>'; return; }
-  tbody.innerHTML = rows.map(r => `
-    <tr>
-      <td><strong>${r.emp?r.emp.first_name+' '+r.emp.last_name:'Unknown'}</strong></td>
-      <td style="font-size:.78rem;color:var(--text2)">${r.emp?.employee_number||'—'}</td>
-      <td style="font-size:.8rem">${r.emp?.unit||'—'}</td>
-      <td>${r.meals}</td>
-      <td>${r.bundles}</td>
-      <td style="font-weight:800">${r.free===r.meals?'<span style="color:var(--gold)">Free</span>':'$'+r.total.toFixed(2)}</td>
-    </tr>
-  `).join('');
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="8"><div class="empty"><div class="empty-icon">📊</div>No data found</div></td></tr>'; return; }
+  const typeMap = { single:'Single', bundle:'Bundle', credit:'Credit', free:'Free' };
+  const typeColor = { single:'var(--accent)', bundle:'var(--gold)', credit:'#6D28D9', free:'var(--success)' };
+  tbody.innerHTML = rows.map(l => {
+    const name = l.employees ? l.employees.first_name+' '+l.employees.last_name : '—';
+    const empNum = l.employees?.employee_number || '—';
+    const unit = l.employees?.unit || '—';
+    const dt = new Date(l.checked_in_at);
+    const date = dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    const time = dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    const typeLabel = typeMap[l.meal_type] || l.meal_type;
+    const typeCol = typeColor[l.meal_type] || 'var(--text)';
+    const amount = l.is_free_meal ? '<span style="color:var(--success);font-weight:700">Free</span>' : '<span style="font-weight:700">$'+parseFloat(l.amount_charged).toFixed(2)+'</span>';
+    const ticket = l.ticket_number || '—';
+    return `<tr>
+      <td><strong>${name}</strong></td>
+      <td style="font-size:.76rem;color:var(--text2)">${empNum}</td>
+      <td style="font-size:.78rem">${unit}</td>
+      <td style="font-size:.78rem;color:var(--text2)">${date}</td>
+      <td style="font-size:.78rem;color:var(--text2)">${time}</td>
+      <td><span style="font-size:.76rem;font-weight:700;color:${typeCol}">${typeLabel}</span></td>
+      <td>${amount}</td>
+      <td style="font-size:.72rem;font-family:monospace;color:var(--text2)">${ticket}</td>
+    </tr>`;
+  }).join('');
 }
 
 function exportCSV() {
   const q = document.getElementById('reportSearch').value.toLowerCase();
-  let rows = allReport.filter(r => {
-    const name = r.emp ? (r.emp.first_name+' '+r.emp.last_name).toLowerCase() : '';
+  let rows = allReport.filter(l => {
+    const name = l.employees ? (l.employees.first_name+' '+l.employees.last_name).toLowerCase() : '';
     return !q || name.includes(q);
   });
   if (!rows.length) { showToast('No data to export'); return; }
-  const rangeLabel = reportDateFrom === reportDateTo
-    ? fmtDate(reportDateFrom)
-    : `${fmtDate(reportDateFrom)} – ${fmtDate(reportDateTo)}`;
-  const header = `Payroll Deduction Report: ${rangeLabel}\nEmployee,Employee ID,Unit,Total Meals,Bundles,Free Meals,Deduction\n`;
-  const csv = header + rows.map(r =>
-    `"${r.emp?r.emp.first_name+' '+r.emp.last_name:'Unknown'}",${r.emp?.employee_number||''},${r.emp?.unit||''},${r.meals},${r.bundles},${r.free},$${r.total.toFixed(2)}`
-  ).join('\n');
+  const header = 'Employee,Employee ID,Unit,Date,Time,Type,Amount,Ticket #\n';
+  const csv = header + rows.map(l => {
+    const name = l.employees ? l.employees.first_name+' '+l.employees.last_name : 'Unknown';
+    const dt = new Date(l.checked_in_at);
+    const date = dt.toLocaleDateString('en-US');
+    const time = dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    const amount = l.is_free_meal ? 'Free' : '$'+parseFloat(l.amount_charged).toFixed(2);
+    return `"${name}",${l.employees?.employee_number||''},${l.employees?.unit||''},${date},${time},${l.meal_type},${amount},${l.ticket_number||''}`;
+  }).join('\n');
   const blob = new Blob([csv], {type:'text/csv'});
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href = url; a.download = `payroll-deductions-${reportDateFrom}-${reportDateTo}.csv`; a.click();
+  a.href = url; a.download = `meal-report-${reportDateFrom}-${reportDateTo}.csv`; a.click();
   URL.revokeObjectURL(url);
   showToast('CSV downloaded');
 }
