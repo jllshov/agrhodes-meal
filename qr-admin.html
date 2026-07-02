@@ -342,6 +342,26 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   font-family: inherit; font-size: 13px; color: var(--black);
 }
 
+
+/* ── Collapsible hall sections ── */
+.hall-section { margin-bottom: 16px; }
+.hall-header {
+  display: flex; align-items: center; gap: 12px; cursor: pointer;
+  background: var(--surface); border-radius: 20px; padding: 16px 20px;
+  box-shadow: var(--shadow-card); transition: box-shadow .15s;
+}
+.hall-header:hover { box-shadow: var(--shadow-out), 0 2px 8px rgba(0,0,0,.06); }
+.hall-icon { width: 44px; height: 44px; border-radius: 14px; background: var(--orange-light);
+  display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.hall-title-wrap { flex: 1; min-width: 0; }
+.hall-title { font-size: 15px; font-weight: 800; }
+.hall-sub { font-size: 11.5px; color: var(--gray); margin-top: 1px; }
+.hall-chevron { font-size: 13px; color: var(--gray); transition: transform .2s; flex-shrink: 0; }
+.hall-section.open .hall-chevron { transform: rotate(180deg); }
+.hall-body { max-height: 0; overflow: hidden; transition: max-height .3s ease; }
+.hall-section.open .hall-body { max-height: 4000px; }
+.hall-body-inner { padding: 16px 4px 4px; }
+
 </style>
 </head>
 <body>
@@ -704,23 +724,69 @@ function statCardAccent(num, label, sub) {
 }
 
 /* ── Rooms ── */
+var HALLS = ['Taylor Hall', 'ICF Hall', 'Garden Hall', 'Victoria Court'];
+var HALL_ICONS = { 'Taylor Hall':'🏠', 'ICF Hall':'🏥', 'Garden Hall':'🌿', 'Victoria Court':'🏛' };
+var hallOpenState = JSON.parse(localStorage.getItem('agrhodes_hall_open') || '{}');
+
 async function loadRooms() {
   var grid = document.getElementById('roomsGrid');
   grid.innerHTML = '<div style="padding:20px;color:var(--gray)">Loading…</div>';
   var { data: rooms } = await sb.from('room_qr_codes').select('*')
     .eq('facility_id', FACILITY_ID).eq('location_type','room').eq('is_active', true);
-  if (!rooms||!rooms.length) { grid.innerHTML = '<div class="card" style="padding:24px;color:var(--gray)">No rooms yet — generate some above.</div>'; return; }
+
   var byUnit = {};
-  rooms.forEach(function(r){ (byUnit[r.unit]=byUnit[r.unit]||[]).push(r); });
+  (rooms||[]).forEach(function(r){ (byUnit[r.unit]=byUnit[r.unit]||[]).push(r); });
+
   grid.innerHTML = '';
-  Object.keys(byUnit).forEach(function(unit) {
-    var section = document.createElement('div'); section.className = 'qr-section';
-    section.innerHTML = '<div class="qr-section-title">'+unit+' — '+byUnit[unit].length+' rooms</div>';
-    var g = document.createElement('div'); g.className = 'qr-grid';
-    byUnit[unit].sort(function(a,b){return (+a.room_number)-(+b.room_number);})
-      .forEach(function(r){ renderQRTile(r,g); });
-    section.appendChild(g); grid.appendChild(section);
+
+  // Always render all 4 halls, even if empty — persistent structure
+  HALLS.forEach(function(hall) {
+    var roomsInHall = (byUnit[hall] || []).sort(function(a,b){return (+a.room_number)-(+b.room_number);});
+    var isOpen = hallOpenState[hall] !== false; // default open
+
+    var section = document.createElement('div');
+    section.className = 'hall-section' + (isOpen ? ' open' : '');
+    section.id = 'hall-section-' + hall.replace(/\s+/g,'-');
+
+    var header = document.createElement('div');
+    header.className = 'hall-header';
+    header.onclick = (function(h){ return function(){ toggleHall(h); }; })(hall);
+    header.innerHTML =
+      '<div class="hall-icon">' + (HALL_ICONS[hall]||'🏨') + '</div>' +
+      '<div class="hall-title-wrap">' +
+        '<div class="hall-title">' + hall + '</div>' +
+        '<div class="hall-sub">' + roomsInHall.length + ' room QR code' + (roomsInHall.length!==1?'s':'') + ' generated</div>' +
+      '</div>' +
+      '<div class="hall-chevron">▼</div>';
+    section.appendChild(header);
+
+    var body = document.createElement('div');
+    body.className = 'hall-body';
+    var bodyInner = document.createElement('div');
+    bodyInner.className = 'hall-body-inner';
+
+    if (!roomsInHall.length) {
+      bodyInner.innerHTML = '<div style="padding:16px;color:var(--gray-light);font-size:12.5px;text-align:center;">No QR codes generated yet for this hall — use the form above.</div>';
+    } else {
+      var g = document.createElement('div');
+      g.className = 'qr-grid';
+      roomsInHall.forEach(function(r){ renderQRTile(r, g); });
+      bodyInner.appendChild(g);
+    }
+
+    body.appendChild(bodyInner);
+    section.appendChild(body);
+    grid.appendChild(section);
   });
+}
+
+function toggleHall(hall) {
+  var section = document.getElementById('hall-section-' + hall.replace(/\s+/g,'-'));
+  if (!section) return;
+  var nowOpen = !section.classList.contains('open');
+  section.classList.toggle('open', nowOpen);
+  hallOpenState[hall] = nowOpen;
+  localStorage.setItem('agrhodes_hall_open', JSON.stringify(hallOpenState));
 }
 
 async function generateBulkRooms() {
