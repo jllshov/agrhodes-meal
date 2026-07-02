@@ -233,7 +233,9 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
 .progress-ring-sub { font-size: 10px; color: var(--gray); }
 
 @media (max-width: 900px) {
+  body { display: block; }
   .sidebar { display: none; }
+  .main { width: 100%; }
   .stats-row { grid-template-columns: repeat(2, 1fr); }
   .content-grid { grid-template-columns: 1fr; }
   .bulk-form { grid-template-columns: 1fr 1fr; }
@@ -247,10 +249,11 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
 
 /* ── Mobile Nav ── */
 .mobile-topbar {
-  display: none; position: sticky; top: 0; z-index: 50;
-  background: var(--surface); padding: 14px 18px;
+  display: none; position: sticky; top: 0; left: 0; right: 0; z-index: 50;
+  width: 100%; background: var(--surface); padding: 14px 18px;
   box-shadow: 0 4px 12px rgba(0,0,0,.08);
   align-items: center; justify-content: space-between;
+  box-sizing: border-box;
 }
 .mobile-logo { display: flex; align-items: center; gap: 10px; }
 .mobile-logo-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--orange);
