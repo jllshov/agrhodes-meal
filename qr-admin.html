@@ -244,11 +244,145 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   .qr-grid { grid-template-columns: repeat(3, 1fr); }
   .qr-tile { break-inside: avoid; }
 }
+
+/* ── Mobile Nav ── */
+.mobile-topbar {
+  display: none; position: sticky; top: 0; z-index: 50;
+  background: var(--surface); padding: 14px 18px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.08);
+  align-items: center; justify-content: space-between;
+}
+.mobile-logo { display: flex; align-items: center; gap: 10px; }
+.mobile-logo-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--orange);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 13px; color: white; }
+.mobile-logo-name { font-size: 14px; font-weight: 700; }
+.hamburger { background: var(--bg); border: none; border-radius: 10px;
+  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; box-shadow: var(--shadow-out); font-size: 18px; }
+
+/* Mobile drawer overlay */
+.mobile-drawer-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4);
+  z-index: 200; backdrop-filter: blur(3px);
+}
+.mobile-drawer-overlay.open { display: block; }
+
+/* Mobile drawer */
+.mobile-drawer {
+  position: fixed; top: 0; left: -260px; width: 250px; height: 100vh;
+  background: var(--surface); z-index: 201; padding: 28px 16px;
+  display: flex; flex-direction: column; gap: 6px;
+  box-shadow: 8px 0 30px rgba(0,0,0,.15);
+  transition: left .25s cubic-bezier(.4,0,.2,1);
+}
+.mobile-drawer.open { left: 0; }
+.mobile-drawer-header { display: flex; align-items: center; justify-content: space-between;
+  padding: 0 8px 20px; border-bottom: 1px solid rgba(0,0,0,.06); margin-bottom: 10px; }
+.drawer-close { background: none; border: none; font-size: 20px; cursor: pointer;
+  color: var(--gray); padding: 4px; }
+
+@media (max-width: 900px) {
+  .mobile-topbar { display: flex; }
+  .main { padding: 16px; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .content-grid { grid-template-columns: 1fr; }
+  .bulk-form { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .bulk-form button { grid-column: 1/-1; }
+}
+
+
+/* ── Design enhancements (screenshot-inspired) ── */
+.card { border-radius: 26px; }
+.stat-card { border-radius: 24px; padding: 22px 20px; }
+.stat-card .stat-num { font-size: 34px; letter-spacing: -0.02em; }
+.neu-btn { border-radius: 999px; }
+.qr-tile { border-radius: 22px; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+.qr-tile:hover { transform: translateY(-3px); }
+.qr-tile:active { transform: scale(.97); }
+.heat-tile { border-radius: 18px; }
+.tab-pill { padding: 9px 20px; }
+
+/* Room detail modal — stacked card style like the screenshots */
+.room-detail-hero {
+  background: var(--surface); border-radius: 24px; box-shadow: var(--shadow-card);
+  padding: 26px 22px; text-align: center; margin-bottom: 16px;
+}
+.room-detail-hero .qr-holder { width: 150px; margin: 0 auto 14px; padding: 14px;
+  background: white; border-radius: 20px; box-shadow: var(--shadow-out); }
+.room-detail-hero .qr-holder img, .room-detail-hero .qr-holder canvas { width: 100%; display:block; border-radius: 8px; }
+.room-hero-name { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+.room-hero-unit { font-size: 12.5px; color: var(--gray); margin-top: 3px; }
+
+.asset-item {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--bg); border-radius: 16px; padding: 13px 15px;
+  box-shadow: var(--shadow-out); margin-bottom: 9px;
+}
+.asset-icon { width: 40px; height: 40px; border-radius: 12px; background: var(--orange-light);
+  display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.asset-info { flex: 1; min-width: 0; }
+.asset-name { font-size: 13px; font-weight: 700; }
+.asset-meta { font-size: 11px; color: var(--gray); margin-top: 1px; }
+.asset-condition { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 999px; flex-shrink: 0; }
+.cond-Good { background: rgba(34,197,94,.12); color: var(--green); }
+.cond-Fair { background: rgba(245,158,11,.12); color: var(--amber); }
+.cond-Needs\ Repair { background: rgba(239,68,68,.12); color: var(--red); }
+.cond-Out\ of\ Service { background: rgba(107,114,128,.15); color: var(--gray); }
+.asset-remove { background:none; border:none; color: var(--gray-light); cursor:pointer; font-size:15px; padding:4px; }
+
+.add-asset-form { background: var(--bg); border-radius: 18px; padding: 16px; box-shadow: var(--shadow-in); margin-top: 12px; }
+.add-asset-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.add-asset-form select, .add-asset-form input {
+  width: 100%; padding: 11px 12px; border: none; border-radius: 12px;
+  background: var(--surface); box-shadow: var(--shadow-out);
+  font-family: inherit; font-size: 13px; color: var(--black);
+}
+
 </style>
 </head>
 <body>
 
 <!-- ════ SIDEBAR ════ -->
+
+<!-- ── Mobile Top Bar ── -->
+<div class="mobile-topbar">
+  <div class="mobile-logo">
+    <div class="mobile-logo-icon">AG</div>
+    <div class="mobile-logo-name">Zone Rounds</div>
+  </div>
+  <button class="hamburger" onclick="openDrawer()">☰</button>
+</div>
+
+<!-- ── Mobile Drawer Overlay ── -->
+<div class="mobile-drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+<!-- ── Mobile Drawer ── -->
+<div class="mobile-drawer" id="mobileDrawer">
+  <div class="mobile-drawer-header">
+    <div class="mobile-logo">
+      <div class="mobile-logo-icon">AG</div>
+      <div class="mobile-logo-name">A.G. Rhodes</div>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <button class="nav-item active" id="drawer-dashboard" onclick="drawerNav('dashboard')">
+    <span class="nav-icon">📊</span> Dashboard
+  </button>
+  <button class="nav-item" id="drawer-rooms" onclick="drawerNav('rooms')">
+    <span class="nav-icon">🚪</span> Resident Rooms
+  </button>
+  <button class="nav-item" id="drawer-eoc" onclick="drawerNav('eoc')">
+    <span class="nav-icon">📋</span> EOC Areas
+  </button>
+  <button class="nav-item" id="drawer-issues" onclick="drawerNav('issues')">
+    <span class="nav-icon">⚠</span> Open Issues
+  </button>
+  <button class="nav-item" onclick="window.print();closeDrawer();">
+    <span class="nav-icon">🖨</span> Print QR Codes
+  </button>
+</div>
+
 <aside class="sidebar">
   <div class="sidebar-logo">
     <div class="sidebar-logo-icon">AG</div>
@@ -387,6 +521,56 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
 
 </main>
 
+
+<!-- ════ ROOM DETAIL MODAL (QR + Assets) ════ -->
+<div id="roomDetailModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);z-index:150;align-items:center;justify-content:center;padding:16px;">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="rdTitle">—</div>
+        <div class="modal-meta-text" id="rdMeta"></div>
+      </div>
+      <button class="modal-close" onclick="closeRoomDetail()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="room-detail-hero">
+        <div class="qr-holder" id="rdQrHolder"></div>
+        <div class="room-hero-name" id="rdName">—</div>
+        <div class="room-hero-unit" id="rdUnit"></div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>Room Assets (<span id="rdAssetCount">0</span>)</span>
+          <button class="neu-btn" style="font-size:11px;padding:6px 14px;" onclick="toggleAddAsset()">+ Add Asset</button>
+        </div>
+        <div id="rdAssetList"></div>
+
+        <div class="add-asset-form" id="addAssetForm" style="display:none;">
+          <div class="add-asset-row">
+            <select id="na-type">
+              <option value="">Type…</option>
+              <option>TV</option><option>Bed</option><option>Wheelchair</option>
+              <option>Recliner</option><option>Dresser</option><option>Nightstand</option>
+              <option>Overbed Table</option><option>Air Mattress</option><option>Lift</option><option>Other</option>
+            </select>
+            <select id="na-condition">
+              <option>Good</option><option>Fair</option><option>Needs Repair</option><option>Out of Service</option>
+            </select>
+          </div>
+          <div style="margin-bottom:10px;">
+            <input type="text" id="na-name" placeholder="Asset name (e.g. Samsung 32in TV)">
+          </div>
+          <div class="add-asset-row">
+            <input type="text" id="na-serial" placeholder="Serial # (optional)">
+            <button class="neu-btn primary" style="font-size:12px;" onclick="saveAsset()">Save Asset</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ════ ROUND DETAIL MODAL ════ -->
 <div id="roundModal">
   <div class="modal-box">
@@ -418,16 +602,9 @@ const BASE_URL = window.location.origin + '/round.html#round=';
 var currentPanel = 'dashboard';
 
 function switchTab(tab) {
-  document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.remove('active'); });
-  event.currentTarget.classList.add('active');
-  ['dashboard','rooms','eoc','issues'].forEach(function(p){
-    document.getElementById('panel-'+p).style.display = p===tab ? 'block' : 'none';
-  });
-  currentPanel = tab;
-  if (tab==='dashboard') loadDashboard();
-  if (tab==='rooms') loadRooms();
-  if (tab==='eoc') loadEOC();
-  if (tab==='issues') loadIssues();
+  document.querySelectorAll('.sidebar .nav-item').forEach(function(b){ b.classList.remove('active'); });
+  if (event && event.currentTarget) event.currentTarget.classList.add('active');
+  switchTab_direct(tab);
 }
 
 /* ── Dashboard ── */
@@ -579,6 +756,7 @@ async function loadEOC() {
 
 function renderQRTile(loc, container) {
   var tile = document.createElement('div'); tile.className = 'qr-tile';
+  tile.onclick = function() { openRoomDetail(loc); };
 
   // QR code container — must be appended before QRCode renders into it
   var qrDiv = document.createElement('div');
@@ -911,6 +1089,167 @@ document.getElementById('modalBody').addEventListener('click', function(e) {
 
 function closeModal() { document.getElementById('roundModal').classList.remove('open'); }
 document.getElementById('roundModal').addEventListener('click', function(e) { if (e.target===this) closeModal(); });
+
+
+/* ── Mobile Drawer ── */
+function openDrawer() {
+  document.getElementById('mobileDrawer').classList.add('open');
+  document.getElementById('drawerOverlay').classList.add('open');
+}
+function closeDrawer() {
+  document.getElementById('mobileDrawer').classList.remove('open');
+  document.getElementById('drawerOverlay').classList.remove('open');
+}
+function drawerNav(tab) {
+  // Update drawer nav active state
+  document.querySelectorAll('.mobile-drawer .nav-item').forEach(function(b){ b.classList.remove('active'); });
+  var btn = document.getElementById('drawer-' + tab);
+  if (btn) btn.classList.add('active');
+  // Also update sidebar nav
+  document.querySelectorAll('.sidebar .nav-item').forEach(function(b){ b.classList.remove('active'); });
+  // Trigger the panel switch
+  switchTab_direct(tab);
+  closeDrawer();
+}
+
+// Renamed internal version that doesn't rely on event.currentTarget
+function switchTab_direct(tab) {
+  document.querySelectorAll('.sidebar .nav-item').forEach(function(b){ b.classList.remove('active'); });
+  ['dashboard','rooms','eoc','issues'].forEach(function(p){
+    document.getElementById('panel-'+p).style.display = p===tab ? 'block' : 'none';
+  });
+  currentPanel = tab;
+  if (tab==='dashboard') loadDashboard();
+  if (tab==='rooms') loadRooms();
+  if (tab==='eoc') loadEOC();
+  if (tab==='issues') loadIssues();
+}
+
+
+/* ── Room Detail (QR + Assets) ── */
+var currentRoomLoc = null;
+
+async function openRoomDetail(loc) {
+  currentRoomLoc = loc;
+  var modal = document.getElementById('roomDetailModal');
+  modal.style.display = 'flex';
+  document.getElementById('rdTitle').textContent = loc.display_name;
+  document.getElementById('rdMeta').textContent = loc.unit || loc.eoc_department || '';
+  document.getElementById('rdName').textContent = loc.display_name;
+  document.getElementById('rdUnit').textContent = (loc.unit || loc.eoc_department || '') + ' · ' + loc.qr_identifier;
+  document.getElementById('addAssetForm').style.display = 'none';
+
+  // Render QR code
+  var holder = document.getElementById('rdQrHolder');
+  holder.innerHTML = '';
+  new QRCode(holder, { text: BASE_URL + loc.qr_identifier, width: 122, height: 122,
+    colorDark: '#1A1A1A', colorLight: '#FFFFFF' });
+
+  loadRoomAssets(loc.qr_identifier);
+}
+
+function closeRoomDetail() {
+  document.getElementById('roomDetailModal').style.display = 'none';
+  currentRoomLoc = null;
+}
+document.getElementById('roomDetailModal').addEventListener('click', function(e) {
+  if (e.target === this) closeRoomDetail();
+});
+
+var ASSET_ICONS = {
+  'TV':'📺','Bed':'🛏','Wheelchair':'🦽','Recliner':'🛋','Dresser':'🗄',
+  'Nightstand':'🪑','Overbed Table':'🍽','Air Mattress':'💨','Lift':'🏗','Other':'📦'
+};
+
+async function loadRoomAssets(qrIdentifier) {
+  var list = document.getElementById('rdAssetList');
+  list.innerHTML = '<div style="font-size:12px;color:var(--gray);padding:8px;">Loading…</div>';
+  var { data: assets } = await sb.from('room_assets').select('*')
+    .eq('qr_identifier', qrIdentifier).eq('is_active', true)
+    .order('created_at', {ascending: true});
+
+  document.getElementById('rdAssetCount').textContent = (assets||[]).length;
+  list.innerHTML = '';
+
+  if (!assets || !assets.length) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--gray-light);padding:12px;text-align:center;">No assets yet — tap + Add Asset</div>';
+    return;
+  }
+
+  assets.forEach(function(a) {
+    var item = document.createElement('div');
+    item.className = 'asset-item';
+
+    var icon = document.createElement('div');
+    icon.className = 'asset-icon';
+    icon.textContent = ASSET_ICONS[a.asset_type] || '📦';
+    item.appendChild(icon);
+
+    var info = document.createElement('div');
+    info.className = 'asset-info';
+    var nm = document.createElement('div');
+    nm.className = 'asset-name'; nm.textContent = a.asset_name;
+    var mt = document.createElement('div');
+    mt.className = 'asset-meta';
+    mt.textContent = (a.asset_type||'') + (a.serial_number ? ' · SN: '+a.serial_number : '');
+    info.appendChild(nm); info.appendChild(mt);
+    item.appendChild(info);
+
+    var cond = document.createElement('span');
+    cond.className = 'asset-condition cond-' + a.condition.replace(/ /g, '\\ ');
+    cond.style.cssText = 'font-size:10px;font-weight:700;padding:4px 10px;border-radius:999px;flex-shrink:0;' +
+      (a.condition==='Good'?'background:rgba(34,197,94,.12);color:var(--green);':
+       a.condition==='Fair'?'background:rgba(245,158,11,.12);color:var(--amber);':
+       a.condition==='Needs Repair'?'background:rgba(239,68,68,.12);color:var(--red);':
+       'background:rgba(107,114,128,.15);color:var(--gray);');
+    cond.textContent = a.condition;
+    item.appendChild(cond);
+
+    var rm = document.createElement('button');
+    rm.className = 'asset-remove';
+    rm.textContent = '✕';
+    rm.onclick = (function(id){ return function(){ removeAsset(id); }; })(a.id);
+    item.appendChild(rm);
+
+    list.appendChild(item);
+  });
+}
+
+function toggleAddAsset() {
+  var form = document.getElementById('addAssetForm');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+async function saveAsset() {
+  if (!currentRoomLoc) return;
+  var name = document.getElementById('na-name').value.trim();
+  var type = document.getElementById('na-type').value;
+  var serial = document.getElementById('na-serial').value.trim();
+  var condition = document.getElementById('na-condition').value;
+  if (!name) { alert('Enter an asset name'); return; }
+
+  var { error } = await sb.from('room_assets').insert({
+    facility_id: FACILITY_ID,
+    qr_id: currentRoomLoc.id,
+    qr_identifier: currentRoomLoc.qr_identifier,
+    asset_name: name, asset_type: type || 'Other',
+    serial_number: serial || null, condition: condition,
+  });
+  if (error) { alert('Error: ' + error.message); return; }
+
+  document.getElementById('na-name').value = '';
+  document.getElementById('na-serial').value = '';
+  document.getElementById('na-type').value = '';
+  document.getElementById('addAssetForm').style.display = 'none';
+  loadRoomAssets(currentRoomLoc.qr_identifier);
+}
+
+async function removeAsset(assetId) {
+  if (!confirm('Remove this asset from the room?')) return;
+  var { error } = await sb.from('room_assets').update({ is_active: false }).eq('id', assetId);
+  if (error) { alert('Error: ' + error.message); return; }
+  loadRoomAssets(currentRoomLoc.qr_identifier);
+}
 
 // Boot
 loadDashboard();
