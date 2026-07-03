@@ -347,7 +347,8 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
 
 
 /* ── Collapsible hall sections ── */
-.hall-section { margin-bottom: 16px; }
+.hall-section { margin-bottom: 16px; width: 100%; display: block; }
+#roomsGrid, #eocGrid { display: flex; flex-direction: column; gap: 4px; width: 100%; }
 .hall-header {
   display: flex; align-items: center; gap: 12px; cursor: pointer;
   background: var(--surface); border-radius: 20px; padding: 16px 20px;
