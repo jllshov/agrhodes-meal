@@ -132,7 +132,10 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
 .card-sub { font-size: 12px; color: var(--gray); margin-bottom: 18px; }
 
 /* ── Heat map ── */
-.heatmap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 10px; }
+.heatmap-grid { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 10px; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+.heatmap-grid .heat-tile { flex: 0 0 72px; }
+.heatmap-grid::-webkit-scrollbar { height: 6px; }
+.heatmap-grid::-webkit-scrollbar-thumb { background: var(--orange); border-radius: 3px; opacity: .3; }
 .heat-tile {
   aspect-ratio: 1; border-radius: 14px; display: flex; flex-direction: column;
   align-items: center; justify-content: center; cursor: pointer;
@@ -859,6 +862,9 @@ async function generateBulkRooms() {
 }
 
 /* ── EOC ── */
+var eocOpenState = JSON.parse(localStorage.getItem('agrhodes_eoc_open') || '{}');
+var EOC_DEPT_ICONS = { 'Nursing':'🩺','Dietary':'🍽','Housekeeping':'🧹','Maintenance':'🔧' };
+
 async function loadEOC() {
   var grid = document.getElementById('eocGrid');
   grid.innerHTML = '<div style="padding:20px;color:var(--gray)">Loading…</div>';
@@ -867,13 +873,44 @@ async function loadEOC() {
   var byDept = {};
   (eoc||[]).forEach(function(e){ (byDept[e.eoc_department]=byDept[e.eoc_department]||[]).push(e); });
   grid.innerHTML = '';
-  Object.keys(byDept).forEach(function(dept) {
-    var section = document.createElement('div'); section.className = 'qr-section';
-    section.innerHTML = '<div class="qr-section-title">'+dept+'</div>';
+  Object.keys(byDept).sort().forEach(function(dept) {
+    var isOpen = eocOpenState[dept] !== false;
+    var section = document.createElement('div');
+    section.className = 'hall-section' + (isOpen ? ' open' : '');
+    section.id = 'eoc-dept-' + dept.replace(/\s+/g,'-');
+
+    var header = document.createElement('div');
+    header.className = 'hall-header';
+    header.onclick = (function(d){ return function(){ toggleEocDept(d); }; })(dept);
+    header.innerHTML =
+      '<div class="hall-icon">' + (EOC_DEPT_ICONS[dept]||'📋') + '</div>' +
+      '<div class="hall-title-wrap">' +
+        '<div class="hall-title">' + dept + '</div>' +
+        '<div class="hall-sub">' + byDept[dept].length + ' area' + (byDept[dept].length>1?'s':'') + '</div>' +
+      '</div>' +
+      '<div class="hall-chevron">▼</div>';
+    section.appendChild(header);
+
+    var body = document.createElement('div');
+    body.className = 'hall-body';
+    var bodyInner = document.createElement('div');
+    bodyInner.className = 'hall-body-inner';
     var g = document.createElement('div'); g.className = 'qr-grid';
     byDept[dept].forEach(function(loc){ renderQRTile(loc,g); });
-    section.appendChild(g); grid.appendChild(section);
+    bodyInner.appendChild(g);
+    body.appendChild(bodyInner);
+    section.appendChild(body);
+    grid.appendChild(section);
   });
+}
+
+function toggleEocDept(dept) {
+  var section = document.getElementById('eoc-dept-' + dept.replace(/\s+/g,'-'));
+  if (!section) return;
+  var nowOpen = !section.classList.contains('open');
+  section.classList.toggle('open', nowOpen);
+  eocOpenState[dept] = nowOpen;
+  localStorage.setItem('agrhodes_eoc_open', JSON.stringify(eocOpenState));
 }
 
 function renderQRTile(loc, container) {
