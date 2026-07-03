@@ -141,6 +141,38 @@ body{padding-bottom:max(24px,env(safe-area-inset-bottom));}
   cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;}
 .photo-preview{width:100%;border-radius:var(--r-sm);margin-top:8px;display:none;}
 
+
+/* ── Choice Screen ── */
+#choiceScreen { display: none; min-height: 100vh; flex-direction: column;
+  padding: 24px; padding-top: 60px; }
+.choice-header { text-align: center; margin-bottom: 32px; }
+.choice-name { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+.choice-meta { font-size: 12.5px; color: var(--text-2); margin-top: 6px; }
+.choice-cards { display: flex; flex-direction: column; gap: 14px; flex: 1; }
+.choice-card {
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: 20px;
+  padding: 22px 20px; cursor: pointer; transition: all .15s; text-align: left;
+  display: flex; align-items: center; gap: 16px;
+}
+.choice-card:active { transform: scale(.98); }
+.choice-card.round-card-choice { border-color: rgba(124,111,240,.4); }
+.choice-card.report-card-choice { border-color: rgba(239,68,68,.35); }
+.choice-icon { width: 52px; height: 52px; border-radius: 16px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.round-card-choice .choice-icon { background: rgba(124,111,240,.15); }
+.report-card-choice .choice-icon { background: rgba(239,68,68,.12); }
+.choice-text-title { font-size: 15px; font-weight: 700; }
+.choice-text-sub { font-size: 12px; color: var(--text-2); margin-top: 3px; line-height: 1.4; }
+.choice-back { background: none; border: none; color: var(--text-2); font-size: 13.5px;
+  font-weight: 500; display: flex; align-items: center; gap: 6px; cursor: pointer;
+  margin-bottom: 20px; padding: 4px 0; }
+
+/* ── Quick Report Screen ── */
+#reportScreen { display: none; min-height: 100vh; }
+.report-header { position: sticky; top: 0; background: var(--surface);
+  border-bottom: 1px solid var(--border); padding: 16px 18px; z-index: 10; }
+.report-body { padding: 18px; padding-bottom: 100px; }
+
 </style>
 </head>
 <body>
@@ -174,6 +206,83 @@ body{padding-bottom:max(24px,env(safe-area-inset-bottom));}
   <div class="action-bar">
     <button class="complete-btn" id="completeBtn" onclick="submitRound()">
       <span id="completeBtnText">Complete Round</span>
+    </button>
+  </div>
+</div>
+
+
+<div id="choiceScreen">
+  <button class="choice-back" onclick="backToScanner()">← Scan next</button>
+  <div class="choice-header">
+    <div class="choice-name" id="choiceName">—</div>
+    <div class="choice-meta" id="choiceMeta"></div>
+  </div>
+  <div class="choice-cards">
+    <div class="choice-card round-card-choice" onclick="startRoundFromChoice()">
+      <div class="choice-icon">📋</div>
+      <div>
+        <div class="choice-text-title">Complete Zone Defense Round</div>
+        <div class="choice-text-sub">Full checklist — resident status, safety, cleanliness, environment</div>
+      </div>
+    </div>
+    <div class="choice-card report-card-choice" onclick="startReportFromChoice()">
+      <div class="choice-icon">⚠</div>
+      <div>
+        <div class="choice-text-title">Report Something Broken</div>
+        <div class="choice-text-sub">Quick issue report — no full round needed</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="reportScreen">
+  <div class="report-header">
+    <button class="fh-back" onclick="backToChoice()">← Back</button>
+    <div class="fh-name" style="margin-top:10px;" id="report-loc-name">—</div>
+    <div class="fh-meta" id="report-loc-meta"></div>
+  </div>
+  <div class="report-body">
+    <div class="round-card">
+      <div class="rc-label">Issue Type</div>
+      <div class="rc-sub">What category best describes this issue?</div>
+      <select class="issue-select" id="qr-issue-type">
+        <option>Maintenance</option><option>Housekeeping</option><option>Nursing</option>
+        <option>Dietary</option><option>Social Services</option><option>Activities</option>
+        <option>Infection Control</option><option>Safety</option><option>Other</option>
+      </select>
+    </div>
+
+    <div class="round-card">
+      <div class="rc-label">Quick Tags</div>
+      <div class="rc-sub">Tap any that apply</div>
+      <div class="quick-chips" id="qr-quick-chips"></div>
+    </div>
+
+    <div class="round-card">
+      <div class="rc-label">Description</div>
+      <div class="rc-sub">Briefly describe the issue</div>
+      <textarea class="issue-textarea" id="qr-description" rows="3" placeholder="What's broken or needs attention?"></textarea>
+    </div>
+
+    <div class="round-card">
+      <div class="rc-label">Priority</div>
+      <div class="rc-options cols-3">
+        <button type="button" class="rc-btn" onclick="setQrPriority(this,'High')">High</button>
+        <button type="button" class="rc-btn" onclick="setQrPriority(this,'Medium')">Medium</button>
+        <button type="button" class="rc-btn" onclick="setQrPriority(this,'Low')">Low</button>
+      </div>
+    </div>
+
+    <div class="round-card">
+      <div class="rc-label">Photo (optional)</div>
+      <button type="button" class="photo-btn" onclick="document.getElementById('qr-photo-input').click()">📷 Take / Upload Photo</button>
+      <input type="file" id="qr-photo-input" accept="image/*" capture="environment" style="display:none" onchange="handleQrPhoto(this)">
+      <img id="qr-photo-preview" class="photo-preview">
+    </div>
+  </div>
+  <div class="action-bar">
+    <button class="complete-btn has-issues" id="qrSubmitBtn" onclick="submitQuickReport()">
+      <span>⚠ Submit Report</span>
     </button>
   </div>
 </div>
@@ -365,12 +474,39 @@ async function loadLocation(qrIdentifier) {
     currentLocation = data;
     sb.from('room_qr_codes').update({ last_scan_at: new Date().toISOString() })
       .eq('id', data.id).then(function(){});
-    renderForm();
-    document.getElementById('scanScreen').style.display = 'none';
-    document.getElementById('formScreen').style.display = 'block';
+    showChoiceScreen();
   } catch (e) {
     showToast('QR code not recognized', 'error');
   }
+}
+
+/* ── Choice Screen ── */
+function showChoiceScreen() {
+  document.getElementById('choiceName').textContent = currentLocation.display_name;
+  var meta = [];
+  if (currentLocation.unit) meta.push(currentLocation.unit);
+  if (currentLocation.eoc_department) meta.push(currentLocation.eoc_department);
+  document.getElementById('choiceMeta').textContent = meta.join(' · ');
+  document.getElementById('scanScreen').style.display = 'none';
+  document.getElementById('choiceScreen').style.display = 'flex';
+}
+
+function backToChoice() {
+  document.getElementById('reportScreen').style.display = 'none';
+  document.getElementById('formScreen').style.display = 'none';
+  document.getElementById('choiceScreen').style.display = 'flex';
+}
+
+function startRoundFromChoice() {
+  renderForm();
+  document.getElementById('choiceScreen').style.display = 'none';
+  document.getElementById('formScreen').style.display = 'block';
+}
+
+function startReportFromChoice() {
+  renderQuickReport();
+  document.getElementById('choiceScreen').style.display = 'none';
+  document.getElementById('reportScreen').style.display = 'block';
 }
 
 function renderForm() {
@@ -785,10 +921,128 @@ function showDone(hasIssues, issueCount) {
 
 function backToScanner() {
   document.getElementById('formScreen').style.display = 'none';
+  document.getElementById('choiceScreen').style.display = 'none';
+  document.getElementById('reportScreen').style.display = 'none';
   document.getElementById('doneScreen').style.display = 'none';
   document.getElementById('scanScreen').style.display = 'flex';
   currentLocation = null;
   startScanner();
+}
+
+
+/* ── Quick Report (standalone issue, no full round) ── */
+var qrReportData = { priority: 'Medium', quickAction: null, photoFile: null };
+
+var QR_QUICK_ACTIONS = ['Trash','Call Light','Odor','Maintenance','Resident Concern','Temperature','Supplies Needed','Bathroom','Broken Equipment','Light Out','Leak'];
+
+function renderQuickReport() {
+  qrReportData = { priority: 'Medium', quickAction: null, photoFile: null };
+  document.getElementById('report-loc-name').textContent = currentLocation.display_name;
+  var meta = [];
+  if (currentLocation.unit) meta.push(currentLocation.unit);
+  if (currentLocation.eoc_department) meta.push(currentLocation.eoc_department);
+  document.getElementById('report-loc-meta').innerHTML = meta.map(function(m){return '<span>'+m+'</span>';}).join('');
+
+  document.getElementById('qr-description').value = '';
+  document.getElementById('qr-issue-type').value = 'Maintenance';
+  document.getElementById('qr-photo-preview').style.display = 'none';
+  document.getElementById('qr-photo-preview').src = '';
+
+  var chipsDiv = document.getElementById('qr-quick-chips');
+  chipsDiv.innerHTML = '';
+  QR_QUICK_ACTIONS.forEach(function(qa) {
+    var chip = document.createElement('button');
+    chip.type = 'button'; chip.className = 'quick-chip'; chip.textContent = qa;
+    chip.onclick = function() { applyQrQuickAction(chip, qa); };
+    chipsDiv.appendChild(chip);
+  });
+
+  // Default select Medium priority
+  var btns = document.querySelectorAll('#reportScreen .rc-options.cols-3 .rc-btn');
+  btns.forEach(function(b){ b.classList.remove('sel-pass','sel-fail','sel-neutral'); });
+  if (btns[1]) btns[1].classList.add('sel-neutral');
+}
+
+function applyQrQuickAction(chip, action) {
+  document.querySelectorAll('#qr-quick-chips .quick-chip').forEach(function(c){ c.classList.remove('active'); });
+  chip.classList.add('active');
+  qrReportData.quickAction = action;
+  var desc = document.getElementById('qr-description');
+  if (!desc.value.trim()) desc.value = action + ' — needs attention';
+}
+
+function setQrPriority(btn, priority) {
+  btn.parentElement.querySelectorAll('.rc-btn').forEach(function(b){b.classList.remove('sel-neutral','sel-fail','sel-pass');});
+  var cls = priority==='High'?'sel-fail':priority==='Low'?'sel-pass':'sel-neutral';
+  btn.classList.add(cls);
+  qrReportData.priority = priority;
+}
+
+function handleQrPhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  qrReportData.photoFile = input.files[0];
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var preview = document.getElementById('qr-photo-preview');
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+async function submitQuickReport() {
+  var btn = document.getElementById('qrSubmitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  var staffName = localStorage.getItem('agrhodes_round_staff') || prompt('Your name (saved for future reports):') || 'Staff';
+  localStorage.setItem('agrhodes_round_staff', staffName);
+
+  var issueType = document.getElementById('qr-issue-type').value;
+  var description = document.getElementById('qr-description').value.trim() || (qrReportData.quickAction || 'Issue reported') + ' — no description provided';
+
+  try {
+    var photoUrl = null;
+    if (qrReportData.photoFile) {
+      var ext = qrReportData.photoFile.name.split('.').pop() || 'jpg';
+      var path = 'reports/' + Date.now() + '.' + ext;
+      var { error: upErr } = await sb.storage.from('round-photos').upload(path, qrReportData.photoFile, {
+        cacheControl: '3600', upsert: true, contentType: qrReportData.photoFile.type,
+      });
+      if (!upErr) {
+        var { data: urlData } = sb.storage.from('round-photos').getPublicUrl(path);
+        photoUrl = urlData.publicUrl;
+      }
+    }
+
+    var { error } = await sb.from('zone_issues').insert({
+      facility_id: currentLocation.facility_id,
+      round_id: null,
+      round_type: currentLocation.location_type === 'room' ? 'room' : 'eoc',
+      room_number: currentLocation.room_number || null,
+      eoc_section: currentLocation.eoc_section || null,
+      issue_type: issueType,
+      issue_description: description,
+      priority: qrReportData.priority,
+      quick_action: qrReportData.quickAction,
+      photo_url: photoUrl,
+      assigned_to: null,
+    });
+    if (error) throw error;
+
+    document.getElementById('reportScreen').style.display = 'none';
+    var icon = document.getElementById('doneIcon');
+    var title = document.getElementById('doneTitle');
+    var sub = document.getElementById('doneSub');
+    icon.textContent = '⚠'; icon.style.background = 'rgba(239,68,68,.15)';
+    title.textContent = 'Report Submitted';
+    sub.textContent = 'Saved and routed to ' + issueType + '.';
+    document.getElementById('doneScreen').style.display = 'flex';
+  } catch (e) {
+    showToast('Save failed — try again', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<span>⚠ Submit Report</span>';
+  }
 }
 
 window.addEventListener('DOMContentLoaded', function() {
