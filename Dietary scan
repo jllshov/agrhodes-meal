@@ -87,11 +87,58 @@ body{padding-bottom:max(24px,env(safe-area-inset-bottom));}
 #toast.show{transform:translateX(-50%) translateY(0);}
 #toast.error{border-color:var(--red);color:var(--red);}
 #toast.success{border-color:var(--green);color:var(--green);}
+
+#roleScreen { display: none; min-height: 100vh; flex-direction: column; padding: 24px; padding-top: 60px; }
+.role-header { text-align: center; margin-bottom: 28px; }
+.role-title { font-size: 20px; font-weight: 800; }
+.role-sub { font-size: 12.5px; color: var(--text-2); margin-top: 6px; }
+.role-option { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 18px; padding: 16px; margin-bottom: 10px; cursor: pointer; }
+.role-option:active { transform: scale(.98); }
+.role-icon { width: 40px; height: 40px; border-radius: 12px; background: var(--surface-2);
+  display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.role-name { font-size: 14px; font-weight: 700; }
+.role-desc { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+.role-lock { margin-left: auto; font-size: 14px; color: var(--text-3); }
+#pinScreen { display: none; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+.pin-input-large { width: 100%; max-width: 240px; text-align: center; font-family: 'DM Mono', monospace;
+  font-size: 30px; letter-spacing: 12px; padding: 16px; border: 1.5px solid var(--border); border-radius: 16px;
+  background: var(--surface-2); color: var(--text); margin: 20px 0 10px; }
+.pin-error { color: var(--red); font-size: 12px; min-height: 16px; margin-bottom: 12px; }
+.disabled-role { opacity: .3; pointer-events: none; }
+
 </style>
 </head>
 <body>
 
 <div id="toast"></div>
+
+
+<div id="roleScreen">
+  <div class="role-header"><div class="role-title">Select Your Role</div><div class="role-sub">Access is tailored to your role</div></div>
+  <div class="role-option" onclick="selectScanRole('Administrator')">
+    <div class="role-icon">👑</div><div><div class="role-name">Administrator</div><div class="role-desc">Full access</div></div><div class="role-lock">🔒</div>
+  </div>
+  <div class="role-option" onclick="selectScanRole('Dietary Manager')">
+    <div class="role-icon">📋</div><div><div class="role-name">Dietary Manager</div><div class="role-desc">Full inventory access</div></div><div class="role-lock">🔒</div>
+  </div>
+  <div class="role-option" onclick="selectScanRole('Cook')">
+    <div class="role-icon">👨‍🍳</div><div><div class="role-name">Cook</div><div class="role-desc">Receive, remove, adjust</div></div>
+  </div>
+  <div class="role-option" onclick="selectScanRole('Receiving')">
+    <div class="role-icon">📥</div><div><div class="role-name">Receiving</div><div class="role-desc">Log deliveries only</div></div>
+  </div>
+  <div class="role-option" onclick="selectScanRole('Read Only')">
+    <div class="role-icon">👁</div><div><div class="role-name">Read Only</div><div class="role-desc">View only — no changes</div></div>
+  </div>
+</div>
+
+<div id="pinScreen">
+  <div class="role-title" id="pinScreenTitle">Enter PIN</div>
+  <input class="pin-input-large" type="password" id="scanPinInput" maxlength="4" inputmode="numeric" placeholder="••••">
+  <div class="pin-error" id="scanPinError"></div>
+  <button class="complete-btn" style="max-width:240px;" onclick="confirmScanPin()">Confirm</button>
+</div>
 
 <div id="scanScreen">
   <div class="scan-logo">AG</div>
@@ -230,6 +277,7 @@ async function renderItemScreen() {
   }
   document.getElementById('d-storage').textContent = storName;
   document.getElementById('d-lot').textContent = currentItem.lot_number || '—';
+  applyScanPermissions();
 }
 
 function openForm(action) {
@@ -326,7 +374,72 @@ function backToScanner() {
   startScanner();
 }
 
+
+/* ── Role-Based Access (matches dietary.html) ── */
+var ROLE_PINS = { 'Administrator': '350', 'Dietary Manager': '1200' };
+var SCAN_PERMISSIONS = {
+  'Administrator':   { receive:true, remove:true, adjust:true },
+  'Dietary Manager': { receive:true, remove:true, adjust:true },
+  'Cook':            { receive:true, remove:true, adjust:true },
+  'Receiving':       { receive:true, remove:false, adjust:false },
+  'Read Only':       { receive:false, remove:false, adjust:false },
+};
+var currentScanRole = localStorage.getItem('agrhodes_dietary_role') || null;
+var pendingScanRole = null;
+
+function canScan(action) {
+  if (!currentScanRole) return false;
+  return !!(SCAN_PERMISSIONS[currentScanRole] && SCAN_PERMISSIONS[currentScanRole][action]);
+}
+
+function selectScanRole(role) {
+  if (ROLE_PINS[role]) {
+    pendingScanRole = role;
+    document.getElementById('pinScreenTitle').textContent = role + ' PIN';
+    document.getElementById('scanPinInput').value = '';
+    document.getElementById('scanPinError').textContent = '';
+    document.getElementById('roleScreen').style.display = 'none';
+    document.getElementById('pinScreen').style.display = 'flex';
+  } else {
+    setScanRole(role);
+  }
+}
+
+function confirmScanPin() {
+  var entered = document.getElementById('scanPinInput').value;
+  if (entered === ROLE_PINS[pendingScanRole]) {
+    document.getElementById('pinScreen').style.display = 'none';
+    setScanRole(pendingScanRole);
+    pendingScanRole = null;
+  } else {
+    document.getElementById('scanPinError').textContent = 'Incorrect PIN';
+    document.getElementById('scanPinInput').value = '';
+  }
+}
+
+function setScanRole(role) {
+  currentScanRole = role;
+  localStorage.setItem('agrhodes_dietary_role', role);
+  document.getElementById('roleScreen').style.display = 'none';
+  document.getElementById('pinScreen').style.display = 'none';
+  document.getElementById('scanScreen').style.display = 'flex';
+  startScanner();
+}
+
+function applyScanPermissions() {
+  var receiveBtn = document.querySelector('.action-btn.receive');
+  var removeBtn = document.querySelector('.action-btn.remove');
+  var adjustBtn = document.querySelector('.action-btn.adjust');
+  if (receiveBtn) receiveBtn.classList.toggle('disabled-role', !canScan('receive'));
+  if (removeBtn) removeBtn.classList.toggle('disabled-role', !canScan('remove'));
+  if (adjustBtn) adjustBtn.classList.toggle('disabled-role', !canScan('adjust'));
+}
+
 window.addEventListener('DOMContentLoaded', function() {
+  if (!currentScanRole) {
+    document.getElementById('roleScreen').style.display = 'flex';
+    return;
+  }
   if (location.hash.startsWith('#item=')) {
     var qrId = location.hash.replace('#item=','').split('&')[0];
     loadItem(qrId);
