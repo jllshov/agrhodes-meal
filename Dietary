@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A.G. Rhodes — Dietary Inventory</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #EAEEF2; --surface: #EEF1F5; --orange: #F5A623; --orange-light: #FFF3DC;
+  --black: #1A1A1A; --gray: #6B7280; --gray-light: #9CA3AF;
+  --green: #22C55E; --red: #EF4444; --amber: #F59E0B; --blue: #3B82F6;
+  --shadow-out: 6px 6px 14px #C8CDD5, -6px -6px 14px #FFFFFF;
+  --shadow-in: inset 4px 4px 10px #C8CDD5, inset -4px -4px 10px #FFFFFF;
+  --shadow-card: 8px 8px 20px #C5CAD1, -8px -8px 20px #FFFFFF;
+  --r: 20px; --r-sm: 12px; --r-pill: 999px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--black); min-height: 100vh; display: flex; }
+
+/* ── Sidebar ── */
+.sidebar { width: 220px; min-height: 100vh; background: var(--surface); box-shadow: var(--shadow-card);
+  padding: 28px 16px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; position: sticky; top: 0; }
+.sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 8px 24px;
+  border-bottom: 1px solid rgba(0,0,0,.06); margin-bottom: 10px; }
+.sidebar-logo-icon { width: 40px; height: 40px; border-radius: 12px; background: var(--orange);
+  display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; color: white; }
+.sidebar-logo-name { font-size: 13px; font-weight: 700; line-height: 1.3; }
+.sidebar-logo-sub { font-size: 10px; color: var(--gray); }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: var(--r-sm);
+  cursor: pointer; font-size: 13px; font-weight: 500; color: var(--gray); transition: all .15s;
+  border: none; background: none; font-family: inherit; width: 100%; text-align: left; }
+.nav-item:hover { background: var(--bg); color: var(--black); }
+.nav-item.active { background: var(--orange); color: white; box-shadow: 4px 4px 12px rgba(245,166,35,.4); }
+.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+.sidebar-bottom { margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(0,0,0,.06); }
+.sidebar-user { display: flex; align-items: center; gap: 10px; padding: 10px 8px; }
+.user-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--orange);
+  display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: white; }
+.user-name { font-size: 12.5px; font-weight: 600; }
+.user-role { font-size: 10.5px; color: var(--gray); }
+
+/* ── Main ── */
+.main { flex: 1; padding: 28px 32px; overflow-y: auto; }
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+.page-title { font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
+.page-sub { font-size: 13px; color: var(--gray); margin-top: 3px; }
+.header-actions { display: flex; gap: 10px; }
+
+.neu-btn { padding: 10px 20px; border-radius: var(--r-pill); border: none; cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 600; background: var(--surface);
+  box-shadow: var(--shadow-out); color: var(--black); transition: all .15s; }
+.neu-btn:active { box-shadow: var(--shadow-in); }
+.neu-btn.primary { background: var(--orange); color: white; box-shadow: 4px 4px 12px rgba(245,166,35,.5); }
+.neu-btn.small { padding: 7px 14px; font-size: 11.5px; }
+
+.tab-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab-pill { padding: 9px 18px; border-radius: var(--r-pill); border: none; cursor: pointer;
+  font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--gray);
+  background: var(--surface); box-shadow: var(--shadow-out); }
+.tab-pill.active { background: var(--orange); color: white; box-shadow: 4px 4px 12px rgba(245,166,35,.4); }
+
+/* ── Stat cards ── */
+.stats-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 22px; }
+.stat-card { background: var(--surface); border-radius: 24px; box-shadow: var(--shadow-card);
+  padding: 18px 16px; display: flex; flex-direction: column; gap: 5px; }
+.stat-card.accent { background: var(--orange); }
+.stat-num { font-family: 'DM Mono', monospace; font-size: 26px; font-weight: 500; letter-spacing: -.02em; }
+.stat-card.accent .stat-num { color: white; }
+.stat-label { font-size: 10.5px; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: .03em; }
+.stat-card.accent .stat-label { color: rgba(255,255,255,.8); }
+.stat-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: var(--r-pill);
+  font-size: 10px; font-weight: 700; margin-top: 2px; width: fit-content; }
+.pill-orange { background: var(--orange-light); color: var(--orange); }
+.pill-green { background: rgba(34,197,94,.12); color: var(--green); }
+.pill-red { background: rgba(239,68,68,.12); color: var(--red); }
+.pill-gray { background: rgba(107,114,128,.1); color: var(--gray); }
+
+/* ── Card / content grid ── */
+.card { background: var(--surface); border-radius: 24px; box-shadow: var(--shadow-card); padding: 22px; margin-bottom: 16px; }
+.card-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.card-sub { font-size: 12px; color: var(--gray); margin-bottom: 16px; }
+.content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; }
+
+/* ── Inventory table ── */
+.inv-table { width: 100%; border-collapse: collapse; }
+.inv-table th { text-align: left; font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--gray); padding: 10px 12px; border-bottom: 2px solid rgba(0,0,0,.06); }
+.inv-table td { padding: 12px; font-size: 12.5px; border-bottom: 1px solid rgba(0,0,0,.05); vertical-align: middle; }
+.inv-table tr { cursor: pointer; transition: background .12s; }
+.inv-table tr:hover td { background: var(--bg); }
+.inv-item-name { font-weight: 700; }
+.inv-item-meta { font-size: 10.5px; color: var(--gray); margin-top: 1px; }
+.qty-badge { font-family: 'DM Mono', monospace; font-weight: 700; padding: 3px 10px; border-radius: var(--r-pill); font-size: 11.5px; }
+.qty-ok { background: rgba(34,197,94,.12); color: var(--green); }
+.qty-low { background: rgba(245,158,11,.12); color: var(--amber); }
+.qty-out { background: rgba(239,68,68,.12); color: var(--red); }
+.exp-badge { font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: var(--r-pill); }
+.exp-good { background: rgba(34,197,94,.1); color: var(--green); }
+.exp-soon { background: rgba(245,158,11,.12); color: var(--amber); }
+.exp-expired { background: rgba(239,68,68,.15); color: var(--red); }
+.exp-none { background: rgba(107,114,128,.08); color: var(--gray-light); }
+
+/* ── Search / filters ── */
+.search-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.search-input { flex: 1; min-width: 200px; padding: 11px 16px; border: none; border-radius: var(--r-pill);
+  background: var(--surface); box-shadow: var(--shadow-in); font-family: inherit; font-size: 13px; color: var(--black); }
+.filter-select { padding: 10px 14px; border: none; border-radius: var(--r-sm); background: var(--surface);
+  box-shadow: var(--shadow-out); font-family: inherit; font-size: 12.5px; color: var(--black); cursor: pointer; }
+
+/* ── Floating scan button ── */
+.fab-scan { position: fixed; bottom: 28px; right: 32px; width: 60px; height: 60px; border-radius: 50%;
+  background: var(--orange); color: white; border: none; font-size: 24px; cursor: pointer;
+  box-shadow: 6px 6px 18px rgba(245,166,35,.5), -2px -2px 10px rgba(255,255,255,.5);
+  display: flex; align-items: center; justify-content: center; z-index: 40; transition: transform .15s; }
+.fab-scan:hover { transform: scale(1.08); }
+.fab-scan:active { transform: scale(.95); }
+
+/* ── Modal ── */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35);
+  backdrop-filter: blur(4px); z-index: 150; align-items: center; justify-content: center; padding: 16px; }
+.modal-overlay.open { display: flex; }
+.modal-box { background: var(--surface); border-radius: 24px; width: 100%; max-width: 560px;
+  max-height: 88vh; overflow-y: auto; box-shadow: 20px 20px 50px rgba(0,0,0,.2); }
+.modal-header { padding: 22px 22px 14px; display: flex; align-items: flex-start; justify-content: space-between;
+  position: sticky; top: 0; background: var(--surface); z-index: 1; border-radius: 24px 24px 0 0; }
+.modal-title { font-size: 17px; font-weight: 800; }
+.modal-meta { font-size: 11.5px; color: var(--gray); margin-top: 3px; }
+.modal-close { background: var(--bg); border: none; border-radius: 10px; width: 32px; height: 32px;
+  cursor: pointer; font-size: 15px; box-shadow: var(--shadow-out); color: var(--gray); }
+.modal-body { padding: 0 22px 22px; }
+
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.field label { display: block; font-size: 10.5px; font-weight: 700; color: var(--gray); margin-bottom: 5px;
+  text-transform: uppercase; letter-spacing: .03em; }
+.field input, .field select, .field textarea { width: 100%; padding: 10px 12px; border: none; border-radius: var(--r-sm);
+  background: var(--bg); box-shadow: var(--shadow-in); font-family: inherit; font-size: 12.5px; color: var(--black); }
+.field textarea { resize: vertical; min-height: 60px; }
+
+.detail-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0;
+  border-bottom: 1px solid rgba(0,0,0,.05); font-size: 12.5px; }
+.detail-label { color: var(--gray); }
+.detail-val { font-weight: 700; }
+
+.action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
+.action-btn { padding: 12px 8px; border-radius: 14px; border: none; cursor: pointer; font-family: inherit;
+  font-size: 11.5px; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 5px;
+  background: var(--bg); box-shadow: var(--shadow-out); color: var(--black); transition: all .15s; }
+.action-btn:active { box-shadow: var(--shadow-in); }
+.action-btn .a-icon { font-size: 18px; }
+.action-btn.receive { color: var(--green); }
+.action-btn.remove { color: var(--red); }
+.action-btn.transfer { color: var(--blue); }
+.action-btn.discard { color: var(--gray); }
+.action-btn.adjust { color: var(--amber); }
+.action-btn.history { color: var(--black); }
+
+.qr-holder { width: 130px; margin: 0 auto 14px; padding: 12px; background: white; border-radius: 18px; box-shadow: var(--shadow-out); }
+.qr-holder canvas, .qr-holder img { width: 100%; display: block; }
+
+.txn-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid rgba(0,0,0,.05); }
+.txn-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.txn-Receive { background: rgba(34,197,94,.12); }
+.txn-Remove { background: rgba(239,68,68,.1); }
+.txn-Transfer { background: rgba(59,130,246,.1); }
+.txn-Discard { background: rgba(107,114,128,.1); }
+.txn-Adjust { background: rgba(245,158,11,.1); }
+.txn-info { flex: 1; min-width: 0; }
+.txn-title { font-size: 12.5px; font-weight: 700; }
+.txn-meta { font-size: 10.5px; color: var(--gray); margin-top: 1px; }
+.txn-qty { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+
+/* ── Grid for cards (vendors/POs/emergency) ── */
+.item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.mini-card { background: var(--surface); border-radius: 18px; box-shadow: var(--shadow-card); padding: 16px; }
+.mini-card-title { font-size: 13px; font-weight: 700; }
+.mini-card-sub { font-size: 11px; color: var(--gray); margin-top: 2px; }
+
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .main { padding: 16px; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .content-grid { grid-template-columns: 1fr; }
+  .field-grid { grid-template-columns: 1fr; }
+  .action-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Mobile topbar */
+.mobile-topbar { display: none; position: sticky; top: 0; left: 0; right: 0; z-index: 50; width: 100%;
+  background: var(--surface); padding: 14px 18px; box-shadow: 0 4px 12px rgba(0,0,0,.08);
+  align-items: center; justify-content: space-between; box-sizing: border-box; }
+.mobile-logo { display: flex; align-items: center; gap: 10px; }
+.mobile-logo-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--orange);
+  display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; color: white; }
+.mobile-logo-name { font-size: 14px; font-weight: 700; }
+.hamburger { background: var(--bg); border: none; border-radius: 10px; width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--shadow-out); font-size: 18px; }
+.mobile-drawer-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; }
+.mobile-drawer-overlay.open { display: block; }
+.mobile-drawer { position: fixed; top: 0; left: -260px; width: 250px; height: 100vh; background: var(--surface);
+  z-index: 201; padding: 28px 16px; display: flex; flex-direction: column; gap: 6px;
+  box-shadow: 8px 0 30px rgba(0,0,0,.15); transition: left .25s cubic-bezier(.4,0,.2,1); }
+.mobile-drawer.open { left: 0; }
+.mobile-drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 0 8px 20px;
+  border-bottom: 1px solid rgba(0,0,0,.06); margin-bottom: 10px; }
+.drawer-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--gray); }
+@media (max-width: 900px) { .mobile-topbar { display: flex; } body { display: block; } .main { width: 100%; } }
+</style>
+</head>
+<body>
+
+<div class="mobile-topbar">
+  <div class="mobile-logo"><div class="mobile-logo-icon">AG</div><div class="mobile-logo-name">Dietary</div></div>
+  <button class="hamburger" onclick="openDrawer()">☰</button>
+</div>
+<div class="mobile-drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="mobile-drawer" id="mobileDrawer">
+  <div class="mobile-drawer-header">
+    <div class="mobile-logo"><div class="mobile-logo-icon">AG</div><div class="mobile-logo-name">Dietary</div></div>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <button class="nav-item active" id="drawer-dashboard" onclick="drawerNav('dashboard')"><span class="nav-icon">📊</span> Dashboard</button>
+  <button class="nav-item" id="drawer-inventory" onclick="drawerNav('inventory')"><span class="nav-icon">📦</span> Inventory</button>
+  <button class="nav-item" id="drawer-vendors" onclick="drawerNav('vendors')"><span class="nav-icon">🚚</span> Vendors</button>
+  <button class="nav-item" id="drawer-emergency" onclick="drawerNav('emergency')"><span class="nav-icon">🆘</span> Emergency Supply</button>
+  <button class="nav-item" onclick="location.href='dietary-scan.html'"><span class="nav-icon">📷</span> QR Scanner</button>
+</div>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">AG</div>
+    <div><div class="sidebar-logo-name">A.G. Rhodes</div><div class="sidebar-logo-sub">Dietary Inventory</div></div>
+  </div>
+  <button class="nav-item active" onclick="switchTab('dashboard')"><span class="nav-icon">📊</span> Dashboard</button>
+  <button class="nav-item" onclick="switchTab('inventory')"><span class="nav-icon">📦</span> Inventory</button>
+  <button class="nav-item" onclick="switchTab('vendors')"><span class="nav-icon">🚚</span> Vendors</button>
+  <button class="nav-item" onclick="switchTab('emergency')"><span class="nav-icon">🆘</span> Emergency Supply</button>
+  <button class="nav-item" onclick="location.href='dietary-scan.html'"><span class="nav-icon">📷</span> QR Scanner</button>
+  <div class="sidebar-bottom">
+    <div class="sidebar-user">
+      <div class="user-avatar">N</div>
+      <div><div class="user-name">Nursaio</div><div class="user-role">Atlanta · Dietary</div></div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+
+  <div id="panel-dashboard">
+    <div class="page-header">
+      <div><div class="page-title">Dietary Dashboard</div><div class="page-sub" id="dash-date">Today's operations overview</div></div>
+      <div class="header-actions">
+        <button class="neu-btn" onclick="loadDashboard()">↻ Refresh</button>
+        <button class="neu-btn primary" onclick="location.href='dietary-scan.html'">📷 Quick Scan</button>
+      </div>
+    </div>
+
+    <div class="stats-row" id="statsRow"></div>
+
+    <div class="content-grid">
+      <div class="card">
+        <div class="card-title">Expiration Tracker</div>
+        <div class="card-sub">Items requiring attention, soonest first</div>
+        <div id="expirationList"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Recent Activity</div>
+        <div class="card-sub">Last 15 transactions</div>
+        <div id="activityFeed"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Items Running Low</div>
+      <div class="card-sub">At or below minimum level</div>
+      <div id="lowStockList"></div>
+    </div>
+  </div>
+
+  <div id="panel-inventory" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Inventory</div><div class="page-sub">All dietary stock items</div></div>
+      <button class="neu-btn primary" onclick="showAddItem()">+ Add Item</button>
+    </div>
+    <div class="search-bar">
+      <input class="search-input" id="invSearch" placeholder="Search item, vendor, lot, SKU…" oninput="renderInventoryTable()">
+      <select class="filter-select" id="invCatFilter" onchange="renderInventoryTable()"><option value="">All Categories</option></select>
+      <select class="filter-select" id="invStorageFilter" onchange="renderInventoryTable()"><option value="">All Storage</option></select>
+      <select class="filter-select" id="invStatusFilter" onchange="renderInventoryTable()">
+        <option value="">All Status</option><option>Low Stock</option><option>Out of Stock</option>
+        <option>Expired</option><option>Expiring Soon</option>
+      </select>
+    </div>
+    <div class="card" style="padding:0;overflow-x:auto;">
+      <table class="inv-table">
+        <thead><tr><th>Item</th><th>Category</th><th>Storage</th><th>Quantity</th><th>Expiration</th><th>Cost/Unit</th></tr></thead>
+        <tbody id="invTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="panel-vendors" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Vendors</div><div class="page-sub">Suppliers and purchasing contacts</div></div>
+      <button class="neu-btn primary" onclick="showAddVendor()">+ Add Vendor</button>
+    </div>
+    <div class="item-grid" id="vendorGrid"></div>
+  </div>
+
+  <div id="panel-emergency" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Emergency Supply</div><div class="page-sub">Disaster preparedness inventory — tracked separately from daily stock</div></div>
+      <button class="neu-btn primary" onclick="showAddEmergency()">+ Add Supply</button>
+    </div>
+    <div class="stats-row" id="emergencyStatsRow" style="grid-template-columns:repeat(4,1fr);"></div>
+    <div class="item-grid" id="emergencyGrid"></div>
+  </div>
+
+</main>
+
+<div class="modal-overlay" id="itemModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div><div class="modal-title" id="imTitle">—</div><div class="modal-meta" id="imMeta"></div></div>
+      <button class="modal-close" onclick="closeItemModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="qr-holder" id="imQrHolder"></div>
+      <div class="detail-row"><span class="detail-label">Current Quantity</span><span class="detail-val" id="imQty">—</span></div>
+      <div class="detail-row"><span class="detail-label">Expiration Date</span><span class="detail-val" id="imExp">—</span></div>
+      <div class="detail-row"><span class="detail-label">Storage Location</span><span class="detail-val" id="imStorage">—</span></div>
+      <div class="detail-row"><span class="detail-label">Lot Number</span><span class="detail-val" id="imLot">—</span></div>
+      <div class="detail-row"><span class="detail-label">Vendor</span><span class="detail-val" id="imVendor">—</span></div>
+      <div class="detail-row"><span class="detail-label">Total Value</span><span class="detail-val" id="imValue">—</span></div>
+
+      <div class="action-grid">
+        <button class="action-btn receive" onclick="openActionForm('Receive')"><span class="a-icon">📥</span>Receive</button>
+        <button class="action-btn remove" onclick="openActionForm('Remove')"><span class="a-icon">📤</span>Remove</button>
+        <button class="action-btn transfer" onclick="openActionForm('Transfer')"><span class="a-icon">🔄</span>Transfer</button>
+        <button class="action-btn discard" onclick="openActionForm('Discard')"><span class="a-icon">🗑</span>Discard</button>
+        <button class="action-btn adjust" onclick="openActionForm('Adjust')"><span class="a-icon">⚖</span>Adjust</button>
+        <button class="action-btn history" onclick="showItemHistory()"><span class="a-icon">📜</span>History</button>
+      </div>
+
+      <div id="actionFormWrap"></div>
+      <div id="historyWrap"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="addItemModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div><div class="modal-title">Add Inventory Item</div><div class="modal-meta">A QR code is generated automatically</div></div>
+      <button class="modal-close" onclick="closeAddItem()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-grid">
+        <div class="field"><label>Item Name *</label><input id="ai-name" placeholder="e.g. Whole Milk, 1 Gallon"></div>
+        <div class="field"><label>Category</label><select id="ai-category"></select></div>
+        <div class="field"><label>Vendor</label><select id="ai-vendor"></select></div>
+        <div class="field"><label>Manufacturer</label><input id="ai-manufacturer"></div>
+        <div class="field"><label>SKU</label><input id="ai-sku"></div>
+        <div class="field"><label>Lot Number</label><input id="ai-lot"></div>
+        <div class="field"><label>Expiration Date</label><input type="date" id="ai-exp"></div>
+        <div class="field"><label>Received Date</label><input type="date" id="ai-received"></div>
+        <div class="field"><label>Storage Location</label><select id="ai-storage"></select></div>
+        <div class="field"><label>Unit Type</label><input id="ai-unit" placeholder="case, each, lb, gal"></div>
+        <div class="field"><label>Current Quantity</label><input type="number" id="ai-qty" value="0"></div>
+        <div class="field"><label>Cost Per Unit ($)</label><input type="number" step="0.01" id="ai-cost"></div>
+        <div class="field"><label>Par Level</label><input type="number" id="ai-par"></div>
+        <div class="field"><label>Minimum Level</label><input type="number" id="ai-min"></div>
+      </div>
+      <div class="field" style="margin-bottom:12px;"><label>Notes</label><textarea id="ai-notes"></textarea></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;margin-bottom:16px;">
+        <input type="checkbox" id="ai-emergency" style="width:auto;"> Mark as Emergency Supply Item
+      </label>
+      <button class="neu-btn primary" style="width:100%;" onclick="saveNewItem()">Save Item & Generate QR</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL  = 'https://gtbiatetqyuxwuehwilr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34';
+const FACILITY_ID = '30f74349-3ab8-483b-a587-f372c0fbd413';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SCAN_BASE_URL = window.location.origin + '/dietary-scan.html#item=';
+
+var currentPanel = 'dashboard';
+var cachedItems = [], cachedCategories = [], cachedStorage = [], cachedVendors = [];
+var currentItem = null;
+
+function switchTab(tab) {
+  document.querySelectorAll('.sidebar .nav-item').forEach(function(b){ b.classList.remove('active'); });
+  if (event && event.currentTarget) event.currentTarget.classList.add('active');
+  switchTab_direct(tab);
+}
+function switchTab_direct(tab) {
+  ['dashboard','inventory','vendors','emergency'].forEach(function(p){
+    var el = document.getElementById('panel-'+p);
+    if (el) el.style.display = p===tab ? 'block' : 'none';
+  });
+  currentPanel = tab;
+  if (tab==='dashboard') loadDashboard();
+  if (tab==='inventory') loadInventoryTab();
+  if (tab==='vendors') loadVendors();
+  if (tab==='emergency') loadEmergency();
+}
+function openDrawer() { document.getElementById('mobileDrawer').classList.add('open'); document.getElementById('drawerOverlay').classList.add('open'); }
+function closeDrawer() { document.getElementById('mobileDrawer').classList.remove('open'); document.getElementById('drawerOverlay').classList.remove('open'); }
+function drawerNav(tab) {
+  document.querySelectorAll('.mobile-drawer .nav-item').forEach(function(b){ b.classList.remove('active'); });
+  var btn = document.getElementById('drawer-'+tab); if (btn) btn.classList.add('active');
+  switchTab_direct(tab);
+  closeDrawer();
+}
+
+function statCard(num, label, pillCls, pillText) {
+  return '<div class="stat-card"><div class="stat-label">'+label+'</div><div class="stat-num">'+num+'</div>' +
+    (pillText ? '<span class="stat-pill '+pillCls+'">'+pillText+'</span>' : '') + '</div>';
+}
+function statCardAccent(num, label, sub) {
+  return '<div class="stat-card accent"><div class="stat-label">'+label+'</div><div class="stat-num">'+num+'</div>' +
+    '<span style="font-size:10px;color:rgba(255,255,255,.7);margin-top:2px">'+sub+'</span></div>';
+}
+function fmtMoney(n) { return '$' + (Number(n)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  var d = new Date(dateStr+'T12:00:00');
+  return Math.ceil((d - new Date()) / 86400000);
+}
+
+async function loadRefData() {
+  var { data: cats } = await sb.from('dietary_categories').select('*').eq('facility_id', FACILITY_ID).order('name');
+  var { data: stor } = await sb.from('dietary_storage_locations').select('*').eq('facility_id', FACILITY_ID).order('name');
+  var { data: vend } = await sb.from('dietary_vendors').select('*').eq('facility_id', FACILITY_ID).eq('is_active', true).order('name');
+  cachedCategories = cats || []; cachedStorage = stor || []; cachedVendors = vend || [];
+
+  var catSel = document.getElementById('ai-category');
+  var storSel = document.getElementById('ai-storage');
+  var vendSel = document.getElementById('ai-vendor');
+  var catFilter = document.getElementById('invCatFilter');
+  var storFilter = document.getElementById('invStorageFilter');
+
+  [catSel, catFilter].forEach(function(sel) {
+    if (!sel) return;
+    var keepFirst = sel.options[0] ? sel.options[0].outerHTML : '';
+    sel.innerHTML = (sel===catFilter?keepFirst:'<option value="">Select…</option>') +
+      cachedCategories.map(function(c){ return '<option value="'+c.id+'">'+c.name+'</option>'; }).join('');
+  });
+  [storSel, storFilter].forEach(function(sel) {
+    if (!sel) return;
+    var keepFirst = sel.options[0] ? sel.options[0].outerHTML : '';
+    sel.innerHTML = (sel===storFilter?keepFirst:'<option value="">Select…</option>') +
+      cachedStorage.map(function(s){ return '<option value="'+s.id+'">'+s.name+'</option>'; }).join('');
+  });
+  if (vendSel) {
+    vendSel.innerHTML = '<option value="">None</option>' +
+      cachedVendors.map(function(v){ return '<option value="'+v.id+'">'+v.name+'</option>'; }).join('');
+  }
+}
+
+async function loadDashboard() {
+  document.getElementById('dash-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  var { data: items } = await sb.from('dietary_items').select('*').eq('facility_id', FACILITY_ID).eq('status','Active');
+  var todayStr = new Date().toISOString().split('T')[0];
+  var { data: txnsToday } = await sb.from('dietary_transactions').select('*').eq('facility_id', FACILITY_ID).gte('created_at', todayStr);
+  var { data: recentTxns } = await sb.from('dietary_transactions').select('*').eq('facility_id', FACILITY_ID).order('created_at',{ascending:false}).limit(15);
+
+  items = items || [];
+  cachedItems = items;
+
+  var lowStock = items.filter(function(i){ return i.minimum_level!=null && i.current_quantity <= i.minimum_level; });
+  var expired = items.filter(function(i){ var d = daysUntil(i.expiration_date); return d!==null && d<0; });
+  var expiringSoon = items.filter(function(i){ var d = daysUntil(i.expiration_date); return d!==null && d>=0 && d<=7; });
+  var invValue = items.reduce(function(sum,i){ return sum + (i.current_quantity||0)*(i.cost_per_unit||0); }, 0);
+  var receivedToday = (txnsToday||[]).filter(function(t){ return t.action==='Receive'; }).length;
+
+  document.getElementById('statsRow').innerHTML =
+    statCard(receivedToday, "Today's Deliveries", 'pill-green', '✓ Logged') +
+    statCard(lowStock.length, 'Running Low', lowStock.length>0?'pill-orange':'pill-green', lowStock.length>0?'⚠ Reorder':'✓ Stocked') +
+    statCard(expired.length, 'Expired Items', expired.length>0?'pill-red':'pill-green', expired.length>0?'🔴 Remove':'✓ Clear') +
+    statCard(expiringSoon.length, 'Expiring ≤7 Days', expiringSoon.length>0?'pill-orange':'pill-green', 'FEFO') +
+    statCard((txnsToday||[]).length, "Today's Transactions", 'pill-gray', '📋 Logged') +
+    statCardAccent(fmtMoney(invValue), 'Inventory Value', 'Total On Hand');
+
+  var expEl = document.getElementById('expirationList');
+  var withExp = items.filter(function(i){ return i.expiration_date; })
+    .map(function(i){ return Object.assign({}, i, { d: daysUntil(i.expiration_date) }); })
+    .sort(function(a,b){ return a.d - b.d; }).slice(0, 8);
+  expEl.innerHTML = withExp.length ? withExp.map(function(i) {
+    var cls = i.d<0?'exp-expired':i.d<=7?'exp-soon':'exp-good';
+    var label = i.d<0 ? 'Expired '+Math.abs(i.d)+'d ago' : i.d===0?'Expires today':'Expires in '+i.d+'d';
+    return '<div class="txn-row"><div class="txn-info"><div class="txn-title">'+i.item_name+'</div>' +
+      '<div class="txn-meta">Lot: '+(i.lot_number||'—')+'</div></div><span class="exp-badge '+cls+'">'+label+'</span></div>';
+  }).join('') : '<div style="padding:20px;text-align:center;color:var(--gray);font-size:12px;">No items with expiration dates</div>';
+
+  var actEl = document.getElementById('activityFeed');
+  var itemMap = {}; items.forEach(function(i){ itemMap[i.id]=i.item_name; });
+  actEl.innerHTML = (recentTxns||[]).length ? (recentTxns||[]).map(function(t) {
+    var icon = {'Receive':'📥','Remove':'📤','Transfer':'🔄','Discard':'🗑','Adjust':'⚖'}[t.action] || '📋';
+    return '<div class="txn-row"><div class="txn-icon txn-'+t.action+'">'+icon+'</div>' +
+      '<div class="txn-info"><div class="txn-title">'+t.action+' — '+(itemMap[t.item_id]||'Item')+'</div>' +
+      '<div class="txn-meta">'+t.performed_by+' · '+new Date(t.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</div></div>' +
+      '<div class="txn-qty">'+(t.action==='Remove'||t.action==='Discard'?'-':'+')+t.quantity+'</div></div>';
+  }).join('') : '<div style="padding:20px;text-align:center;color:var(--gray);font-size:12px;">No activity yet</div>';
+
+  var lowEl = document.getElementById('lowStockList');
+  lowEl.innerHTML = lowStock.length ? lowStock.map(function(i) {
+    var cls = i.current_quantity<=0?'qty-out':'qty-low';
+    return '<div class="txn-row" style="cursor:pointer;" onclick="openItemDetail(\'' + i.id + '\')">' +
+      '<div class="txn-info"><div class="txn-title">'+i.item_name+'</div><div class="txn-meta">Min: '+i.minimum_level+' '+(i.unit_type||'')+'</div></div>' +
+      '<span class="qty-badge '+cls+'">'+i.current_quantity+' '+(i.unit_type||'')+'</span></div>';
+  }).join('') : '<div style="padding:20px;text-align:center;color:var(--green);font-weight:600;font-size:12.5px;">✓ All items adequately stocked</div>';
+}
+
+async function loadInventoryTab() {
+  await loadRefData();
+  var { data: items } = await sb.from('dietary_items').select('*').eq('facility_id', FACILITY_ID).eq('status','Active').order('item_name');
+  cachedItems = items || [];
+  renderInventoryTable();
+}
+
+function renderInventoryTable() {
+  var search = (document.getElementById('invSearch').value || '').toLowerCase();
+  var catF = document.getElementById('invCatFilter').value;
+  var storF = document.getElementById('invStorageFilter').value;
+  var statusF = document.getElementById('invStatusFilter').value;
+
+  var catMap = {}; cachedCategories.forEach(function(c){ catMap[c.id]=c.name; });
+  var storMap = {}; cachedStorage.forEach(function(s){ storMap[s.id]=s.name; });
+
+  var filtered = cachedItems.filter(function(i) {
+    if (search && !(i.item_name.toLowerCase().includes(search) || (i.sku||'').toLowerCase().includes(search) || (i.lot_number||'').toLowerCase().includes(search))) return false;
+    if (catF && i.category_id !== catF) return false;
+    if (storF && i.storage_location_id !== storF) return false;
+    if (statusF) {
+      var d = daysUntil(i.expiration_date);
+      if (statusF==='Low Stock' && !(i.minimum_level!=null && i.current_quantity<=i.minimum_level && i.current_quantity>0)) return false;
+      if (statusF==='Out of Stock' && i.current_quantity>0) return false;
+      if (statusF==='Expired' && !(d!==null && d<0)) return false;
+      if (statusF==='Expiring Soon' && !(d!==null && d>=0 && d<=7)) return false;
+    }
+    return true;
+  });
+
+  var tbody = document.getElementById('invTableBody');
+  if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gray);">No items found</td></tr>'; return; }
+
+  tbody.innerHTML = filtered.map(function(i) {
+    var qtyCls = i.current_quantity<=0 ? 'qty-out' : (i.minimum_level!=null && i.current_quantity<=i.minimum_level) ? 'qty-low' : 'qty-ok';
+    var d = daysUntil(i.expiration_date);
+    var expCls = !i.expiration_date ? 'exp-none' : d<0 ? 'exp-expired' : d<=7 ? 'exp-soon' : 'exp-good';
+    var expLabel = !i.expiration_date ? '—' : d<0 ? 'Expired' : d===0 ? 'Today' : d+'d';
+    return '<tr onclick="openItemDetail(\'' + i.id + '\')">' +
+      '<td><div class="inv-item-name">'+i.item_name+'</div><div class="inv-item-meta">'+(i.sku||'No SKU')+'</div></td>' +
+      '<td>'+(catMap[i.category_id]||'—')+'</td>' +
+      '<td>'+(storMap[i.storage_location_id]||'—')+'</td>' +
+      '<td><span class="qty-badge '+qtyCls+'">'+i.current_quantity+' '+(i.unit_type||'')+'</span></td>' +
+      '<td><span class="exp-badge '+expCls+'">'+expLabel+'</span></td>' +
+      '<td>'+fmtMoney(i.cost_per_unit)+'</td></tr>';
+  }).join('');
+}
+
+function showAddItem() {
+  document.getElementById('addItemModal').classList.add('open');
+  ['ai-name','ai-manufacturer','ai-sku','ai-lot','ai-exp','ai-received','ai-cost','ai-par','ai-min','ai-notes'].forEach(function(id){
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('ai-qty').value = 0;
+  document.getElementById('ai-unit').value = '';
+  document.getElementById('ai-emergency').checked = false;
+}
+function closeAddItem() { document.getElementById('addItemModal').classList.remove('open'); }
+
+async function saveNewItem() {
+  var name = document.getElementById('ai-name').value.trim();
+  if (!name) { alert('Item name is required'); return; }
+
+  var qrId = 'agrhodes-atl-diet-' + Date.now();
+  var payload = {
+    facility_id: FACILITY_ID, qr_identifier: qrId, item_name: name,
+    category_id: document.getElementById('ai-category').value || null,
+    vendor_id: document.getElementById('ai-vendor').value || null,
+    manufacturer: document.getElementById('ai-manufacturer').value || null,
+    sku: document.getElementById('ai-sku').value || null,
+    lot_number: document.getElementById('ai-lot').value || null,
+    expiration_date: document.getElementById('ai-exp').value || null,
+    received_date: document.getElementById('ai-received').value || null,
+    storage_location_id: document.getElementById('ai-storage').value || null,
+    unit_type: document.getElementById('ai-unit').value || null,
+    current_quantity: +document.getElementById('ai-qty').value || 0,
+    cost_per_unit: +document.getElementById('ai-cost').value || null,
+    par_level: document.getElementById('ai-par').value ? +document.getElementById('ai-par').value : null,
+    minimum_level: document.getElementById('ai-min').value ? +document.getElementById('ai-min').value : null,
+    is_emergency_supply: document.getElementById('ai-emergency').checked,
+    notes: document.getElementById('ai-notes').value || null,
+  };
+
+  var { data, error } = await sb.from('dietary_items').insert(payload).select().single();
+  if (error) { alert('Error: ' + error.message); return; }
+
+  if (payload.current_quantity > 0) {
+    await sb.from('dietary_transactions').insert({
+      facility_id: FACILITY_ID, item_id: data.id, action: 'Receive', reason: 'Initial Stock',
+      quantity: payload.current_quantity, before_quantity: 0, after_quantity: payload.current_quantity,
+      performed_by: getStaffName(), device: 'web',
+    });
+  }
+
+  closeAddItem();
+  loadInventoryTab();
+}
+
+async function openItemDetail(itemId) {
+  var item = cachedItems.find(function(i){ return i.id===itemId; });
+  if (!item) return;
+  currentItem = item;
+  document.getElementById('actionFormWrap').innerHTML = '';
+  document.getElementById('historyWrap').innerHTML = '';
+
+  var catMap = {}; cachedCategories.forEach(function(c){ catMap[c.id]=c.name; });
+  var storMap = {}; cachedStorage.forEach(function(s){ storMap[s.id]=s.name; });
+  var vendMap = {}; cachedVendors.forEach(function(v){ vendMap[v.id]=v.name; });
+
+  document.getElementById('imTitle').textContent = item.item_name;
+  document.getElementById('imMeta').textContent = (catMap[item.category_id]||'') + ' · ' + item.qr_identifier;
+  document.getElementById('imQty').textContent = item.current_quantity + ' ' + (item.unit_type||'');
+  var d = daysUntil(item.expiration_date);
+  document.getElementById('imExp').innerHTML = item.expiration_date ? item.expiration_date +
+    (d<0 ? ' <span style="color:var(--red)">(Expired)</span>' : d<=7 ? ' <span style="color:var(--amber)">(Soon)</span>' : '') : '—';
+  document.getElementById('imStorage').textContent = storMap[item.storage_location_id] || '—';
+  document.getElementById('imLot').textContent = item.lot_number || '—';
+  document.getElementById('imVendor').textContent = vendMap[item.vendor_id] || '—';
+  document.getElementById('imValue').textContent = fmtMoney((item.current_quantity||0)*(item.cost_per_unit||0));
+
+  var qrHolder = document.getElementById('imQrHolder');
+  qrHolder.innerHTML = '';
+  new QRCode(qrHolder, { text: SCAN_BASE_URL + item.qr_identifier, width: 110, height: 110, colorDark:'#1A1A1A', colorLight:'#FFFFFF' });
+
+  document.getElementById('itemModal').classList.add('open');
+}
+function closeItemModal() { document.getElementById('itemModal').classList.remove('open'); currentItem = null; }
+
+function getStaffName() {
+  var name = localStorage.getItem('agrhodes_round_staff') || prompt('Your name:') || 'Staff';
+  localStorage.setItem('agrhodes_round_staff', name);
+  return name;
+}
+
+var REMOVE_REASONS = ['Meal Production','Resident Snack','Nourishment Cart','Employee Meal','Spoilage','Expired','Damaged','Transfer','Other'];
+
+function openActionForm(action) {
+  var wrap = document.getElementById('actionFormWrap');
+  document.getElementById('historyWrap').innerHTML = '';
+  var html = '<div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(0,0,0,.06);">' +
+    '<div style="font-size:13px;font-weight:700;margin-bottom:10px;">'+action+' Inventory</div>';
+
+  if (action === 'Receive') {
+    html += '<div class="field-grid">' +
+      '<div class="field"><label>Quantity Received</label><input type="number" id="af-qty"></div>' +
+      '<div class="field"><label>Vendor</label><select id="af-vendor">' + '<option value="">Select…</option>' + cachedVendors.map(function(v){return '<option value="'+v.id+'">'+v.name+'</option>';}).join('') + '</select></div>' +
+      '<div class="field"><label>Invoice #</label><input id="af-invoice"></div>' +
+      '<div class="field"><label>Lot Number</label><input id="af-lot"></div>' +
+      '<div class="field"><label>Expiration Date</label><input type="date" id="af-exp"></div>' +
+      '<div class="field"><label>Storage Location</label><select id="af-storage">' + cachedStorage.map(function(s){return '<option value="'+s.id+'">'+s.name+'</option>';}).join('') + '</select></div>' +
+      '</div>';
+  } else if (action === 'Remove') {
+    html += '<div class="field-grid">' +
+      '<div class="field"><label>Quantity</label><input type="number" id="af-qty"></div>' +
+      '<div class="field"><label>Reason</label><select id="af-reason">' + REMOVE_REASONS.map(function(r){return '<option>'+r+'</option>';}).join('') + '</select></div>' +
+      '</div>';
+  } else if (action === 'Transfer') {
+    html += '<div class="field-grid">' +
+      '<div class="field"><label>Quantity</label><input type="number" id="af-qty"></div>' +
+      '<div class="field"><label>Transfer To</label><select id="af-transfer-to">' + cachedStorage.map(function(s){return '<option value="'+s.id+'">'+s.name+'</option>';}).join('') + '</select></div>' +
+      '</div>';
+  } else if (action === 'Discard') {
+    html += '<div class="field-grid">' +
+      '<div class="field"><label>Quantity</label><input type="number" id="af-qty"></div>' +
+      '<div class="field"><label>Reason</label><select id="af-reason"><option>Spoilage</option><option>Expired</option><option>Damaged</option><option>Recalled</option></select></div>' +
+      '</div>';
+  } else if (action === 'Adjust') {
+    html += '<div class="field-grid">' +
+      '<div class="field"><label>New Quantity</label><input type="number" id="af-qty" value="'+(currentItem?currentItem.current_quantity:0)+'"></div>' +
+      '<div class="field"><label>Reason</label><input id="af-reason" placeholder="e.g. Cycle count correction"></div>' +
+      '</div>';
+  }
+
+  html += '<div class="field" style="margin-bottom:10px;"><label>Notes (optional)</label><textarea id="af-notes"></textarea></div>' +
+    '<button class="neu-btn primary" style="width:100%;" onclick="submitAction(\'' + action + '\')">Confirm '+action+'</button></div>';
+  wrap.innerHTML = html;
+}
+
+async function submitAction(action) {
+  if (!currentItem) return;
+  var qtyInput = +document.getElementById('af-qty').value;
+  if (!qtyInput && action !== 'Adjust') { alert('Enter a quantity'); return; }
+  var staff = getStaffName();
+  var before = currentItem.current_quantity;
+  var after = before;
+  var payload = { facility_id: FACILITY_ID, item_id: currentItem.id, action: action, performed_by: staff, device: 'web' };
+
+  if (action === 'Receive') {
+    after = before + qtyInput;
+    payload.quantity = qtyInput;
+    payload.reason = 'Receiving';
+    payload.vendor_id = document.getElementById('af-vendor').value || null;
+    payload.invoice_number = document.getElementById('af-invoice').value || null;
+    payload.lot_number = document.getElementById('af-lot').value || null;
+    payload.expiration_date = document.getElementById('af-exp').value || null;
+    payload.storage_location_id = document.getElementById('af-storage').value || null;
+  } else if (action === 'Remove') {
+    after = Math.max(0, before - qtyInput);
+    payload.quantity = qtyInput;
+    payload.reason = document.getElementById('af-reason').value;
+  } else if (action === 'Transfer') {
+    after = before;
+    payload.quantity = qtyInput;
+    payload.reason = 'Transfer';
+    payload.transfer_to_location = document.getElementById('af-transfer-to').value || null;
+  } else if (action === 'Discard') {
+    after = Math.max(0, before - qtyInput);
+    payload.quantity = qtyInput;
+    payload.reason = document.getElementById('af-reason').value;
+  } else if (action === 'Adjust') {
+    after = qtyInput;
+    payload.quantity = Math.abs(after - before);
+    payload.reason = document.getElementById('af-reason').value || 'Manual adjustment';
+  }
+
+  payload.before_quantity = before;
+  payload.after_quantity = after;
+  payload.notes = document.getElementById('af-notes').value || null;
+
+  var { error: txnErr } = await sb.from('dietary_transactions').insert(payload);
+  if (txnErr) { alert('Error: ' + txnErr.message); return; }
+
+  var itemUpdate = { current_quantity: after, updated_at: new Date().toISOString() };
+  if (action === 'Transfer' && payload.transfer_to_location) itemUpdate.storage_location_id = payload.transfer_to_location;
+  if (action === 'Receive') {
+    if (payload.lot_number) itemUpdate.lot_number = payload.lot_number;
+    if (payload.expiration_date) itemUpdate.expiration_date = payload.expiration_date;
+    if (payload.storage_location_id) itemUpdate.storage_location_id = payload.storage_location_id;
+    if (payload.vendor_id) itemUpdate.vendor_id = payload.vendor_id;
+    itemUpdate.received_date = new Date().toISOString().split('T')[0];
+  }
+
+  var { error: updErr } = await sb.from('dietary_items').update(itemUpdate).eq('id', currentItem.id);
+  if (updErr) { alert('Error: ' + updErr.message); return; }
+
+  document.getElementById('actionFormWrap').innerHTML = '<div style="text-align:center;padding:16px;color:var(--green);font-weight:700;font-size:13px;">✓ '+action+' recorded</div>';
+  closeItemModal();
+  loadInventoryTab();
+  if (currentPanel==='dashboard') loadDashboard();
+}
+
+async function showItemHistory() {
+  if (!currentItem) return;
+  document.getElementById('actionFormWrap').innerHTML = '';
+  var wrap = document.getElementById('historyWrap');
+  wrap.innerHTML = '<div style="padding:12px;color:var(--gray);font-size:12px;">Loading…</div>';
+  var { data: txns } = await sb.from('dietary_transactions').select('*').eq('item_id', currentItem.id).order('created_at',{ascending:false}).limit(30);
+  if (!txns || !txns.length) { wrap.innerHTML = '<div style="padding:16px;text-align:center;color:var(--gray);font-size:12px;">No transaction history yet</div>'; return; }
+  wrap.innerHTML = '<div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(0,0,0,.06);"><div style="font-size:13px;font-weight:700;margin-bottom:10px;">Transaction History</div>' +
+    txns.map(function(t) {
+      var icon = {'Receive':'📥','Remove':'📤','Transfer':'🔄','Discard':'🗑','Adjust':'⚖'}[t.action] || '📋';
+      return '<div class="txn-row"><div class="txn-icon txn-'+t.action+'">'+icon+'</div>' +
+        '<div class="txn-info"><div class="txn-title">'+t.action+(t.reason?' — '+t.reason:'')+'</div>' +
+        '<div class="txn-meta">'+t.performed_by+' · '+new Date(t.created_at).toLocaleString()+' · '+t.before_quantity+'→'+t.after_quantity+'</div></div></div>';
+    }).join('') + '</div>';
+}
+
+async function loadVendors() {
+  var { data: vendors } = await sb.from('dietary_vendors').select('*').eq('facility_id', FACILITY_ID).eq('is_active', true).order('name');
+  var grid = document.getElementById('vendorGrid');
+  if (!vendors || !vendors.length) { grid.innerHTML = '<div class="card" style="padding:24px;text-align:center;color:var(--gray);">No vendors yet — add one above.</div>'; return; }
+  grid.innerHTML = vendors.map(function(v) {
+    return '<div class="mini-card"><div class="mini-card-title">'+v.name+'</div>' +
+      '<div class="mini-card-sub">'+(v.contact_name||'')+(v.phone?' · '+v.phone:'')+'</div>' +
+      (v.email ? '<div class="mini-card-sub">'+v.email+'</div>' : '') +
+      (v.account_number ? '<div class="mini-card-sub">Acct: '+v.account_number+'</div>' : '') + '</div>';
+  }).join('');
+}
+
+function showAddVendor() {
+  var name = prompt('Vendor name:'); if (!name) return;
+  var contact = prompt('Contact name (optional):') || null;
+  var phone = prompt('Phone (optional):') || null;
+  sb.from('dietary_vendors').insert({ facility_id: FACILITY_ID, name: name, contact_name: contact, phone: phone })
+    .then(function(){ loadVendors(); loadRefData(); });
+}
+
+async function loadEmergency() {
+  var { data: supplies } = await sb.from('dietary_emergency_inventory').select('*').eq('facility_id', FACILITY_ID).order('supply_type');
+  supplies = supplies || [];
+
+  var byType = {};
+  supplies.forEach(function(s){ (byType[s.supply_type]=byType[s.supply_type]||[]).push(s); });
+  var totalDays = supplies.length ? Math.min.apply(null, supplies.map(function(s){return s.days_supply||0;})) : 0;
+
+  document.getElementById('emergencyStatsRow').innerHTML =
+    statCard(supplies.length, 'Tracked Items', 'pill-gray', '📦') +
+    statCard((byType['Water']||[]).length, 'Water Supplies', 'pill-orange', '💧') +
+    statCard((byType['Shelf-Stable Food']||[]).length, 'Shelf-Stable Food', 'pill-orange', '🥫') +
+    statCardAccent(totalDays + ' days', 'Minimum Coverage', totalDays>=3?'✓ Compliant':'⚠ Below 3-Day Min');
+
+  var grid = document.getElementById('emergencyGrid');
+  grid.innerHTML = supplies.length ? supplies.map(function(s) {
+    return '<div class="mini-card"><div class="mini-card-title">'+s.item_name+'</div>' +
+      '<div class="mini-card-sub">'+s.supply_type+'</div>' +
+      '<div style="margin-top:8px;font-family:\'DM Mono\',monospace;font-size:18px;font-weight:700;">'+s.quantity+' '+(s.unit||'')+'</div>' +
+      (s.days_supply ? '<div class="mini-card-sub">'+s.days_supply+' days supply</div>' : '') + '</div>';
+  }).join('') : '<div class="card" style="padding:24px;text-align:center;color:var(--gray);">No emergency supply items tracked yet.</div>';
+}
+
+function showAddEmergency() {
+  var type = prompt('Supply type (Shelf-Stable Food / Water / Emergency Beverages / Disaster Supplies):');
+  if (!type) return;
+  var name = prompt('Item name:'); if (!name) return;
+  var qty = +prompt('Quantity:') || 0;
+  var unit = prompt('Unit (optional):') || null;
+  var days = +prompt('Days of supply this represents (optional):') || null;
+  sb.from('dietary_emergency_inventory').insert({
+    facility_id: FACILITY_ID, supply_type: type, item_name: name, quantity: qty, unit: unit, days_supply: days,
+  }).then(function(){ loadEmergency(); });
+}
+
+loadRefData().then(loadDashboard);
+</script>
+</body>
+</html>
