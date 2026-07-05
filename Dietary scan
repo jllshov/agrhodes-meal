@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>A.G. Rhodes — Dietary Scan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0D1117; --surface:#161B22; --surface-2:#1C2330;
+  --border:#2A3140; --text:#F0F2F5; --text-2:#A8B0BD; --text-3:#6B7280;
+  --orange:#F5A623; --green:#10B981; --amber:#F59E0B; --red:#EF4444;
+  --r:16px; --r-sm:10px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
+body{padding-bottom:max(24px,env(safe-area-inset-bottom));}
+
+#scanScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;text-align:center;}
+.scan-logo{width:60px;height:60px;background:var(--orange);border-radius:16px;display:flex;align-items:center;justify-content:center;
+  font-family:'DM Mono',monospace;font-size:26px;font-weight:500;color:#1A1A1A;margin-bottom:18px;}
+.scan-title{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px;}
+.scan-sub{font-size:13.5px;color:var(--text-2);margin-bottom:32px;max-width:270px;line-height:1.5;}
+#qrReaderWrap{width:min(300px,85vw);border-radius:var(--r);overflow:hidden;border:2px solid var(--border);background:#000;aspect-ratio:1;position:relative;}
+#qrReader{width:100%;height:100%;}
+#qrReader video{object-fit:cover;}
+.scan-frame-corner{position:absolute;width:26px;height:26px;border-color:var(--orange);pointer-events:none;}
+.scan-tl{top:12px;left:12px;border-top:3px solid;border-left:3px solid;border-radius:6px 0 0 0;}
+.scan-tr{top:12px;right:12px;border-top:3px solid;border-right:3px solid;border-radius:0 6px 0 0;}
+.scan-bl{bottom:12px;left:12px;border-bottom:3px solid;border-left:3px solid;border-radius:0 0 0 6px;}
+.scan-br{bottom:12px;right:12px;border-bottom:3px solid;border-right:3px solid;border-radius:0 0 6px 0;}
+.scan-hint{margin-top:18px;font-size:11.5px;color:var(--text-3);}
+.scan-manual-btn{margin-top:22px;background:transparent;border:1px solid var(--border);color:var(--text-2);padding:9px 18px;
+  border-radius:999px;font-size:12.5px;font-weight:500;font-family:inherit;cursor:pointer;}
+
+#itemScreen{display:none;min-height:100vh;}
+.item-header{position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--border);padding:16px 18px;z-index:10;}
+.fh-back{background:none;border:none;color:var(--text-2);font-size:13.5px;font-weight:500;display:flex;align-items:center;
+  gap:6px;cursor:pointer;font-family:inherit;padding:4px 0;margin-bottom:10px;}
+.item-name{font-size:20px;font-weight:800;letter-spacing:-.02em;}
+.item-meta{display:flex;gap:12px;margin-top:6px;font-size:12px;color:var(--text-2);flex-wrap:wrap;}
+
+.item-body{padding:18px;padding-bottom:24px;}
+.detail-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px;}
+.detail-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.detail-row:last-child{border-bottom:none;}
+.detail-label{color:var(--text-2);}
+.detail-val{font-weight:700;}
+.exp-warn{color:var(--red);}
+.exp-soon-warn{color:var(--amber);}
+
+.action-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.action-btn{padding:16px 8px;border-radius:16px;border:1.5px solid var(--border);cursor:pointer;font-family:inherit;
+  font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:6px;
+  background:var(--surface-2);color:var(--text);transition:all .15s;}
+.action-btn:active{transform:scale(.96);}
+.action-btn .a-icon{font-size:20px;}
+.action-btn.receive{border-color:rgba(16,185,129,.4);color:var(--green);}
+.action-btn.remove{border-color:rgba(239,68,68,.4);color:var(--red);}
+.action-btn.adjust{border-color:rgba(245,158,11,.4);color:var(--amber);}
+
+#actionFormScreen{display:none;min-height:100vh;}
+.form-body{padding:18px;padding-bottom:100px;}
+.round-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px;}
+.rc-label{font-size:13.5px;font-weight:700;margin-bottom:2px;}
+.rc-sub{font-size:11.5px;color:var(--text-3);margin-bottom:12px;}
+.rc-input, .rc-select{width:100%;background:var(--surface-2);border:1.5px solid var(--border);border-radius:var(--r-sm);
+  padding:11px 12px;color:var(--text);font-family:inherit;font-size:14px;}
+.action-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);
+  padding:14px 18px max(14px,env(safe-area-inset-bottom));z-index:20;}
+.complete-btn{width:100%;min-height:52px;border-radius:14px;border:none;background:var(--orange);color:#1A1A1A;
+  font-family:inherit;font-size:15.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;}
+.complete-btn:active{transform:scale(.98);}
+
+#doneScreen{display:none;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;}
+.done-icon{width:76px;height:76px;border-radius:50%;background:rgba(16,185,129,.15);display:flex;align-items:center;
+  justify-content:center;font-size:38px;margin-bottom:18px;}
+.done-title{font-size:21px;font-weight:800;margin-bottom:8px;}
+.done-sub{font-size:13.5px;color:var(--text-2);margin-bottom:30px;}
+.done-btn{background:var(--orange);color:#1A1A1A;border:none;border-radius:999px;padding:13px 30px;
+  font-size:14.5px;font-weight:700;font-family:inherit;cursor:pointer;}
+
+#toast{position:fixed;top:env(safe-area-inset-top,0);left:50%;transform:translateX(-50%) translateY(-100%);
+  background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:10px 18px;font-size:12px;
+  font-weight:600;z-index:100;transition:transform .25s;margin-top:10px;white-space:nowrap;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+#toast.error{border-color:var(--red);color:var(--red);}
+#toast.success{border-color:var(--green);color:var(--green);}
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<div id="scanScreen">
+  <div class="scan-logo">AG</div>
+  <div class="scan-title">Scan Item QR</div>
+  <div class="scan-sub">Point your camera at the item's QR code to receive, remove, or adjust inventory.</div>
+  <div id="qrReaderWrap">
+    <div id="qrReader"></div>
+    <div class="scan-frame-corner scan-tl"></div>
+    <div class="scan-frame-corner scan-tr"></div>
+    <div class="scan-frame-corner scan-bl"></div>
+    <div class="scan-frame-corner scan-br"></div>
+  </div>
+  <div class="scan-hint">Camera access is required to scan</div>
+  <button class="scan-manual-btn" onclick="showManualEntry()">Enter code manually</button>
+</div>
+
+<div id="itemScreen">
+  <div class="item-header">
+    <button class="fh-back" onclick="backToScanner()">← Scan next</button>
+    <div class="item-name" id="itemName">—</div>
+    <div class="item-meta" id="itemMeta"></div>
+  </div>
+  <div class="item-body">
+    <div class="detail-card">
+      <div class="detail-row"><span class="detail-label">Current Quantity</span><span class="detail-val" id="d-qty">—</span></div>
+      <div class="detail-row"><span class="detail-label">Expiration Date</span><span class="detail-val" id="d-exp">—</span></div>
+      <div class="detail-row"><span class="detail-label">Storage Location</span><span class="detail-val" id="d-storage">—</span></div>
+      <div class="detail-row"><span class="detail-label">Lot Number</span><span class="detail-val" id="d-lot">—</span></div>
+    </div>
+    <div class="action-grid">
+      <button class="action-btn receive" onclick="openForm('Receive')"><span class="a-icon">📥</span>Receive</button>
+      <button class="action-btn remove" onclick="openForm('Remove')"><span class="a-icon">📤</span>Remove</button>
+      <button class="action-btn adjust" onclick="openForm('Adjust')"><span class="a-icon">⚖</span>Adjust</button>
+    </div>
+  </div>
+</div>
+
+<div id="actionFormScreen">
+  <div class="item-header">
+    <button class="fh-back" onclick="backToItem()">← Back</button>
+    <div class="item-name" id="formTitle">—</div>
+  </div>
+  <div class="form-body" id="formBody"></div>
+  <div class="action-bar">
+    <button class="complete-btn" id="submitBtn" onclick="submitScanAction()">Confirm</button>
+  </div>
+</div>
+
+<div id="doneScreen">
+  <div class="done-icon" id="doneIcon">✓</div>
+  <div class="done-title" id="doneTitle">Saved</div>
+  <div class="done-sub" id="doneSub">Inventory updated.</div>
+  <button class="done-btn" onclick="backToScanner()">Scan Next Item</button>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://gtbiatetqyuxwuehwilr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34';
+const FACILITY_ID = '30f74349-3ab8-483b-a587-f372c0fbd413';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var currentItem = null;
+var html5QrCode = null;
+var currentAction = null;
+
+var REMOVE_REASONS = ['Meal Production','Resident Snack','Nourishment Cart','Employee Meal','Spoilage','Expired','Damaged','Transfer','Other'];
+
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.className = type || '';
+  setTimeout(function() { t.classList.add('show'); }, 10);
+  setTimeout(function() { t.classList.remove('show'); }, 2200);
+}
+
+function startScanner() {
+  if (html5QrCode) return;
+  html5QrCode = new Html5Qrcode('qrReader');
+  html5QrCode.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: { width: 220, height: 220 } },
+    function(decodedText) { onScanSuccess(decodedText); },
+    function() {}
+  ).catch(function() { showToast('Camera access denied', 'error'); });
+}
+function stopScanner() {
+  if (html5QrCode) { html5QrCode.stop().then(function(){ html5QrCode.clear(); html5QrCode=null; }).catch(function(){}); }
+}
+function onScanSuccess(decodedText) {
+  var qrId = decodedText;
+  if (decodedText.includes('#item=')) qrId = decodedText.split('#item=')[1].split('&')[0];
+  stopScanner();
+  loadItem(qrId);
+}
+function showManualEntry() {
+  var code = prompt('Enter item QR identifier:');
+  if (code) loadItem(code.trim());
+}
+
+async function loadItem(qrIdentifier) {
+  showToast('Loading…', '');
+  try {
+    var { data, error } = await sb.from('dietary_items').select('*').eq('qr_identifier', qrIdentifier).single();
+    if (error || !data) throw new Error('Item not found');
+    currentItem = data;
+    renderItemScreen();
+    document.getElementById('scanScreen').style.display = 'none';
+    document.getElementById('itemScreen').style.display = 'block';
+  } catch (e) {
+    showToast('QR code not recognized', 'error');
+  }
+}
+
+async function renderItemScreen() {
+  document.getElementById('itemName').textContent = currentItem.item_name;
+  var meta = [];
+  if (currentItem.sku) meta.push('SKU: ' + currentItem.sku);
+  if (currentItem.lot_number) meta.push('Lot: ' + currentItem.lot_number);
+  document.getElementById('itemMeta').innerHTML = meta.map(function(m){return '<span>'+m+'</span>';}).join('');
+
+  document.getElementById('d-qty').textContent = currentItem.current_quantity + ' ' + (currentItem.unit_type||'');
+
+  var expEl = document.getElementById('d-exp');
+  if (currentItem.expiration_date) {
+    var d = new Date(currentItem.expiration_date+'T12:00:00');
+    var daysLeft = Math.ceil((d - new Date())/86400000);
+    var cls = daysLeft<0 ? 'exp-warn' : daysLeft<=7 ? 'exp-soon-warn' : '';
+    expEl.innerHTML = '<span class="'+cls+'">' + currentItem.expiration_date + (daysLeft<0?' (Expired)':daysLeft<=7?' (Soon)':'') + '</span>';
+  } else { expEl.textContent = '—'; }
+
+  var storName = '—';
+  if (currentItem.storage_location_id) {
+    var { data: stor } = await sb.from('dietary_storage_locations').select('name').eq('id', currentItem.storage_location_id).single();
+    if (stor) storName = stor.name;
+  }
+  document.getElementById('d-storage').textContent = storName;
+  document.getElementById('d-lot').textContent = currentItem.lot_number || '—';
+}
+
+function openForm(action) {
+  currentAction = action;
+  document.getElementById('itemScreen').style.display = 'none';
+  document.getElementById('actionFormScreen').style.display = 'block';
+  document.getElementById('formTitle').textContent = action + ' — ' + currentItem.item_name;
+  var body = document.getElementById('formBody');
+
+  if (action === 'Receive') {
+    body.innerHTML =
+      '<div class="round-card"><div class="rc-label">Quantity Received</div><div class="rc-sub">Add to current stock</div>' +
+        '<input class="rc-input" type="number" id="f-qty" placeholder="0"></div>' +
+      '<div class="round-card"><div class="rc-label">Lot Number</div>' +
+        '<input class="rc-input" id="f-lot" value="'+(currentItem.lot_number||'')+'"></div>' +
+      '<div class="round-card"><div class="rc-label">Expiration Date</div>' +
+        '<input class="rc-input" type="date" id="f-exp"></div>';
+  } else if (action === 'Remove') {
+    body.innerHTML =
+      '<div class="round-card"><div class="rc-label">Quantity</div><div class="rc-sub">Removed from current stock</div>' +
+        '<input class="rc-input" type="number" id="f-qty" placeholder="0"></div>' +
+      '<div class="round-card"><div class="rc-label">Reason</div>' +
+        '<select class="rc-select" id="f-reason">' + REMOVE_REASONS.map(function(r){return '<option>'+r+'</option>';}).join('') + '</select></div>';
+  } else if (action === 'Adjust') {
+    body.innerHTML =
+      '<div class="round-card"><div class="rc-label">New Quantity</div><div class="rc-sub">Corrects the current count</div>' +
+        '<input class="rc-input" type="number" id="f-qty" value="'+currentItem.current_quantity+'"></div>' +
+      '<div class="round-card"><div class="rc-label">Reason</div>' +
+        '<input class="rc-input" id="f-reason" placeholder="e.g. Cycle count correction"></div>';
+  }
+}
+
+function backToItem() {
+  document.getElementById('actionFormScreen').style.display = 'none';
+  document.getElementById('itemScreen').style.display = 'block';
+}
+
+async function submitScanAction() {
+  var qtyInput = +document.getElementById('f-qty').value;
+  if (!qtyInput && currentAction !== 'Adjust') { showToast('Enter a quantity', 'error'); return; }
+
+  var staffName = localStorage.getItem('agrhodes_round_staff') || prompt('Your name:') || 'Staff';
+  localStorage.setItem('agrhodes_round_staff', staffName);
+
+  var before = currentItem.current_quantity;
+  var after = before;
+  var payload = { facility_id: FACILITY_ID, item_id: currentItem.id, action: currentAction, performed_by: staffName, device: 'mobile' };
+  var itemUpdate = {};
+
+  if (currentAction === 'Receive') {
+    after = before + qtyInput;
+    payload.quantity = qtyInput; payload.reason = 'Receiving';
+    var lot = document.getElementById('f-lot').value;
+    var exp = document.getElementById('f-exp').value;
+    if (lot) { payload.lot_number = lot; itemUpdate.lot_number = lot; }
+    if (exp) { payload.expiration_date = exp; itemUpdate.expiration_date = exp; }
+    itemUpdate.received_date = new Date().toISOString().split('T')[0];
+  } else if (currentAction === 'Remove') {
+    after = Math.max(0, before - qtyInput);
+    payload.quantity = qtyInput;
+    payload.reason = document.getElementById('f-reason').value;
+  } else if (currentAction === 'Adjust') {
+    after = qtyInput;
+    payload.quantity = Math.abs(after - before);
+    payload.reason = document.getElementById('f-reason').value || 'Manual adjustment';
+  }
+
+  payload.before_quantity = before;
+  payload.after_quantity = after;
+  itemUpdate.current_quantity = after;
+  itemUpdate.updated_at = new Date().toISOString();
+
+  try {
+    var { error: txnErr } = await sb.from('dietary_transactions').insert(payload);
+    if (txnErr) throw txnErr;
+    var { error: updErr } = await sb.from('dietary_items').update(itemUpdate).eq('id', currentItem.id);
+    if (updErr) throw updErr;
+
+    document.getElementById('actionFormScreen').style.display = 'none';
+    document.getElementById('doneTitle').textContent = currentAction + ' Recorded';
+    document.getElementById('doneSub').textContent = currentItem.item_name + ' is now ' + after + ' ' + (currentItem.unit_type||'') + '.';
+    document.getElementById('doneScreen').style.display = 'flex';
+  } catch (e) {
+    showToast('Save failed — try again', 'error');
+  }
+}
+
+function backToScanner() {
+  document.getElementById('itemScreen').style.display = 'none';
+  document.getElementById('actionFormScreen').style.display = 'none';
+  document.getElementById('doneScreen').style.display = 'none';
+  document.getElementById('scanScreen').style.display = 'flex';
+  currentItem = null; currentAction = null;
+  startScanner();
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+  if (location.hash.startsWith('#item=')) {
+    var qrId = location.hash.replace('#item=','').split('&')[0];
+    loadItem(qrId);
+  } else {
+    startScanner();
+  }
+});
+</script>
+</body>
+</html>
