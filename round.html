@@ -590,6 +590,23 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
     <div class="page-header">
       <div><div class="page-title">Resident Rooms</div><div class="page-sub">Generate QR codes for each room door</div></div>
     </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title">Quick Add — Single Room</div>
+      <div class="card-sub">Generate one QR on demand — for a single new or renumbered room, without running a full range</div>
+      <div class="bulk-form">
+        <div class="field"><label>Unit</label>
+          <select id="single-unit">
+            <option>Taylor Hall</option><option>ICF Hall</option>
+            <option>Garden Hall</option><option>Victoria Court</option>
+          </select>
+        </div>
+        <div class="field"><label>Room #</label><input type="text" id="single-room-num" placeholder="112"></div>
+        <div></div>
+        <button class="neu-btn primary" onclick="generateSingleRoom()">⚡ Generate Now</button>
+      </div>
+    </div>
+
     <div class="card" style="margin-bottom:20px;">
       <div class="card-title">Generate in Bulk</div>
       <div class="card-sub">Enter a unit and room number range to create QR codes at once</div>
@@ -882,6 +899,46 @@ var HALLS = ['Taylor Hall', 'ICF Hall', 'Garden Hall', 'Victoria Court'];
 var HALL_ICONS = { 'Taylor Hall':'🏠', 'ICF Hall':'🏥', 'Garden Hall':'🌿', 'Victoria Court':'🏛' };
 var hallOpenState = JSON.parse(localStorage.getItem('agrhodes_hall_open') || '{}');
 
+// ── QR generation access control ──
+// TODO: Once user accounts / Supabase Auth roles are added, replace this with a real
+// check (e.g. session role === 'admin' || 'facility_manager'). Every QR-generating
+// action below already calls this single gate, so wiring up real auth later is a
+// one-line change here — nothing else needs to be touched.
+function canManageQRCodes() {
+  return true;
+}
+
+function slugifyUnit(unit) {
+  return unit.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+}
+
+async function generateSingleRoom() {
+  if (!canManageQRCodes()) { alert('You do not have permission to generate QR codes.'); return; }
+  var unit = document.getElementById('single-unit').value;
+  var roomNum = document.getElementById('single-room-num').value.trim();
+  if (!roomNum) { alert('Enter a room number'); return; }
+
+  var qrId = 'agrhodes-atl-' + slugifyUnit(unit) + '-room-' + roomNum;
+
+  var { data: existing } = await sb.from('room_qr_codes').select('qr_identifier,unit')
+    .eq('facility_id', FACILITY_ID).eq('qr_identifier', qrId).maybeSingle();
+  if (existing && existing.unit && existing.unit !== unit) {
+    if (!confirm('Room ' + roomNum + ' already exists under ' + existing.unit + ' and will be reassigned to ' + unit + '. Continue?')) return;
+  }
+
+  var row = { facility_id:FACILITY_ID, location_type:'room', room_number:roomNum,
+    unit:unit, display_name:'Room '+roomNum, qr_identifier: qrId };
+
+  var { data: inserted, error } = await sb.from('room_qr_codes')
+    .upsert([row], {onConflict:'qr_identifier'}).select().single();
+  if (error) { alert('Error: '+error.message); return; }
+
+  document.getElementById('single-room-num').value = '';
+  loadRooms();
+  // Open immediately so it can be printed/scanned right away — that's the point of "on demand"
+  openRoomDetail(inserted);
+}
+
 async function loadRooms() {
   var grid = document.getElementById('roomsGrid');
   grid.innerHTML = '<div style="padding:20px;color:var(--gray)">Loading…</div>';
@@ -944,14 +1001,25 @@ function toggleHall(hall) {
 }
 
 async function generateBulkRooms() {
+  if (!canManageQRCodes()) { alert('You do not have permission to generate QR codes.'); return; }
   var unit = document.getElementById('bulk-unit').value;
   var start = +document.getElementById('bulk-start').value;
   var end = +document.getElementById('bulk-end').value;
   if (!start||!end||end<start) { alert('Enter a valid room range'); return; }
+  var unitSlug = slugifyUnit(unit);
   var rows = [];
   for (var n=start; n<=end; n++) {
     rows.push({ facility_id:FACILITY_ID, location_type:'room', room_number:String(n),
-      unit:unit, display_name:'Room '+n, qr_identifier:'agrhodes-atl-room-'+n });
+      unit:unit, display_name:'Room '+n, qr_identifier:'agrhodes-atl-'+unitSlug+'-room-'+n });
+  }
+  // Guard: warn if any of these identifiers already exist under a DIFFERENT unit,
+  // which would mean two halls share a room-number range and are about to collide.
+  var { data: existing } = await sb.from('room_qr_codes').select('qr_identifier,unit,room_number')
+    .eq('facility_id', FACILITY_ID).in('qr_identifier', rows.map(function(r){return r.qr_identifier;}));
+  var conflicts = (existing||[]).filter(function(e){ return e.unit && e.unit !== unit; });
+  if (conflicts.length) {
+    var roomList = conflicts.map(function(c){ return c.room_number; }).join(', ');
+    if (!confirm('Warning: Room(s) ' + roomList + ' already exist under a different unit and will be reassigned to ' + unit + '. Continue?')) return;
   }
   var { error } = await sb.from('room_qr_codes').upsert(rows, {onConflict:'qr_identifier'});
   if (error) { alert('Error: '+error.message); return; }
