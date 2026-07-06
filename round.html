@@ -720,6 +720,13 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
           </div>
         </div>
       </div>
+
+      <div class="modal-section" style="margin-top:4px;">
+        <button id="rdRemoveBtn" onclick="removeRoomQR()" style="width:100%;padding:12px;border-radius:12px;border:1.5px solid var(--red);background:rgba(239,68,68,.06);color:var(--red);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">
+          🗑 Remove This
+        </button>
+        <div style="font-size:10.5px;color:var(--gray-light);margin-top:6px;text-align:center;">This hides it from all lists — round history and past logs are kept.</div>
+      </div>
     </div>
   </div>
 </div>
@@ -1499,6 +1506,7 @@ async function openRoomDetail(loc) {
   document.getElementById('rdName').textContent = loc.display_name;
   document.getElementById('rdUnit').textContent = (loc.unit || loc.eoc_department || '') + ' · ' + loc.qr_identifier;
   document.getElementById('addAssetForm').style.display = 'none';
+  document.getElementById('rdRemoveBtn').textContent = loc.location_type === 'eoc_area' ? '🗑 Remove This Area' : '🗑 Remove This Room';
 
   // Render QR code
   var holder = document.getElementById('rdQrHolder');
@@ -1610,6 +1618,22 @@ async function removeAsset(assetId) {
   var { error } = await sb.from('room_assets').update({ is_active: false }).eq('id', assetId);
   if (error) { alert('Error: ' + error.message); return; }
   loadRoomAssets(currentRoomLoc.qr_identifier);
+}
+
+async function removeRoomQR() {
+  if (!canManageQRCodes()) { alert('You do not have permission to remove QR codes.'); return; }
+  if (!currentRoomLoc) return;
+  var label = currentRoomLoc.location_type === 'eoc_area' ? 'area' : 'room';
+  if (!confirm('Remove "' + currentRoomLoc.display_name + '" (' + (currentRoomLoc.unit||currentRoomLoc.eoc_department||'') + ')? ' +
+    'This hides the ' + label + ' from all lists and heat maps. Its round history and completion logs are kept, not deleted.')) return;
+
+  var { error } = await sb.from('room_qr_codes').update({ is_active: false }).eq('id', currentRoomLoc.id);
+  if (error) { alert('Error: ' + error.message); return; }
+
+  closeRoomDetail();
+  if (currentPanel === 'rooms') loadRooms();
+  else if (currentPanel === 'eoc') loadEOC();
+  else loadDashboard();
 }
 
 
