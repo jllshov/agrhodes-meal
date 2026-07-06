@@ -331,9 +331,15 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
 .stat-card { border-radius: 24px; padding: 22px 20px; }
 .stat-card .stat-num { font-size: 34px; letter-spacing: -0.02em; }
 .neu-btn { border-radius: 999px; }
-.qr-tile { border-radius: 22px; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+.qr-tile { border-radius: 22px; cursor: pointer; transition: transform .15s, box-shadow .15s; position: relative; }
 .qr-tile:hover { transform: translateY(-3px); }
 .qr-tile:active { transform: scale(.97); }
+.qr-tile-print-btn {
+  position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border-radius: 10px;
+  border: none; background: var(--surface); box-shadow: var(--shadow-out); cursor: pointer;
+  font-size: 14px; display: flex; align-items: center; justify-content: center; z-index: 2;
+}
+.qr-tile-print-btn:active { box-shadow: var(--shadow-in); }
 .heat-tile { border-radius: 18px; }
 .tab-pill { padding: 9px 20px; }
 
@@ -690,6 +696,15 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
         <div class="qr-holder" id="rdQrHolder"></div>
         <div class="room-hero-name" id="rdName">—</div>
         <div class="room-hero-unit" id="rdUnit"></div>
+        <div style="display:flex;gap:8px;margin-top:14px;justify-content:center;flex-wrap:wrap;">
+          <select id="rdLabelSize" style="padding:9px 12px;border:none;border-radius:10px;background:var(--bg);box-shadow:var(--shadow-in);font-family:inherit;font-size:12px;color:var(--black);">
+            <option value="dk1201">DK-1201 Address (29×90mm)</option>
+            <option value="dk1241">DK-1241 Large Shipping (102×51mm)</option>
+            <option value="dk2210">DK-2210 Continuous (29mm)</option>
+            <option value="dk2205">DK-2205 Continuous (62mm)</option>
+          </select>
+          <button class="neu-btn primary" style="font-size:12px;" onclick="printCurrentRoomLabel()">🖨 Print This Label</button>
+        </div>
       </div>
 
       <div class="modal-section">
@@ -1094,6 +1109,14 @@ function renderQRTile(loc, container) {
   var qrDiv = document.createElement('div');
   qrDiv.style.cssText = 'width:120px;margin:0 auto 10px;';
   tile.appendChild(qrDiv);
+
+  // Quick print icon — prints this one label without opening the full detail modal
+  var printBtn = document.createElement('button');
+  printBtn.className = 'qr-tile-print-btn';
+  printBtn.textContent = '🖨';
+  printBtn.title = 'Print this label';
+  printBtn.onclick = function(e) { printLabelForLoc(loc, qrDiv, e); };
+  tile.appendChild(printBtn);
 
   // Text info — built with DOM, not innerHTML, to avoid wiping qrDiv
   var nameDiv = document.createElement('div');
@@ -1507,6 +1530,7 @@ async function openRoomDetail(loc) {
   document.getElementById('rdUnit').textContent = (loc.unit || loc.eoc_department || '') + ' · ' + loc.qr_identifier;
   document.getElementById('addAssetForm').style.display = 'none';
   document.getElementById('rdRemoveBtn').textContent = loc.location_type === 'eoc_area' ? '🗑 Remove This Area' : '🗑 Remove This Room';
+  document.getElementById('rdLabelSize').value = localStorage.getItem('agrhodes_label_preset') || 'dk1201';
 
   // Render QR code
   var holder = document.getElementById('rdQrHolder');
@@ -1637,7 +1661,68 @@ async function removeRoomQR() {
 }
 
 
-/* ── Life Safety Compliance ── */
+// ── Brother QL-800 label printing ──
+// Common DK label roll dimensions in mm. Browsers can't talk to the printer directly,
+// but sizing the print job's @page to match the label lets you pick "Brother QL-800"
+// in the print dialog and have it line up instead of printing on a full sheet.
+var LABEL_PRESETS = {
+  'dk1201': { name:'DK-1201 Address (29\u00d790mm)', w:90, h:29 },
+  'dk1241': { name:'DK-1241 Large Shipping (102\u00d751mm)', w:102, h:51 },
+  'dk2210': { name:'DK-2210 Continuous (29mm)', w:60, h:29 },
+  'dk2205': { name:'DK-2205 Continuous (62mm)', w:62, h:62 }
+};
+
+function doPrintLabel(loc, presetKey, qrHolderEl) {
+  var preset = LABEL_PRESETS[presetKey] || LABEL_PRESETS['dk1201'];
+  var qrEl = qrHolderEl ? (qrHolderEl.querySelector('canvas') || qrHolderEl.querySelector('img')) : null;
+  var imgSrc = qrEl ? (qrEl.tagName === 'CANVAS' ? qrEl.toDataURL('image/png') : qrEl.src) : '';
+  if (!imgSrc) { alert('QR image isn\'t ready yet \u2014 try again in a moment.'); return; }
+
+  var win = window.open('', '_blank', 'width=480,height=380');
+  if (!win) { alert('Please allow pop-ups for this site to print labels.'); return; }
+
+  var subLabel = loc.unit || loc.eoc_department || '';
+  var big = preset.h > 40;
+
+  win.document.write(
+    '<!DOCTYPE html><html><head><title>Label \u2014 ' + loc.display_name + '</title><style>' +
+    '@page { size: ' + preset.w + 'mm ' + preset.h + 'mm; margin: 0; }' +
+    '*{box-sizing:border-box;}' +
+    'html,body{margin:0;padding:0;width:' + preset.w + 'mm;height:' + preset.h + 'mm;}' +
+    '.label{width:' + preset.w + 'mm;height:' + preset.h + 'mm;display:flex;align-items:center;justify-content:center;' +
+      'gap:2.5mm;padding:1.5mm;font-family:Arial,Helvetica,sans-serif;overflow:hidden;}' +
+    '.label img{height:100%;max-height:' + (preset.h - 3) + 'mm;width:auto;flex-shrink:0;}' +
+    '.txt{min-width:0;}' +
+    '.txt .name{font-size:' + (big ? '11pt' : '8pt') + ';font-weight:700;line-height:1.15;word-break:break-word;}' +
+    '.txt .sub{font-size:' + (big ? '8pt' : '6pt') + ';color:#444;margin-top:0.8mm;}' +
+    '</style></head><body>' +
+    '<div class="label">' +
+      '<img src="' + imgSrc + '" alt="QR">' +
+      '<div class="txt"><div class="name">' + loc.display_name + '</div>' +
+        (subLabel ? '<div class="sub">' + subLabel + '</div>' : '') + '</div>' +
+    '</div>' +
+    '<script>window.onload=function(){ setTimeout(function(){ window.print(); }, 150); };<\/script>' +
+    '</body></html>'
+  );
+  win.document.close();
+}
+
+// Quick-print icon on each grid tile — uses the last size you picked in the modal
+function printLabelForLoc(loc, qrHolderEl, e) {
+  if (e) e.stopPropagation();
+  var presetKey = localStorage.getItem('agrhodes_label_preset') || 'dk1201';
+  doPrintLabel(loc, presetKey, qrHolderEl);
+}
+
+// Print button inside the room/area detail modal — respects the dropdown, remembers choice
+function printCurrentRoomLabel() {
+  if (!currentRoomLoc) return;
+  var presetKey = document.getElementById('rdLabelSize').value;
+  localStorage.setItem('agrhodes_label_preset', presetKey);
+  doPrintLabel(currentRoomLoc, presetKey, document.getElementById('rdQrHolder'));
+}
+
+
 var FREQ_DAYS = { 'Weekly':7, 'Monthly':30, 'Quarterly':90, 'Semi-Annual':182, 'Annual':365 };
 var FREQ_ORDER = ['Weekly','Monthly','Quarterly','Semi-Annual','Annual'];
 var FREQ_ICONS = { 'Weekly':'\ud83d\udd01','Monthly':'\ud83d\udcc5','Quarterly':'\ud83d\udcca','Semi-Annual':'\ud83d\udcc6','Annual':'\ud83d\udcc3' };
