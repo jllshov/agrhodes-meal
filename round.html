@@ -519,9 +519,6 @@ async function submitRound() {
     facility_id: FACILITY_ID,
     qr_identifier: loc.qr_identifier,
     round_type: isRoom ? 'room' : 'eoc',
-    unit: loc.unit || null,
-    room_number: loc.room_number || null,
-    eoc_section: loc.eoc_section || null,
     rounded_by: staffName,
     rounded_at: new Date().toISOString()
   };
