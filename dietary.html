@@ -412,6 +412,8 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   <button class="nav-item" id="drawer-inventory" onclick="drawerNav('inventory')"><span class="nav-icon">📦</span> Inventory</button>
   <button class="nav-item" id="drawer-vendors" onclick="drawerNav('vendors')"><span class="nav-icon">🚚</span> Vendors</button>
   <button class="nav-item" id="drawer-emergency" onclick="drawerNav('emergency')"><span class="nav-icon">🆘</span> Emergency Supply</button>
+  <button class="nav-item" id="drawer-grievances" onclick="drawerNav('grievances')"><span class="nav-icon">📢</span> Grievances</button>
+  <button class="nav-item" id="drawer-policies" onclick="drawerNav('policies')"><span class="nav-icon">📖</span> Policies &amp; Procedures</button>
   <button class="nav-item" onclick="location.href='dietary-scan.html'"><span class="nav-icon">📷</span> QR Scanner</button>
 </div>
 
@@ -429,6 +431,8 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   <button class="nav2-item" id="sb2-nav-inventory" onclick="switchTab('inventory')"><span class="nav2-icon">📦</span> Inventory</button>
   <button class="nav2-item" id="sb2-nav-vendors" onclick="switchTab('vendors')"><span class="nav2-icon">🚚</span> Vendors</button>
   <button class="nav2-item" id="sb2-nav-emergency" onclick="switchTab('emergency')"><span class="nav2-icon">🆘</span> Emergency Supply</button>
+  <button class="nav2-item" id="sb2-nav-grievances" onclick="switchTab('grievances')"><span class="nav2-icon">📢</span> Grievances<span id="grievanceNavBadge" style="display:none;margin-left:auto;background:var(--red);color:white;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;"></span></button>
+  <button class="nav2-item" id="sb2-nav-policies" onclick="switchTab('policies')"><span class="nav2-icon">📖</span> Policies &amp; Procedures</button>
   <button class="nav2-item" onclick="location.href='dietary-scan.html'"><span class="nav2-icon">📷</span> QR Scanner</button>
 
   <div class="sb2-bottom-card">
@@ -646,6 +650,38 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
     <div class="item-grid" id="emergencyGrid"></div>
   </div>
 
+  <!-- ═══ GRIEVANCES ═══ -->
+  <div id="panel-grievances" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Grievances</div><div class="page-sub">Auto-generated from Meal Feedback — patient/caregiver ratings of 3 or lower</div></div>
+      <button class="neu-btn" onclick="loadGrievances()">↻ Refresh</button>
+    </div>
+    <div class="stats-row" id="grievanceStatsRow" style="grid-template-columns:repeat(4,1fr);"></div>
+    <div class="tab-row">
+      <button class="tab-pill active" id="griev-filter-New" onclick="setGrievanceFilter(this,'New')">New</button>
+      <button class="tab-pill" id="griev-filter-Reviewing" onclick="setGrievanceFilter(this,'Reviewing')">Reviewing</button>
+      <button class="tab-pill" id="griev-filter-Resolved" onclick="setGrievanceFilter(this,'Resolved')">Resolved</button>
+    </div>
+    <div id="grievanceList"></div>
+  </div>
+
+  <!-- ═══ POLICIES & PROCEDURES ═══ -->
+  <div id="panel-policies" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Policies &amp; Procedures</div><div class="page-sub">Searchable reference library for dietary operations</div></div>
+      <button class="neu-btn primary" data-perm="addItem" onclick="showAddPolicy()">+ New Policy</button>
+    </div>
+    <div class="search-bar">
+      <input class="search-input" id="policySearch" placeholder="Search titles, content, tags…" oninput="renderPolicyList()">
+      <select class="filter-select" id="policyCatFilter" onchange="renderPolicyList()">
+        <option value="">All Categories</option>
+        <option>Food Safety</option><option>Sanitation</option><option>Emergency Prep</option>
+        <option>HR</option><option>General</option>
+      </select>
+    </div>
+    <div id="policyList"></div>
+  </div>
+
 </main>
 
 <div class="modal-overlay" id="itemModal">
@@ -757,6 +793,68 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   </div>
 </div>
 
+<div class="modal-overlay" id="grievanceModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div><div class="modal-title">Grievance Detail</div><div class="modal-meta" id="gvMeta"></div></div>
+      <button class="modal-close" onclick="closeGrievanceModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-row"><span class="detail-label">Respondent</span><span class="detail-val" id="gv-respondent">—</span></div>
+      <div class="detail-row"><span class="detail-label">Overall Meal Rating</span><span class="detail-val" id="gv-rating">—</span></div>
+      <div class="detail-row"><span class="detail-label">Food Taste</span><span class="detail-val" id="gv-taste">—</span></div>
+      <div class="detail-row"><span class="detail-label">Food Temperature</span><span class="detail-val" id="gv-temp">—</span></div>
+      <div class="detail-row"><span class="detail-label">Submitted</span><span class="detail-val" id="gv-date">—</span></div>
+      <div style="margin-top:14px;">
+        <label style="font-size:10.5px;font-weight:700;color:var(--gray);text-transform:uppercase;display:block;margin-bottom:6px;">Comment</label>
+        <div style="background:var(--bg);border-radius:14px;padding:14px;font-size:13px;line-height:1.5;" id="gv-comment">—</div>
+      </div>
+      <div style="margin-top:16px;">
+        <label style="font-size:10.5px;font-weight:700;color:var(--gray);text-transform:uppercase;display:block;margin-bottom:6px;">Resolution Notes</label>
+        <textarea class="issue-textarea" id="gv-notes" rows="3" placeholder="Document follow-up actions taken…" style="width:100%;border:none;border-radius:14px;background:var(--bg);box-shadow:var(--shadow-in);padding:12px;font-family:inherit;font-size:13px;"></textarea>
+      </div>
+      <div class="action-grid" style="grid-template-columns:repeat(3,1fr);margin-top:14px;">
+        <button class="neu-btn small" onclick="updateGrievanceStatus('New')">New</button>
+        <button class="neu-btn small" onclick="updateGrievanceStatus('Reviewing')">Reviewing</button>
+        <button class="neu-btn primary small" onclick="updateGrievanceStatus('Resolved')">Resolved</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="policyModal">
+  <div class="modal-box" style="max-width:640px;">
+    <div class="modal-header">
+      <div><div class="modal-title" id="pvTitle">—</div><div class="modal-meta" id="pvMeta"></div></div>
+      <button class="modal-close" onclick="closePolicyModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="pvContent" style="white-space:pre-wrap;line-height:1.7;font-size:13.5px;"></div>
+      <button class="neu-btn small" style="margin-top:16px;" data-perm="addItem" onclick="editCurrentPolicy()">✎ Edit</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="addPolicyModal">
+  <div class="modal-box" style="max-width:640px;">
+    <div class="modal-header">
+      <div><div class="modal-title" id="apTitle">New Policy</div></div>
+      <button class="modal-close" onclick="closeAddPolicy()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-grid">
+        <div class="field"><label>Title *</label><input id="ap-title" placeholder="e.g. Food Storage Temperature Log"></div>
+        <div class="field"><label>Category</label>
+          <select id="ap-category"><option>Food Safety</option><option>Sanitation</option><option>Emergency Prep</option><option>HR</option><option>General</option></select>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:12px;"><label>Tags (comma separated)</label><input id="ap-tags" placeholder="e.g. FEFO, temperature, storage"></div>
+      <div class="field" style="margin-bottom:12px;"><label>Policy Content *</label><textarea id="ap-content" rows="12" style="min-height:260px;"></textarea></div>
+      <button class="neu-btn primary" style="width:100%;" onclick="savePolicy()">Save Policy</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -777,7 +875,7 @@ function switchTab(tab) {
   switchTab_direct(tab);
 }
 function switchTab_direct(tab) {
-  ['dashboard','inventory','vendors','emergency'].forEach(function(p){
+  ['dashboard','inventory','vendors','emergency','grievances','policies'].forEach(function(p){
     var el = document.getElementById('panel-'+p);
     if (el) el.style.display = p===tab ? 'block' : 'none';
   });
@@ -786,6 +884,8 @@ function switchTab_direct(tab) {
   if (tab==='inventory') loadInventoryTab();
   if (tab==='vendors') loadVendors();
   if (tab==='emergency') loadEmergency();
+  if (tab==='grievances') loadGrievances();
+  if (tab==='policies') loadPolicies();
 }
 function openDrawer() { document.getElementById('mobileDrawer').classList.add('open'); document.getElementById('drawerOverlay').classList.add('open'); }
 function closeDrawer() { document.getElementById('mobileDrawer').classList.remove('open'); document.getElementById('drawerOverlay').classList.remove('open'); }
@@ -1559,7 +1659,235 @@ setInterval(function() { if (currentRole) loadNotifications(); }, 90000);
 // Boot
 if (currentRole) {
   document.getElementById('roleBadge').textContent = currentRole;
-  loadRefData().then(function(){ loadDashboard(); applyRolePermissions(); loadNotifications(); });
+  
+/* ════════════════════════════════════════════
+   GRIEVANCES — derived from meal `feedback` table
+   Trigger: respondent_type in (patient, caregiver)
+            AND overall_meal <= 3
+════════════════════════════════════════════ */
+var grievanceFilter = 'New';
+var cachedGrievances = [];
+var currentGrievance = null;
+
+function setGrievanceFilter(btn, status) {
+  document.querySelectorAll('#panel-grievances .tab-pill').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  grievanceFilter = status;
+  renderGrievanceList();
+}
+
+async function loadGrievances() {
+  var list = document.getElementById('grievanceList');
+  list.innerHTML = '<div style="padding:20px;color:var(--gray);">Loading…</div>';
+
+  var { data: fb } = await sb.from('feedback').select('*')
+    .eq('facility_id', FACILITY_ID)
+    .in('respondent_type', ['patient','caregiver'])
+    .lte('overall_meal', 3)
+    .order('submitted_at', {ascending:false});
+  var { data: tracking } = await sb.from('dietary_grievance_tracking').select('*').eq('facility_id', FACILITY_ID);
+
+  fb = fb || []; tracking = tracking || [];
+  var trackMap = {}; tracking.forEach(function(t){ trackMap[t.feedback_id] = t; });
+
+  cachedGrievances = fb.map(function(f) {
+    var t = trackMap[f.id];
+    return Object.assign({}, f, {
+      grievance_status: t ? t.status : 'New',
+      resolution_notes: t ? t.resolution_notes : '',
+      tracking_id: t ? t.id : null,
+    });
+  });
+
+  var counts = { New:0, Reviewing:0, Resolved:0 };
+  cachedGrievances.forEach(function(g){ counts[g.grievance_status] = (counts[g.grievance_status]||0)+1; });
+
+  document.getElementById('grievanceStatsRow').innerHTML =
+    statCard(cachedGrievances.length, 'Total Grievances', 'pill-gray', '📢') +
+    statCard(counts.New, 'New', counts.New>0?'pill-red':'pill-green', counts.New>0?'⚠ Needs Review':'✓ Clear') +
+    statCard(counts.Reviewing, 'Reviewing', 'pill-orange', '⏳ In Progress') +
+    statCard(counts.Resolved, 'Resolved', 'pill-green', '✓ Closed');
+
+  var navBadge = document.getElementById('grievanceNavBadge');
+  if (counts.New > 0) { navBadge.style.display = 'inline-flex'; navBadge.textContent = counts.New; }
+  else { navBadge.style.display = 'none'; }
+
+  renderGrievanceList();
+}
+
+function renderGrievanceList() {
+  var list = document.getElementById('grievanceList');
+  var filtered = cachedGrievances.filter(function(g){ return g.grievance_status === grievanceFilter; });
+
+  if (!filtered.length) {
+    var emptyMsg = grievanceFilter==='New' ? '✓ No new grievances' : grievanceFilter==='Reviewing' ? 'Nothing currently in review' : 'No resolved grievances yet';
+    var emptyColor = grievanceFilter==='New' ? 'var(--green)' : 'var(--gray)';
+    list.innerHTML = '<div class="card" style="padding:32px;text-align:center;color:'+emptyColor+';font-weight:600;">'+emptyMsg+'</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(function(g) {
+    var ratingColor = g.overall_meal <= 1 ? 'var(--red)' : g.overall_meal === 2 ? 'var(--amber)' : 'var(--gray)';
+    var respLabel = g.respondent_type === 'patient' ? '🛏 Patient' : '🧑‍🤝‍🧑 Caregiver';
+    var dateStr = new Date(g.submitted_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    return '<div class="card" style="cursor:pointer;margin-bottom:10px;" onclick="openGrievanceDetail(\''+g.id+'\')">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
+            '<span style="font-size:12px;font-weight:700;">'+respLabel+'</span>' +
+            '<span class="qty-badge" style="background:rgba(239,68,68,.1);color:'+ratingColor+';">Rating: '+g.overall_meal+'/5</span>' +
+          '</div>' +
+          '<div style="font-size:12.5px;color:var(--gray);line-height:1.4;">'+(g.comment ? g.comment.substring(0,120)+(g.comment.length>120?'…':'') : 'No comment provided')+'</div>' +
+          '<div style="font-size:10.5px;color:var(--gray-light);margin-top:6px;">'+dateStr+'</div>' +
+        '</div>' +
+      '</div></div>';
+  }).join('');
+}
+
+async function openGrievanceDetail(feedbackId) {
+  var g = cachedGrievances.find(function(x){ return x.id === feedbackId; });
+  if (!g) return;
+  currentGrievance = g;
+
+  document.getElementById('gvMeta').textContent = new Date(g.submitted_at).toLocaleString();
+  document.getElementById('gv-respondent').textContent = g.respondent_type === 'patient' ? 'Patient' : 'Caregiver';
+  document.getElementById('gv-rating').textContent = g.overall_meal + ' / 5';
+  document.getElementById('gv-taste').textContent = g.food_taste ? g.food_taste+' / 5' : '—';
+  document.getElementById('gv-temp').textContent = g.food_temperature ? g.food_temperature+' / 5' : '—';
+  document.getElementById('gv-date').textContent = new Date(g.submitted_at).toLocaleString();
+  document.getElementById('gv-comment').textContent = g.comment || 'No comment provided';
+  document.getElementById('gv-notes').value = g.resolution_notes || '';
+
+  document.getElementById('grievanceModal').classList.add('open');
+}
+function closeGrievanceModal() { document.getElementById('grievanceModal').classList.remove('open'); currentGrievance = null; }
+
+async function updateGrievanceStatus(status) {
+  if (!currentGrievance) return;
+  var notes = document.getElementById('gv-notes').value;
+  var staff = getStaffName();
+
+  var payload = {
+    facility_id: FACILITY_ID, feedback_id: currentGrievance.id, status: status,
+    resolution_notes: notes, updated_at: new Date().toISOString(),
+  };
+  if (status === 'Resolved') { payload.resolved_by = staff; payload.resolved_at = new Date().toISOString(); }
+
+  var { error } = await sb.from('dietary_grievance_tracking').upsert(payload, { onConflict: 'feedback_id' });
+  if (error) { alert('Error: ' + error.message); return; }
+
+  closeGrievanceModal();
+  loadGrievances();
+}
+
+/* ════════════════════════════════════════════
+   POLICIES & PROCEDURES
+════════════════════════════════════════════ */
+var cachedPolicies = [];
+var currentPolicy = null;
+
+async function loadPolicies() {
+  var { data } = await sb.from('dietary_policies').select('*').eq('facility_id', FACILITY_ID).order('category').order('title');
+  cachedPolicies = data || [];
+  renderPolicyList();
+}
+
+function renderPolicyList() {
+  var search = (document.getElementById('policySearch').value || '').toLowerCase();
+  var catF = document.getElementById('policyCatFilter').value;
+
+  var filtered = cachedPolicies.filter(function(p) {
+    if (catF && p.category !== catF) return false;
+    if (search) {
+      var haystack = (p.title + ' ' + p.content + ' ' + (p.tags||[]).join(' ')).toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+    return true;
+  });
+
+  var list = document.getElementById('policyList');
+  if (!filtered.length) {
+    list.innerHTML = '<div class="card" style="padding:32px;text-align:center;color:var(--gray);">No policies found — create one above.</div>';
+    return;
+  }
+
+  var byCat = {};
+  filtered.forEach(function(p){ (byCat[p.category]=byCat[p.category]||[]).push(p); });
+
+  list.innerHTML = Object.keys(byCat).sort().map(function(cat) {
+    return '<div class="hall-section open"><div class="hall-header" style="cursor:default;" onclick="event.stopPropagation();">' +
+      '<div class="hall-icon">📖</div><div class="hall-title-wrap"><div class="hall-title">'+cat+'</div>' +
+      '<div class="hall-sub">'+byCat[cat].length+' polic'+(byCat[cat].length>1?'ies':'y')+'</div></div></div>' +
+      '<div class="hall-body open" style="max-height:none;"><div class="hall-body-inner">' +
+      byCat[cat].map(function(p) {
+        var preview = p.content.substring(0,100) + (p.content.length>100?'…':'');
+        return '<div class="mini-card" style="cursor:pointer;margin-bottom:8px;" onclick="viewPolicy(\''+p.id+'\')">' +
+          '<div class="mini-card-title">'+p.title+'</div><div class="mini-card-sub">'+preview+'</div></div>';
+      }).join('') + '</div></div></div>';
+  }).join('');
+}
+
+function viewPolicy(id) {
+  var p = cachedPolicies.find(function(x){ return x.id===id; });
+  if (!p) return;
+  currentPolicy = p;
+  document.getElementById('pvTitle').textContent = p.title;
+  document.getElementById('pvMeta').textContent = p.category + (p.tags&&p.tags.length ? ' · ' + p.tags.join(', ') : '') + ' · Updated ' + new Date(p.updated_at).toLocaleDateString();
+  document.getElementById('pvContent').textContent = p.content;
+  document.getElementById('policyModal').classList.add('open');
+}
+function closePolicyModal() { document.getElementById('policyModal').classList.remove('open'); }
+
+function editCurrentPolicy() {
+  if (!currentPolicy) return;
+  closePolicyModal();
+  document.getElementById('apTitle').textContent = 'Edit Policy';
+  document.getElementById('ap-title').value = currentPolicy.title;
+  document.getElementById('ap-category').value = currentPolicy.category;
+  document.getElementById('ap-tags').value = (currentPolicy.tags||[]).join(', ');
+  document.getElementById('ap-content').value = currentPolicy.content;
+  document.getElementById('addPolicyModal').classList.add('open');
+}
+
+function showAddPolicy() {
+  currentPolicy = null;
+  document.getElementById('apTitle').textContent = 'New Policy';
+  document.getElementById('ap-title').value = '';
+  document.getElementById('ap-category').value = 'Food Safety';
+  document.getElementById('ap-tags').value = '';
+  document.getElementById('ap-content').value = '';
+  document.getElementById('addPolicyModal').classList.add('open');
+}
+function closeAddPolicy() { document.getElementById('addPolicyModal').classList.remove('open'); }
+
+async function savePolicy() {
+  var title = document.getElementById('ap-title').value.trim();
+  var content = document.getElementById('ap-content').value.trim();
+  if (!title || !content) { alert('Title and content are required'); return; }
+
+  var tags = document.getElementById('ap-tags').value.split(',').map(function(t){return t.trim();}).filter(Boolean);
+  var staff = getStaffName();
+
+  var payload = {
+    facility_id: FACILITY_ID, title: title,
+    category: document.getElementById('ap-category').value,
+    content: content, tags: tags, updated_by: staff, updated_at: new Date().toISOString(),
+  };
+
+  var error;
+  if (currentPolicy) {
+    ({ error } = await sb.from('dietary_policies').update(payload).eq('id', currentPolicy.id));
+  } else {
+    payload.created_by = staff;
+    ({ error } = await sb.from('dietary_policies').insert(payload));
+  }
+  if (error) { alert('Error: ' + error.message); return; }
+
+  closeAddPolicy();
+  loadPolicies();
+}
+
+loadRefData().then(function(){ loadDashboard(); applyRolePermissions(); loadNotifications(); });
 } else {
   openRolePicker(false);
 }
