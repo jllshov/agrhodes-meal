@@ -993,7 +993,7 @@ async function loadDashboard() {
   var stockedCount = items.length - lowStock.length - items.filter(function(i){return i.current_quantity<=0;}).length;
 
   // ── 4 Metric cards ──
-  var invGoal = 15000;
+  var invGoal = 120000;
   setMetric('m-invval', fmtMoney(invValue).replace('$',''), 'USD', 'of ' + fmtMoney(invGoal) + ' target', Math.min(100, Math.round(invValue/invGoal*100)), true);
   var delivGoal = Math.max(10, receivedCount + 3);
   setMetric('m-deliv', receivedCount, 'items', 'of ' + delivGoal + ' goal', Math.min(100, Math.round(receivedCount/delivGoal*100)), false);
