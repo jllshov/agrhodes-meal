@@ -116,6 +116,13 @@
   }
   textarea:focus { border-color: var(--accent); }
   textarea::placeholder { color: var(--text3); }
+  textarea.required-flag { border-color: var(--danger); background: #FEF2F2; }
+
+  .comment-required-note {
+    display: none; font-size: .76rem; font-weight: 700; color: var(--danger);
+    margin-bottom: 10px; align-items: center; gap: 6px;
+  }
+  .comment-required-note.show { display: flex; }
 
   /* Submit */
   .btn-submit {
@@ -245,6 +252,7 @@
   <!-- Comment -->
   <div class="card">
     <div class="card-title">Any Comments?</div>
+    <div class="comment-required-note" id="commentRequiredNote">⚠ Please tell us more — a note is required for this rating</div>
     <textarea id="comment" rows="4" placeholder="Tell us what you loved, what could be better, or anything else…"></textarea>
   </div>
 
@@ -308,6 +316,26 @@ function setRating(key, val) {
   const stars = document.getElementById('stars-'+key).querySelectorAll('.star');
   stars.forEach((s, i) => s.classList.toggle('lit', i < val));
   document.getElementById('lbl-'+key).textContent = LABELS[val];
+
+  // ── Grievance-trigger check ──
+  // Requirement: Overall Meal rating ≤ 3 requires a comment before submission.
+  if (key === 'overall') updateCommentRequirement();
+}
+
+function isGrievanceTrigger() {
+  return ratings.overall > 0 && ratings.overall <= 3;
+}
+
+function updateCommentRequirement() {
+  const note = document.getElementById('commentRequiredNote');
+  const textarea = document.getElementById('comment');
+  if (isGrievanceTrigger()) {
+    note.classList.add('show');
+    textarea.classList.add('required-flag');
+  } else {
+    note.classList.remove('show');
+    textarea.classList.remove('required-flag');
+  }
 }
 
 function selectWho(type) {
@@ -340,6 +368,17 @@ async function submitFeedback() {
   if (!ratings.taste)    { errEl.textContent = 'Please rate the food taste.'; errEl.style.display='block'; return; }
   if (!ratings.temp)     { errEl.textContent = 'Please rate the food temperature.'; errEl.style.display='block'; return; }
 
+  // ── Required comment when Overall Meal rating is 3 or lower ──
+  const commentVal = document.getElementById('comment').value.trim();
+  if (isGrievanceTrigger() && !commentVal) {
+    errEl.textContent = 'Please add a note explaining your rating — this helps us follow up.';
+    errEl.style.display = 'block';
+    document.getElementById('comment').classList.add('required-flag');
+    document.getElementById('comment').focus();
+    document.getElementById('comment').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Submitting…';
@@ -355,7 +394,7 @@ async function submitFeedback() {
         food_temperature: ratings.temp,
         portion_size:     selPortion || 'na',
         eat_again:        selEatAgain || 'na',
-        comment:          document.getElementById('comment').value.trim() || null,
+        comment:          commentVal || null,
         submitted_at:     new Date().toISOString()
       })
     });
@@ -385,6 +424,8 @@ function resetForm() {
     document.getElementById('ea-'+v).className = 'yna-opt';
   });
   document.getElementById('comment').value = '';
+  document.getElementById('comment').classList.remove('required-flag');
+  document.getElementById('commentRequiredNote').classList.remove('show');
   document.getElementById('formErr').style.display = 'none';
   document.getElementById('submitBtn').textContent = 'Submit Feedback →';
   document.getElementById('successScreen').classList.remove('show');
