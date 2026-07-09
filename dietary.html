@@ -1656,10 +1656,6 @@ async function loadNotifications() {
 // Poll notifications every 90 seconds while page is open
 setInterval(function() { if (currentRole) loadNotifications(); }, 90000);
 
-// Boot
-if (currentRole) {
-  document.getElementById('roleBadge').textContent = currentRole;
-  
 /* ════════════════════════════════════════════
    GRIEVANCES — derived from meal `feedback` table
    Trigger: respondent_type in (patient, caregiver)
@@ -1887,6 +1883,11 @@ async function savePolicy() {
   loadPolicies();
 }
 
+
+// Boot
+if (currentRole) {
+  document.getElementById('roleBadge').textContent = currentRole;
+  
 loadRefData().then(function(){ loadDashboard(); applyRolePermissions(); loadNotifications(); });
 } else {
   openRolePicker(false);
