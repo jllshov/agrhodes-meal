@@ -390,6 +390,11 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   font-family: inherit; font-size: 12px; font-weight: 600; color: var(--gray-light); }
 .dv2-range-tab.active { color: var(--black); font-weight: 800; }
 
+.dv2-stars-display { display: flex; gap: 2px; flex-shrink: 0; }
+.dv2-star { font-size: 20px; color: #E5E7EB; }
+.dv2-star.filled { color: var(--orange); }
+.dv2-star.half { position: relative; color: #E5E7EB; }
+.dv2-star.half::after { content: '★'; position: absolute; left: 0; top: 0; width: 50%; overflow: hidden; color: var(--orange); }
 .dv2-chart-legend { display: flex; gap: 22px; margin-top: 18px; }
 .dv2-chart-legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--gray); font-weight: 600; }
 .dv2-chart-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
@@ -515,6 +520,13 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
             <div><div class="dv2-metric-val" id="m-waste">— <small>USD</small></div><div class="dv2-metric-goal" id="m-waste-goal">of $75 limit</div></div>
             <div class="dv2-metric-bar-wrap"><div class="dv2-metric-bar-fill" id="m-waste-bar" style="background:var(--bg);width:0%">
               <div class="dv2-metric-dots">⋯</div></div><div class="dv2-metric-pct" id="m-waste-pct">0%</div></div>
+          </div>
+        </div>
+        <div class="dv2-metric-group">
+          <div class="dv2-metric-label">Meal Satisfaction <span>From feedback</span></div>
+          <div class="dv2-metric-card">
+            <div><div class="dv2-metric-val" id="m-satisfaction">— <small>/ 5</small></div><div class="dv2-metric-goal" id="m-satisfaction-goal">0 responses</div></div>
+            <div class="dv2-stars-display" id="m-satisfaction-stars"></div>
           </div>
         </div>
       </div>
@@ -990,6 +1002,9 @@ async function loadDashboard() {
   var wasteLimit = 75;
   setMetric('m-waste', fmtMoney(wasteValue).replace('$',''), 'USD', 'of ' + fmtMoney(wasteLimit) + ' limit', Math.min(100, Math.round(wasteValue/wasteLimit*100)), false);
 
+  // ── Meal Satisfaction (from meal feedback) ──
+  await renderMealSatisfaction(periodStart);
+
   // ── Category donut ──
   renderCategoryDonut(items, cats);
 
@@ -1103,6 +1118,30 @@ function renderPeakActivity(txns) {
   document.getElementById('dv2-peak-chip').style.left = Math.max(0, Math.min(80, pct)) + '%';
   var label = peakHour === 0 ? '12 AM' : peakHour < 12 ? peakHour+' AM' : peakHour===12 ? '12 PM' : (peakHour-12)+' PM';
   document.getElementById('dv2-peak-label').textContent = label;
+}
+
+async function renderMealSatisfaction(periodStart) {
+  var { data: fb } = await sb.from('feedback').select('overall_meal')
+    .eq('facility_id', FACILITY_ID)
+    .gte('submitted_at', periodStart)
+    .not('overall_meal', 'is', null);
+  fb = fb || [];
+
+  var count = fb.length;
+  var avg = count ? fb.reduce(function(sum, f){ return sum + f.overall_meal; }, 0) / count : 0;
+  var avgRounded = Math.round(avg * 10) / 10;
+
+  document.getElementById('m-satisfaction').innerHTML = (count ? avgRounded : '—') + ' <small>/ 5</small>';
+  document.getElementById('m-satisfaction-goal').textContent = count + ' response' + (count!==1?'s':'') + ' this period';
+
+  var starsEl = document.getElementById('m-satisfaction-stars');
+  var starsHtml = '';
+  for (var i = 1; i <= 5; i++) {
+    if (avg >= i) starsHtml += '<span class="dv2-star filled">★</span>';
+    else if (avg >= i - 0.5) starsHtml += '<span class="dv2-star half">★</span>';
+    else starsHtml += '<span class="dv2-star">★</span>';
+  }
+  starsEl.innerHTML = starsHtml;
 }
 
 function setChartMetric(btn, metric) {
