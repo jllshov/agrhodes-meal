@@ -419,6 +419,7 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   <button class="nav-item" id="drawer-emergency" onclick="drawerNav('emergency')"><span class="nav-icon">🆘</span> Emergency Supply</button>
   <button class="nav-item" id="drawer-grievances" onclick="drawerNav('grievances')"><span class="nav-icon">📢</span> Grievances</button>
   <button class="nav-item" id="drawer-policies" onclick="drawerNav('policies')"><span class="nav-icon">📖</span> Policies &amp; Procedures</button>
+  <button class="nav-item" id="drawer-monthly" data-perm="addItem" onclick="drawerNav('monthly')"><span class="nav-icon">📅</span> Monthly Report</button>
   <button class="nav-item" onclick="location.href='dietary-scan.html'"><span class="nav-icon">📷</span> QR Scanner</button>
 </div>
 
@@ -438,6 +439,7 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   <button class="nav2-item" id="sb2-nav-emergency" onclick="switchTab('emergency')"><span class="nav2-icon">🆘</span> Emergency Supply</button>
   <button class="nav2-item" id="sb2-nav-grievances" onclick="switchTab('grievances')"><span class="nav2-icon">📢</span> Grievances<span id="grievanceNavBadge" style="display:none;margin-left:auto;background:var(--red);color:white;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;"></span></button>
   <button class="nav2-item" id="sb2-nav-policies" onclick="switchTab('policies')"><span class="nav2-icon">📖</span> Policies &amp; Procedures</button>
+  <button class="nav2-item" id="sb2-nav-monthly" data-perm="addItem" onclick="switchTab('monthly')"><span class="nav2-icon">📅</span> Monthly Report</button>
   <button class="nav2-item" onclick="location.href='dietary-scan.html'"><span class="nav2-icon">📷</span> QR Scanner</button>
 
   <div class="sb2-bottom-card">
@@ -694,6 +696,15 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
     <div id="policyList"></div>
   </div>
 
+  <!-- ═══ MONTHLY REPORT ═══ -->
+  <div id="panel-monthly" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Monthly Report</div><div class="page-sub">Dietary Manager's monthly outcome metrics</div></div>
+      <button class="neu-btn primary" onclick="showAddMonthlyReport()">+ New Report</button>
+    </div>
+    <div id="monthlyReportList"></div>
+  </div>
+
 </main>
 
 <div class="modal-overlay" id="itemModal">
@@ -867,6 +878,86 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   </div>
 </div>
 
+<div class="modal-overlay" id="monthlyReportModal">
+  <div class="modal-box" style="max-width:640px;">
+    <div class="modal-header">
+      <div><div class="modal-title" id="mrTitle">Monthly Report</div><div class="modal-meta">Fill in the metrics for this reporting period</div></div>
+      <button class="modal-close" onclick="closeMonthlyReportModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-grid">
+        <div class="field"><label>Report Period *</label><input id="mr-period" placeholder="e.g. July 2026"></div>
+        <div class="field"><label>Report Month *</label><input type="month" id="mr-date"></div>
+      </div>
+
+      <div style="background:var(--bg);border-radius:16px;padding:16px;margin-bottom:14px;">
+        <div style="font-size:12.5px;font-weight:700;margin-bottom:10px;">1. Food Forums Held</div>
+        <div class="field-grid">
+          <div class="field"><label># of Forums</label><input type="number" id="mr-q1-forums"></div>
+          <div class="field"><label>Time Period</label><input id="mr-q1-period" placeholder="e.g. this month"></div>
+          <div class="field"><label># Employees Participating</label><input type="number" id="mr-q1-employees"></div>
+          <div class="field"><label># Elders/Residents Participating</label><input type="number" id="mr-q1-residents"></div>
+        </div>
+      </div>
+
+      <div style="background:var(--bg);border-radius:16px;padding:16px;margin-bottom:14px;">
+        <div style="font-size:12.5px;font-weight:700;margin-bottom:10px;">2. Elder/Resident Interview Satisfaction</div>
+        <div class="field-grid">
+          <div class="field"><label>Time Period</label><input id="mr-q2-period" placeholder="e.g. this month"></div>
+          <div class="field"><label>Satisfaction Rate (%)</label><input type="number" step="0.1" id="mr-q2-pct"></div>
+        </div>
+      </div>
+
+      <div style="background:var(--bg);border-radius:16px;padding:16px;margin-bottom:14px;">
+        <div style="font-size:12.5px;font-weight:700;margin-bottom:10px;">3. Food Waste Reduction</div>
+        <div class="field-grid">
+          <div class="field"><label>Time Period</label><input id="mr-q3-period" placeholder="e.g. this month"></div>
+          <div class="field"><label>Reduction (%)</label><input type="number" step="0.1" id="mr-q3-pct"></div>
+          <div class="field"><label>Reduction ($)</label><input type="number" step="0.01" id="mr-q3-dollars"></div>
+        </div>
+      </div>
+
+      <div style="background:var(--bg);border-radius:16px;padding:16px;margin-bottom:14px;">
+        <div style="font-size:12.5px;font-weight:700;margin-bottom:10px;">4. Food Choice Satisfaction Improvement</div>
+        <div class="field-grid">
+          <div class="field"><label>Time Period</label><input id="mr-q4-period" placeholder="e.g. this month"></div>
+          <div class="field"><label>Improvement (%)</label><input type="number" step="0.1" id="mr-q4-pct"></div>
+        </div>
+      </div>
+
+      <div style="background:var(--bg);border-radius:16px;padding:16px;margin-bottom:14px;">
+        <div style="font-size:12.5px;font-weight:700;margin-bottom:10px;">5. Nutritional Intake Improvement</div>
+        <div class="field-grid">
+          <div class="field"><label>Time Period</label><input id="mr-q5-period" placeholder="e.g. this month"></div>
+          <div class="field"><label>Improvement (%)</label><input type="number" step="0.1" id="mr-q5-pct"></div>
+        </div>
+      </div>
+
+      <div style="background:var(--bg);border-radius:16px;padding:16px;margin-bottom:14px;">
+        <div style="font-size:12.5px;font-weight:700;margin-bottom:10px;">6. Supplement Use Cost Decrease</div>
+        <div class="field-grid">
+          <div class="field"><label>Time Period</label><input id="mr-q6-period" placeholder="e.g. this month"></div>
+          <div class="field"><label>Decrease (%)</label><input type="number" step="0.1" id="mr-q6-pct"></div>
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom:14px;"><label>Other Measures</label><textarea id="mr-other" rows="4" placeholder="Any additional outcomes or notes…"></textarea></div>
+
+      <button class="neu-btn primary" style="width:100%;" onclick="saveMonthlyReport()">Save Report</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="monthlyReportViewModal">
+  <div class="modal-box" style="max-width:600px;">
+    <div class="modal-header">
+      <div><div class="modal-title" id="mrvTitle">—</div><div class="modal-meta" id="mrvMeta"></div></div>
+      <button class="modal-close" onclick="closeMonthlyReportView()">✕</button>
+    </div>
+    <div class="modal-body" id="mrvBody"></div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -887,7 +978,7 @@ function switchTab(tab) {
   switchTab_direct(tab);
 }
 function switchTab_direct(tab) {
-  ['dashboard','inventory','vendors','emergency','grievances','policies'].forEach(function(p){
+  ['dashboard','inventory','vendors','emergency','grievances','policies','monthly'].forEach(function(p){
     var el = document.getElementById('panel-'+p);
     if (el) el.style.display = p===tab ? 'block' : 'none';
   });
@@ -898,6 +989,7 @@ function switchTab_direct(tab) {
   if (tab==='emergency') loadEmergency();
   if (tab==='grievances') loadGrievances();
   if (tab==='policies') loadPolicies();
+  if (tab==='monthly') loadMonthlyReports();
 }
 function openDrawer() { document.getElementById('mobileDrawer').classList.add('open'); document.getElementById('drawerOverlay').classList.add('open'); }
 function closeDrawer() { document.getElementById('mobileDrawer').classList.remove('open'); document.getElementById('drawerOverlay').classList.remove('open'); }
@@ -1920,6 +2012,146 @@ async function savePolicy() {
 
   closeAddPolicy();
   loadPolicies();
+}
+
+/* ════════════════════════════════════════════
+   MONTHLY REPORT — Dietary Manager's monthly metrics
+════════════════════════════════════════════ */
+var cachedMonthlyReports = [];
+var currentMonthlyReport = null;
+
+async function loadMonthlyReports() {
+  var list = document.getElementById('monthlyReportList');
+  list.innerHTML = '<div style="padding:20px;color:var(--gray);">Loading…</div>';
+
+  var { data } = await sb.from('dietary_monthly_reports').select('*').eq('facility_id', FACILITY_ID).order('report_date', {ascending:false});
+  cachedMonthlyReports = data || [];
+
+  if (!cachedMonthlyReports.length) {
+    list.innerHTML = '<div class="card" style="padding:32px;text-align:center;color:var(--gray);">No monthly reports yet — click + New Report to submit the first one.</div>';
+    return;
+  }
+
+  list.innerHTML = cachedMonthlyReports.map(function(r) {
+    return '<div class="card" style="cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;" onclick="viewMonthlyReport(\''+r.id+'\')">' +
+      '<div><div style="font-size:14px;font-weight:800;">'+r.report_period+'</div>' +
+      '<div style="font-size:11.5px;color:var(--gray);margin-top:2px;">Submitted by '+r.submitted_by+' · '+new Date(r.submitted_at).toLocaleDateString()+'</div></div>' +
+      '<div style="font-size:18px;color:var(--gray-light);">›</div></div>';
+  }).join('');
+}
+
+function showAddMonthlyReport() {
+  currentMonthlyReport = null;
+  document.getElementById('mrTitle').textContent = 'New Monthly Report';
+  ['mr-period','mr-date','mr-q1-forums','mr-q1-period','mr-q1-employees','mr-q1-residents',
+   'mr-q2-period','mr-q2-pct','mr-q3-period','mr-q3-pct','mr-q3-dollars',
+   'mr-q4-period','mr-q4-pct','mr-q5-period','mr-q5-pct','mr-q6-period','mr-q6-pct','mr-other'
+  ].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('monthlyReportModal').classList.add('open');
+}
+function closeMonthlyReportModal() { document.getElementById('monthlyReportModal').classList.remove('open'); }
+
+async function saveMonthlyReport() {
+  var period = document.getElementById('mr-period').value.trim();
+  var monthVal = document.getElementById('mr-date').value;
+  if (!period || !monthVal) { alert('Report Period and Report Month are required'); return; }
+
+  var staff = getStaffName();
+  var payload = {
+    facility_id: FACILITY_ID, report_period: period, report_date: monthVal + '-01',
+    q1_forums_count: numOrNull('mr-q1-forums'), q1_period: strOrNull('mr-q1-period'),
+    q1_employees_count: numOrNull('mr-q1-employees'), q1_residents_count: numOrNull('mr-q1-residents'),
+    q2_period: strOrNull('mr-q2-period'), q2_satisfaction_pct: numOrNull('mr-q2-pct'),
+    q3_period: strOrNull('mr-q3-period'), q3_reduction_pct: numOrNull('mr-q3-pct'), q3_reduction_dollars: numOrNull('mr-q3-dollars'),
+    q4_period: strOrNull('mr-q4-period'), q4_improvement_pct: numOrNull('mr-q4-pct'),
+    q5_period: strOrNull('mr-q5-period'), q5_improvement_pct: numOrNull('mr-q5-pct'),
+    q6_period: strOrNull('mr-q6-period'), q6_decrease_pct: numOrNull('mr-q6-pct'),
+    other_measures: strOrNull('mr-other'),
+    submitted_by: staff, updated_at: new Date().toISOString(),
+  };
+
+  var error;
+  if (currentMonthlyReport) {
+    ({ error } = await sb.from('dietary_monthly_reports').update(payload).eq('id', currentMonthlyReport.id));
+  } else {
+    ({ error } = await sb.from('dietary_monthly_reports').insert(payload));
+  }
+  if (error) { alert('Error: ' + error.message); return; }
+
+  closeMonthlyReportModal();
+  loadMonthlyReports();
+}
+
+function numOrNull(id) { var v = document.getElementById(id).value; return v === '' ? null : +v; }
+function strOrNull(id) { var v = document.getElementById(id).value.trim(); return v === '' ? null : v; }
+
+function viewMonthlyReport(id) {
+  var r = cachedMonthlyReports.find(function(x){ return x.id===id; });
+  if (!r) return;
+  currentMonthlyReport = r;
+
+  document.getElementById('mrvTitle').textContent = r.report_period;
+  document.getElementById('mrvMeta').textContent = 'Submitted by ' + r.submitted_by + ' · ' + new Date(r.submitted_at).toLocaleDateString();
+
+  function row(label, val) {
+    return '<div class="detail-row"><span class="detail-label">'+label+'</span><span class="detail-val">'+(val!=null && val!==''?val:'—')+'</span></div>';
+  }
+
+  var body =
+    '<div class="modal-section-title" style="margin-top:0;">1. Food Forums</div>' +
+    row('Forums Held', r.q1_forums_count) + row('Time Period', r.q1_period) +
+    row('Employees Participating', r.q1_employees_count) + row('Elders/Residents Participating', r.q1_residents_count) +
+    '<div class="modal-section-title" style="margin-top:16px;">2. Interview Satisfaction</div>' +
+    row('Time Period', r.q2_period) + row('Satisfaction Rate', r.q2_satisfaction_pct!=null ? r.q2_satisfaction_pct+'%' : null) +
+    '<div class="modal-section-title" style="margin-top:16px;">3. Food Waste Reduction</div>' +
+    row('Time Period', r.q3_period) + row('Reduction', r.q3_reduction_pct!=null ? r.q3_reduction_pct+'%' : null) +
+    row('Reduction ($)', r.q3_reduction_dollars!=null ? fmtMoney(r.q3_reduction_dollars) : null) +
+    '<div class="modal-section-title" style="margin-top:16px;">4. Food Choice Satisfaction Improvement</div>' +
+    row('Time Period', r.q4_period) + row('Improvement', r.q4_improvement_pct!=null ? r.q4_improvement_pct+'%' : null) +
+    '<div class="modal-section-title" style="margin-top:16px;">5. Nutritional Intake Improvement</div>' +
+    row('Time Period', r.q5_period) + row('Improvement', r.q5_improvement_pct!=null ? r.q5_improvement_pct+'%' : null) +
+    '<div class="modal-section-title" style="margin-top:16px;">6. Supplement Cost Decrease</div>' +
+    row('Time Period', r.q6_period) + row('Decrease', r.q6_decrease_pct!=null ? r.q6_decrease_pct+'%' : null);
+
+  if (r.other_measures) {
+    body += '<div class="modal-section-title" style="margin-top:16px;">Other Measures</div>' +
+      '<div style="background:var(--bg);border-radius:14px;padding:14px;font-size:13px;line-height:1.5;white-space:pre-wrap;">'+r.other_measures+'</div>';
+  }
+
+  body += '<button class="neu-btn small" style="margin-top:16px;" data-perm="addItem" onclick="editMonthlyReport()">✎ Edit</button>';
+
+  document.getElementById('mrvBody').innerHTML = body;
+  document.getElementById('monthlyReportViewModal').classList.add('open');
+  applyRolePermissions();
+}
+function closeMonthlyReportView() { document.getElementById('monthlyReportViewModal').classList.remove('open'); }
+
+function editMonthlyReport() {
+  if (!currentMonthlyReport) return;
+  var r = currentMonthlyReport;
+  closeMonthlyReportView();
+
+  document.getElementById('mrTitle').textContent = 'Edit Monthly Report';
+  document.getElementById('mr-period').value = r.report_period;
+  document.getElementById('mr-date').value = r.report_date.substring(0,7);
+  document.getElementById('mr-q1-forums').value = r.q1_forums_count ?? '';
+  document.getElementById('mr-q1-period').value = r.q1_period || '';
+  document.getElementById('mr-q1-employees').value = r.q1_employees_count ?? '';
+  document.getElementById('mr-q1-residents').value = r.q1_residents_count ?? '';
+  document.getElementById('mr-q2-period').value = r.q2_period || '';
+  document.getElementById('mr-q2-pct').value = r.q2_satisfaction_pct ?? '';
+  document.getElementById('mr-q3-period').value = r.q3_period || '';
+  document.getElementById('mr-q3-pct').value = r.q3_reduction_pct ?? '';
+  document.getElementById('mr-q3-dollars').value = r.q3_reduction_dollars ?? '';
+  document.getElementById('mr-q4-period').value = r.q4_period || '';
+  document.getElementById('mr-q4-pct').value = r.q4_improvement_pct ?? '';
+  document.getElementById('mr-q5-period').value = r.q5_period || '';
+  document.getElementById('mr-q5-pct').value = r.q5_improvement_pct ?? '';
+  document.getElementById('mr-q6-period').value = r.q6_period || '';
+  document.getElementById('mr-q6-pct').value = r.q6_decrease_pct ?? '';
+  document.getElementById('mr-other').value = r.other_measures || '';
+
+  document.getElementById('monthlyReportModal').classList.add('open');
 }
 
 
