@@ -191,6 +191,44 @@ var roundValues = {};   // key -> 'pass'|'fail'|'yes'|'no'|'n/a'
 var issueDrafts = {};   // key -> { description, priority } for items answered negatively
 var extraIssues = [];   // manually added issues not tied to a checklist item
 
+// Cleaning task checklists for offices and bathrooms — reasonable EVS defaults.
+var OFFICE_SECTIONS = [
+  { title:'Cleaning Tasks', dept:'Housekeeping', type:'passfail', items:[
+    { key:'trash_emptied', label:'Trash Emptied & Liner Replaced' },
+    { key:'surfaces_wiped', label:'Desk / Surfaces Wiped Down' },
+    { key:'floor_cleaned', label:'Floor Vacuumed or Mopped' },
+    { key:'glass_cleaned', label:'Windows / Glass Cleaned' },
+    { key:'odor_free', label:'No Odors' }
+  ]}
+];
+var BATHROOM_SECTIONS = [
+  { title:'Restroom Cleaning', dept:'Housekeeping', type:'passfail', items:[
+    { key:'toilet_disinfected', label:'Toilet / Urinal Cleaned & Disinfected' },
+    { key:'sink_cleaned', label:'Sink & Countertop Cleaned' },
+    { key:'mirror_cleaned', label:'Mirror Cleaned' },
+    { key:'floor_mopped', label:'Floor Mopped' },
+    { key:'trash_emptied', label:'Trash Emptied & Liner Replaced' },
+    { key:'fixtures_wiped', label:'Grab Bars / Fixtures Wiped Down' },
+    { key:'odor_free', label:'No Odors' }
+  ]},
+  { title:'Supplies', dept:'Housekeeping', type:'passfail', items:[
+    { key:'soap_stocked', label:'Soap Dispenser Stocked' },
+    { key:'paper_stocked', label:'Paper Towels / Toilet Paper Stocked' },
+    { key:'sanitizer_stocked', label:'Hand Sanitizer Stocked' }
+  ]}
+];
+
+// Per-location-type presentation: icon, wording, and which identifier to collect.
+var LOCATION_CONFIG = {
+  room:     { icon:'🚪', roundTitle:'Complete Zone Round', roundSub:'Run the checklist and log any issues', idLabel:'Your Name', idKey:'agrhodes_round_staff', idPlaceholder:'Enter your name' },
+  eoc_area: { icon:'📋', roundTitle:'Complete Zone Round', roundSub:'Run the checklist and log any issues', idLabel:'Your Name', idKey:'agrhodes_round_staff', idPlaceholder:'Enter your name' },
+  office:   { icon:'🏢', roundTitle:'Complete Cleaning Task', roundSub:'Run the cleaning checklist for this office', idLabel:'Employee ID', idKey:'agrhodes_employee_id', idPlaceholder:'Enter your employee ID' },
+  bathroom: { icon:'🚻', roundTitle:'Complete Cleaning Task', roundSub:'Run the cleaning checklist for this restroom', idLabel:'Employee ID', idKey:'agrhodes_employee_id', idPlaceholder:'Enter your employee ID' }
+};
+function getLocConfig(loc) {
+  return LOCATION_CONFIG[loc.location_type] || LOCATION_CONFIG.room;
+}
+
 // ── Checklist definition — field names match exactly what the dashboard reads ──
 var ROOM_SECTIONS = [
   { title:'Resident Status', dept:'Nursing', type:'yesno', items:[
@@ -266,16 +304,18 @@ function closeConfirmModal(result) {
   if (_confirmResolve) { _confirmResolve(result); _confirmResolve = null; }
 }
 
-function getStaffName() {
+function getIdentifierValue() {
   var input = document.getElementById('staffNameInput');
-  return input ? input.value.trim() : (localStorage.getItem('agrhodes_round_staff') || '').trim();
+  var cfg = getLocConfig(currentLoc);
+  return input ? input.value.trim() : (localStorage.getItem(cfg.idKey) || '').trim();
 }
-function nameFieldHTML() {
-  var saved = localStorage.getItem('agrhodes_round_staff') || '';
+function identifierFieldHTML() {
+  var cfg = getLocConfig(currentLoc);
+  var saved = localStorage.getItem(cfg.idKey) || '';
   return '<div class="card name-field-card">' +
-    '<div class="section-title" style="margin-bottom:8px;">Your Name</div>' +
-    '<input type="text" id="staffNameInput" placeholder="Enter your name" value="' + saved.replace(/"/g,'&quot;') + '" ' +
-      'oninput="localStorage.setItem(\'agrhodes_round_staff\', this.value)">' +
+    '<div class="section-title" style="margin-bottom:8px;">' + cfg.idLabel + '</div>' +
+    '<input type="text" id="staffNameInput" placeholder="' + cfg.idPlaceholder + '" value="' + saved.replace(/"/g,'&quot;') + '" ' +
+      'oninput="localStorage.setItem(\'' + cfg.idKey + '\', this.value)">' +
   '</div>';
 }
 
@@ -312,17 +352,18 @@ function locSubtitle(loc) {
 
 function renderLanding() {
   var loc = currentLoc;
-  var isRoom = loc.location_type === 'room';
+  var cfg = getLocConfig(loc);
+  var isRoom = loc.location_type === 'room' || loc.location_type === 'eoc_area';
   app.innerHTML =
     '<div class="rr-header">' +
-      '<div class="rr-icon">' + (isRoom ? '🚪' : '📋') + '</div>' +
+      '<div class="rr-icon">' + cfg.icon + '</div>' +
       '<div class="rr-name">' + loc.display_name + '</div>' +
       '<div class="rr-meta">' + locSubtitle(loc) + '</div>' +
     '</div>' +
     '<div class="choice-card" onclick="startRound()">' +
-      '<div class="choice-icon">📋</div>' +
-      '<div><div class="choice-title">Complete Zone Round</div>' +
-        '<div class="choice-sub">Run the checklist and log any issues</div></div>' +
+      '<div class="choice-icon">' + (isRoom ? '📋' : '🧹') + '</div>' +
+      '<div><div class="choice-title">' + cfg.roundTitle + '</div>' +
+        '<div class="choice-sub">' + cfg.roundSub + '</div></div>' +
       '<div class="choice-arrow">›</div>' +
     '</div>' +
     '<div class="choice-card" onclick="reportIssueForm()">' +
@@ -332,7 +373,7 @@ function renderLanding() {
       '<div class="choice-arrow">›</div>' +
     '</div>' +
     '<div style="text-align:center;margin-top:6px;">' +
-      '<button class="neu-btn ghost" onclick="viewAssets()">View ' + (isRoom ? 'Room' : 'Area') + ' Assets →</button>' +
+      '<button class="neu-btn ghost" onclick="viewAssets()">View Assets on File →</button>' +
     '</div>';
 }
 
@@ -348,7 +389,11 @@ function startRound() {
 }
 
 function getSections() {
-  return currentLoc.location_type === 'room' ? ROOM_SECTIONS : EOC_SECTIONS;
+  var t = currentLoc.location_type;
+  if (t === 'room') return ROOM_SECTIONS;
+  if (t === 'office') return OFFICE_SECTIONS;
+  if (t === 'bathroom') return BATHROOM_SECTIONS;
+  return EOC_SECTIONS;
 }
 function totalItems() {
   return getSections().reduce(function(sum, s){ return sum + s.items.length; }, 0);
@@ -362,7 +407,7 @@ function renderChecklist() {
   var html = '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>';
   html += '<div class="rr-header" style="padding:16px 18px;"><div class="rr-name" style="font-size:16px;">' + currentLoc.display_name + '</div>' +
     '<div class="rr-meta">' + locSubtitle(currentLoc) + '</div></div>';
-  html += nameFieldHTML();
+  html += identifierFieldHTML();
 
   sections.forEach(function(section, si) {
     html += '<div class="card"><div class="section-title"><span>' + section.title + '</span></div>';
@@ -489,8 +534,8 @@ function updateProgressBar() {
 async function reviewAndSubmit() {
   var total = totalItems();
   var done = answeredCount();
-  if (!getStaffName()) {
-    showToast('Please enter your name at the top of the page before submitting.', 'error');
+  if (!getIdentifierValue()) {
+    showToast('Please enter your ' + getLocConfig(currentLoc).idLabel + ' at the top of the page before submitting.', 'error');
     var input = document.getElementById('staffNameInput');
     if (input) input.focus();
     return;
@@ -503,22 +548,23 @@ async function reviewAndSubmit() {
 }
 
 async function submitRound() {
-  var staffName = getStaffName();
+  var staffName = getIdentifierValue();
   if (!staffName) {
-    showToast('Please enter your name at the top of the page before submitting.', 'error');
+    showToast('Please enter your ' + getLocConfig(currentLoc).idLabel + ' at the top of the page before submitting.', 'error');
     return;
   }
-  localStorage.setItem('agrhodes_round_staff', staffName);
+  localStorage.setItem(getLocConfig(currentLoc).idKey, staffName);
 
   var wrap = document.getElementById('progressBarWrap');
   if (wrap) { var btn = wrap.querySelector('button'); if (btn) btn.textContent = 'Saving…'; }
 
   var loc = currentLoc;
   var isRoom = loc.location_type === 'room';
+  var roundTypeValue = loc.location_type === 'eoc_area' ? 'eoc' : loc.location_type; // room | eoc | office | bathroom
   var roundRow = {
     facility_id: FACILITY_ID,
     qr_identifier: loc.qr_identifier,
-    round_type: isRoom ? 'room' : 'eoc',
+    round_type: roundTypeValue,
     rounded_by: staffName,
     rounded_at: new Date().toISOString()
   };
@@ -608,7 +654,7 @@ function renderReportIssueForm() {
       '<div class="rr-name" style="font-size:16px;">🛠 Report Something</div>' +
       '<div class="rr-meta">' + loc.display_name + ' · ' + locSubtitle(loc) + '</div>' +
     '</div>' +
-    nameFieldHTML() +
+    identifierFieldHTML() +
     '<div class="card">' +
       '<div class="section-title">What department does this belong to?</div>' +
       '<select id="qi-dept" onchange="quickIssue.dept=this.value">' +
@@ -636,14 +682,14 @@ async function submitQuickIssue() {
     showToast('Please describe what needs fixing.', 'error');
     return;
   }
-  var staffName = getStaffName();
+  var staffName = getIdentifierValue();
   if (!staffName) {
-    showToast('Please enter your name at the top of the page before submitting.', 'error');
+    showToast('Please enter your ' + getLocConfig(currentLoc).idLabel + ' at the top of the page before submitting.', 'error');
     var input = document.getElementById('staffNameInput');
     if (input) input.focus();
     return;
   }
-  localStorage.setItem('agrhodes_round_staff', staffName);
+  localStorage.setItem(getLocConfig(currentLoc).idKey, staffName);
 
   var btn = document.getElementById('qi-submit-btn');
   if (btn) { btn.textContent = 'Submitting…'; btn.disabled = true; }
