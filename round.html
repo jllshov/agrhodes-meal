@@ -192,6 +192,12 @@ var issueDrafts = {};   // key -> { description, priority } for items answered n
 var extraIssues = [];   // manually added issues not tied to a checklist item
 
 // Cleaning task checklists for offices and bathrooms — reasonable EVS defaults.
+var ADDITIONAL_CLEANING_ITEMS = [
+  { key:'furniture_pulled', label:'Pull Beds & Furniture (wipe underneath/behind)' },
+  { key:'overhead_lights_wiped', label:'Wipe Down Overhead Lights' },
+  { key:'window_sills_cleaned', label:'Clean Window Sills' },
+  { key:'water_dispenser_cleaned', label:'Clean All Water Dispensers' }
+];
 var OFFICE_SECTIONS = [
   { title:'Cleaning Tasks', dept:'Housekeeping', type:'passfail', items:[
     { key:'trash_emptied', label:'Trash Emptied & Liner Replaced' },
@@ -199,7 +205,8 @@ var OFFICE_SECTIONS = [
     { key:'floor_cleaned', label:'Floor Vacuumed or Mopped' },
     { key:'glass_cleaned', label:'Windows / Glass Cleaned' },
     { key:'odor_free', label:'No Odors' }
-  ]}
+  ]},
+  { title:'Additional Tasks', dept:'Housekeeping', type:'passfail', items: ADDITIONAL_CLEANING_ITEMS }
 ];
 var BATHROOM_SECTIONS = [
   { title:'Restroom Cleaning', dept:'Housekeeping', type:'passfail', items:[
@@ -215,7 +222,8 @@ var BATHROOM_SECTIONS = [
     { key:'soap_stocked', label:'Soap Dispenser Stocked' },
     { key:'paper_stocked', label:'Paper Towels / Toilet Paper Stocked' },
     { key:'sanitizer_stocked', label:'Hand Sanitizer Stocked' }
-  ]}
+  ]},
+  { title:'Additional Tasks', dept:'Housekeeping', type:'passfail', items: ADDITIONAL_CLEANING_ITEMS }
 ];
 
 // Per-location-type presentation: icon, wording, and which identifier to collect.
