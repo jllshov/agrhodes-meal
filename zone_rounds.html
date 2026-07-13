@@ -276,6 +276,8 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   .main { padding: 0; }
   .qr-grid { grid-template-columns: repeat(3, 1fr); }
   .qr-tile { break-inside: avoid; }
+  #reportTable { font-size: 10.5px; }
+  #reportTable tr { break-inside: avoid; }
 }
 
 /* ── Mobile Nav ── */
@@ -495,6 +497,9 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   <button class="nav-item" id="drawer-compliance" onclick="drawerNav('compliance')">
     <span class="nav-icon">🔥</span> Life Safety
   </button>
+  <button class="nav-item" id="drawer-reports" onclick="drawerNav('reports')">
+    <span class="nav-icon">📄</span> Reports
+  </button>
   <button class="nav-item" onclick="window.print();closeDrawer();">
     <span class="nav-icon">🖨</span> Print QR Codes
   </button>
@@ -526,6 +531,9 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   </button>
   <button class="nav-item" onclick="switchTab('compliance')">
     <span class="nav-icon">🔥</span> Life Safety
+  </button>
+  <button class="nav-item" onclick="switchTab('reports')">
+    <span class="nav-icon">📄</span> Reports
   </button>
   <button class="nav-item no-print" onclick="window.print()">
     <span class="nav-icon">🖨</span> Print QR Codes
@@ -725,6 +733,43 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
     </div>
 
     <div id="complianceList"></div>
+  </div>
+
+  <!-- ── Reports ── -->
+  <div class="panel" id="panel-reports" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Reports</div><div class="page-sub">Completed rounds and cleaning tasks over a date range</div></div>
+    </div>
+
+    <div class="card no-print" style="margin-bottom:20px;">
+      <div class="bulk-form" style="grid-template-columns:1fr 1fr 1fr auto;">
+        <div class="field"><label>From</label><input type="date" id="rep-start"></div>
+        <div class="field"><label>To</label><input type="date" id="rep-end"></div>
+        <div class="field"><label>Location Type</label>
+          <select id="rep-type">
+            <option value="all">All Types</option>
+            <option value="room">Resident Rooms</option>
+            <option value="eoc_area">EOC Areas</option>
+            <option value="office">Offices</option>
+            <option value="bathroom">Bathrooms</option>
+          </select>
+        </div>
+        <button class="neu-btn primary" onclick="generateReport()">Generate</button>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:14px;">
+        <button class="neu-btn" onclick="window.print()">🖨 Print Report</button>
+        <button class="neu-btn" onclick="exportReportCSV()">⬇ Export CSV</button>
+      </div>
+    </div>
+
+    <div class="stats-row" id="reportStatsRow" style="margin-bottom:20px;"></div>
+    <div class="card" id="reportTableCard">
+      <div class="card-title">Results</div>
+      <div class="card-sub" id="reportRangeLabel">Choose a date range and hit Generate</div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px;" id="reportTable"></table>
+      </div>
+    </div>
   </div>
 
 </main>
@@ -1675,7 +1720,7 @@ function drawerNav(tab) {
 // Renamed internal version that doesn't rely on event.currentTarget
 function switchTab_direct(tab) {
   document.querySelectorAll('.sidebar .nav-item').forEach(function(b){ b.classList.remove('active'); });
-  ['dashboard','rooms','eoc','facilities','issues','compliance'].forEach(function(p){
+  ['dashboard','rooms','eoc','facilities','issues','compliance','reports'].forEach(function(p){
     document.getElementById('panel-'+p).style.display = p===tab ? 'block' : 'none';
   });
   currentPanel = tab;
@@ -1685,6 +1730,7 @@ function switchTab_direct(tab) {
   if (tab==='facilities') loadFacilities();
   if (tab==='issues') loadIssues();
   if (tab==='compliance') loadCompliance();
+  if (tab==='reports') initReportsPanel();
 }
 
 
@@ -2182,6 +2228,190 @@ async function markComplianceComplete(taskId) {
   });
   if (error) { alert('Error: ' + error.message); return; }
   loadCompliance();
+}
+
+/* ── Reports ── */
+var ROOM_CHECK_KEYS = [
+  'resident_contacted','satisfaction','no_concerns','call_light','bed_low_locked','room_clutter',
+  'floor_clean','bathroom_clean','trash_removed','curtains_clean','odor_free','lighting',
+  'furniture_intact','equipment_functioning','no_maintenance'
+];
+var REPORT_TYPE_LABELS = { room:'Resident Room', eoc_area:'EOC Area', office:'Office', bathroom:'Bathroom' };
+var lastReportRows = [];
+
+function initReportsPanel() {
+  var startEl = document.getElementById('rep-start');
+  var endEl = document.getElementById('rep-end');
+  if (!startEl.value) {
+    var today = new Date();
+    var weekAgo = new Date(today.getTime() - 7*86400000);
+    endEl.value = today.toISOString().split('T')[0];
+    startEl.value = weekAgo.toISOString().split('T')[0];
+  }
+}
+
+async function generateReport() {
+  var startDate = document.getElementById('rep-start').value;
+  var endDate = document.getElementById('rep-end').value;
+  var typeFilter = document.getElementById('rep-type').value;
+  if (!startDate || !endDate) { alert('Select a start and end date'); return; }
+
+  var startISO = startDate + 'T00:00:00';
+  var endISO = endDate + 'T23:59:59';
+
+  var { data: rounds, error: roundsErr } = await sb.from('zone_rounds').select('*')
+    .eq('facility_id', FACILITY_ID)
+    .gte('rounded_at', startISO).lte('rounded_at', endISO)
+    .order('rounded_at', {ascending:false});
+  if (roundsErr) { alert('Error loading rounds: ' + roundsErr.message); return; }
+
+  var { data: locations } = await sb.from('room_qr_codes').select('*').eq('facility_id', FACILITY_ID);
+  var locByQr = {};
+  (locations||[]).forEach(function(l){ locByQr[l.qr_identifier] = l; });
+
+  function resolveType(r) {
+    var loc = locByQr[r.qr_identifier];
+    if (loc) return loc.location_type;
+    return r.round_type === 'eoc' ? 'eoc_area' : r.round_type;
+  }
+
+  var filteredRounds = (rounds||[]).filter(function(r){
+    if (typeFilter === 'all') return true;
+    return resolveType(r) === typeFilter;
+  });
+
+  var roundIds = filteredRounds.map(function(r){ return r.id; });
+  var issuesByRound = {};
+  if (roundIds.length) {
+    var { data: issues } = await sb.from('zone_issues').select('*').in('round_id', roundIds);
+    (issues||[]).forEach(function(i){ (issuesByRound[i.round_id] = issuesByRound[i.round_id] || []).push(i); });
+  }
+
+  lastReportRows = filteredRounds.map(function(r){
+    var loc = locByQr[r.qr_identifier];
+    var type = resolveType(r);
+    var issues = issuesByRound[r.id] || [];
+    var passCount = null, failCount = null;
+
+    if (type === 'room') {
+      passCount = ROOM_CHECK_KEYS.filter(function(k){ return r[k]==='pass' || r[k]==='yes'; }).length;
+      failCount = ROOM_CHECK_KEYS.filter(function(k){ return r[k]==='fail' || r[k]==='no'; }).length;
+    } else if (r.eoc_scores) {
+      var scores = typeof r.eoc_scores === 'string' ? JSON.parse(r.eoc_scores) : r.eoc_scores;
+      var keys = Object.keys(scores);
+      passCount = keys.filter(function(k){ return scores[k]==='pass'; }).length;
+      failCount = keys.filter(function(k){ return scores[k]==='fail'; }).length;
+    }
+
+    return {
+      name: loc ? loc.display_name : r.qr_identifier,
+      area: loc ? (loc.unit || loc.eoc_department || '') : '',
+      type: type,
+      typeLabel: REPORT_TYPE_LABELS[type] || type,
+      roundedBy: r.rounded_by,
+      roundedAt: r.rounded_at,
+      compliancePct: r.eoc_compliance_pct,
+      passCount: passCount, failCount: failCount,
+      issuesCount: issues.length,
+      highIssues: issues.filter(function(i){ return i.priority==='High'; }).length
+    };
+  });
+
+  document.getElementById('reportRangeLabel').textContent =
+    lastReportRows.length + ' round' + (lastReportRows.length!==1?'s':'') + ' from ' + startDate + ' to ' + endDate;
+
+  renderReportStats(lastReportRows);
+  renderReportTable(lastReportRows);
+}
+
+function renderReportStats(rows) {
+  var totalRounds = rows.length;
+  var uniqueLocations = new Set(rows.map(function(r){ return r.name; })).size;
+  var totalIssues = rows.reduce(function(s,r){ return s + r.issuesCount; }, 0);
+  var highIssues = rows.reduce(function(s,r){ return s + r.highIssues; }, 0);
+  var withCompliance = rows.filter(function(r){ return r.compliancePct !== null && r.compliancePct !== undefined; });
+  var avgCompliance = withCompliance.length
+    ? Math.round(withCompliance.reduce(function(s,r){ return s + r.compliancePct; }, 0) / withCompliance.length)
+    : null;
+
+  document.getElementById('reportStatsRow').innerHTML =
+    statCard(totalRounds, 'Rounds Completed', 'pill-orange', '📋') +
+    statCard(uniqueLocations, 'Locations Covered', 'pill-gray', '📍') +
+    statCard(totalIssues, 'Issues Logged', totalIssues>0?'pill-orange':'pill-green', totalIssues>0?'⚠':'✓') +
+    statCard(highIssues, 'High Priority', highIssues>0?'pill-red':'pill-green', highIssues>0?'🔴':'✓ Clear') +
+    statCardAccent(avgCompliance!==null ? avgCompliance+'%' : '—', 'Avg Compliance', 'EOC / Cleaning Rounds');
+}
+
+function renderReportTable(rows) {
+  var table = document.getElementById('reportTable');
+  if (!rows.length) {
+    table.innerHTML = '<tr><td style="padding:20px;color:var(--gray);text-align:center;">No rounds found for this range.</td></tr>';
+    return;
+  }
+  var thStyle = 'text-align:left;padding:10px 8px;border-bottom:2px solid rgba(0,0,0,.08);font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--gray);';
+  var tdStyle = 'padding:10px 8px;border-bottom:1px solid rgba(0,0,0,.06);';
+  var html = '<thead><tr>' +
+    '<th style="'+thStyle+'">Location</th><th style="'+thStyle+'">Type</th><th style="'+thStyle+'">Area</th>' +
+    '<th style="'+thStyle+'">Completed By</th><th style="'+thStyle+'">Date / Time</th>' +
+    '<th style="'+thStyle+'">Result</th><th style="'+thStyle+'">Issues</th>' +
+    '</tr></thead><tbody>';
+
+  rows.forEach(function(r){
+    var dt = new Date(r.roundedAt);
+    var dtStr = dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) + ' ' +
+      dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    var result;
+    if (r.passCount !== null) {
+      var total = r.passCount + r.failCount;
+      var color = r.failCount > 0 ? 'var(--red)' : 'var(--green)';
+      result = '<span style="color:'+color+';font-weight:700;">' + r.passCount + '/' + total + ' passed</span>';
+    } else {
+      result = '<span style="color:var(--gray);">—</span>';
+    }
+    var issuesLabel = r.issuesCount
+      ? '<span style="color:'+(r.highIssues>0?'var(--red)':'var(--amber)')+';font-weight:700;">' + r.issuesCount + (r.highIssues>0?' ('+r.highIssues+' high)':'') + '</span>'
+      : '<span style="color:var(--green);">0</span>';
+
+    html += '<tr>' +
+      '<td style="'+tdStyle+'font-weight:700;">' + r.name + '</td>' +
+      '<td style="'+tdStyle+'">' + r.typeLabel + '</td>' +
+      '<td style="'+tdStyle+'">' + (r.area||'—') + '</td>' +
+      '<td style="'+tdStyle+'">' + (r.roundedBy||'—') + '</td>' +
+      '<td style="'+tdStyle+'">' + dtStr + '</td>' +
+      '<td style="'+tdStyle+'">' + result + '</td>' +
+      '<td style="'+tdStyle+'">' + issuesLabel + '</td>' +
+      '</tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+function exportReportCSV() {
+  if (!lastReportRows.length) { alert('Generate a report first.'); return; }
+  var headers = ['Location','Type','Area','Completed By','Date/Time','Passed','Failed','Compliance %','Issues','High Priority Issues'];
+  var lines = [headers.join(',')];
+  lastReportRows.forEach(function(r){
+    var row = [
+      r.name, r.typeLabel, r.area||'', r.roundedBy||'',
+      new Date(r.roundedAt).toLocaleString('en-US'),
+      r.passCount!==null?r.passCount:'', r.failCount!==null?r.failCount:'',
+      r.compliancePct!==null&&r.compliancePct!==undefined?r.compliancePct:'',
+      r.issuesCount, r.highIssues
+    ].map(function(v){
+      var s = String(v).replace(/"/g,'""');
+      return /[",\n]/.test(s) ? '"'+s+'"' : s;
+    });
+    lines.push(row.join(','));
+  });
+  var blob = new Blob([lines.join('\n')], { type:'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'zone-rounds-report-' + document.getElementById('rep-start').value + '-to-' + document.getElementById('rep-end').value + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // Boot
