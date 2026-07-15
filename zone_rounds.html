@@ -452,6 +452,29 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   font-size: 10.5px; color: var(--red); margin-top: 6px; display: flex; align-items: center; gap: 5px;
 }
 
+/* ── Policies & Procedures ── */
+.policy-callout {
+  background: var(--orange-light); border-radius: 16px; padding: 16px 18px;
+  font-size: 13.5px; font-weight: 700; color: #92400E; margin-bottom: 18px;
+  display: flex; align-items: center; gap: 10px;
+}
+.policy-steps { padding-left: 22px; }
+.policy-steps > li { margin-bottom: 16px; font-size: 13.5px; line-height: 1.5; }
+.policy-steps > li b { display: block; margin-bottom: 2px; }
+.policy-sublist { margin-top: 8px; padding-left: 20px; list-style: disc; }
+.policy-sublist li { font-size: 12.5px; color: var(--gray); margin-bottom: 4px; line-height: 1.4; }
+.policy-note { font-size: 11.5px; color: var(--gray-light); font-style: italic; margin-top: 6px; }
+.policy-warn-box {
+  background: rgba(239,68,68,.07); border: 1.5px solid rgba(239,68,68,.22);
+  border-radius: 16px; padding: 16px 18px; margin-top: 6px;
+}
+.policy-warn-box .policy-steps { padding-left: 20px; margin-top: 4px; }
+.policy-warn-title { font-size: 13px; font-weight: 800; color: var(--red); display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+table.policy-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 10px; }
+table.policy-table th { text-align: left; padding: 10px 8px; border-bottom: 2px solid rgba(0,0,0,.08); font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--gray); }
+table.policy-table td { padding: 12px 8px; border-bottom: 1px solid rgba(0,0,0,.06); vertical-align: top; line-height: 1.4; }
+table.policy-table tr:last-child td { border-bottom: none; }
+
 </style>
 </head>
 <body>
@@ -500,6 +523,9 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   <button class="nav-item" id="drawer-reports" onclick="drawerNav('reports')">
     <span class="nav-icon">📄</span> Reports
   </button>
+  <button class="nav-item" id="drawer-policies" onclick="drawerNav('policies')">
+    <span class="nav-icon">📚</span> Policies & Procedures
+  </button>
   <button class="nav-item" onclick="window.print();closeDrawer();">
     <span class="nav-icon">🖨</span> Print QR Codes
   </button>
@@ -534,6 +560,9 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   </button>
   <button class="nav-item" onclick="switchTab('reports')">
     <span class="nav-icon">📄</span> Reports
+  </button>
+  <button class="nav-item" onclick="switchTab('policies')">
+    <span class="nav-icon">📚</span> Policies & Procedures
   </button>
   <button class="nav-item no-print" onclick="window.print()">
     <span class="nav-icon">🖨</span> Print QR Codes
@@ -769,6 +798,87 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
       <div style="overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:12.5px;" id="reportTable"></table>
       </div>
+    </div>
+  </div>
+
+  <!-- ── Policies & Procedures ── -->
+  <div class="panel" id="panel-policies" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Policies & Procedures</div><div class="page-sub">Reference guides for staff</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title">🧹 Room & Restroom Cleaning Instructions</div>
+      <div class="card-sub">Standard procedure for daily and terminal cleaning</div>
+
+      <div class="policy-callout">
+        <span style="font-size:20px;">☝️</span>
+        <span>Clean from clean to dirty, working from top to bottom.</span>
+      </div>
+
+      <ol class="policy-steps">
+        <li><b>1. Assemble supplies.</b> Gather the disinfectant and cleaning equipment needed to clean the room.</li>
+        <li><b>2. Wear appropriate PPE</b> before beginning.</li>
+        <li><b>3. Clean and disinfect surfaces.</b> Using a cloth rag or sponge immersed in germicidal solution, thoroughly clean the following (change rags and gloves as needed):
+          <ul class="policy-sublist">
+            <li><b>Bed and mattress</b> (Terminal Clean)</li>
+            <li><b>High-touch room surfaces:</b> bed rails/controls, light switch, door knobs, IV/G-tube supplement pole (grab area), call box/button, remotes, bedside/tray table, chair(s)</li>
+            <li><b>Over-sink light</b> (Terminal Clean)</li>
+            <li><b>High-touch bathroom surfaces:</b> room sink, room light switch, room inner doorknob, bathroom inner doorknob/plate, bathroom light switch, bathroom handrails by toilet, bathroom sink, toilet seat, toilet flush handle, toilet bedpan cleaner</li>
+          </ul>
+          <div class="policy-note">Common restrooms and shower areas are cleaned the same way.</div>
+        </li>
+        <li><b>4. Clean the floor.</b> Sweep, remove litter, and dust, then mop the room floor using a flat mop immersed in germicidal detergent to pick up visible soil.</li>
+        <li><b>5. Privacy curtain.</b> Inspect, clean, or replace the privacy curtain as needed, and always during terminal cleaning.</li>
+        <li><b>6. Change rags/gloves and perform hand hygiene.</b></li>
+        <li><b>7. Check and restock.</b> Confirm trash cans are clean inside and outside before placing a new liner. Confirm PPE, hand sanitizer, soap, and toilet paper/paper towels are stocked.</li>
+        <li><b>8. Mop the restroom floor</b> using a flat mop immersed in germicidal detergent to pick up visible soil.</li>
+        <li><b>9. Clean your equipment.</b> Using germicidal solution, wipe down the mop handle, mop bucket, and any containers utilized.</li>
+        <li><b>10. Remove gloves and perform hand hygiene.</b></li>
+      </ol>
+
+      <div class="policy-warn-box">
+        <div class="policy-warn-title">⚠ Special Precautions / Isolation Rooms</div>
+        <ol class="policy-steps" style="margin-bottom:0;">
+          <li style="margin-bottom:10px;"><b>A.</b> Use the proper PPE indicated on the precaution sign prior to entering the room, and remove it prior to leaving the room.</li>
+          <li style="margin-bottom:10px;"><b>B.</b> Verify that the disinfectant you will use will kill the organism the resident is on isolation for. Know the disinfectant's proper contact time.</li>
+          <li style="margin-bottom:0;"><b>C.</b> Do not dust mop or use a dry cloth to dust furniture. Use a mop or cloth immersed in disinfectant.</li>
+        </ol>
+      </div>
+
+      <div class="policy-callout" style="margin-top:18px;margin-bottom:0;background:var(--bg);color:var(--black);">
+        <span style="font-size:20px;">🏢</span>
+        <span>Use the same cleaning principles for other public areas — e.g. lobby, dining area, and office area.</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🧪 Disinfectant Reference Guide</div>
+      <div class="card-sub">Contact times and appropriate use for each product</div>
+      <table class="policy-table">
+        <thead>
+          <tr><th>Disinfectant</th><th>Use For</th><th>Kills</th><th>Contact Time</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>PuRTabs</b><br><span style="color:var(--gray);font-size:11px;">Dilute 4 tabs to a gallon. Only good for 24 hrs once diluted.</span></td>
+            <td>General surface cleaning / disinfecting</td>
+            <td>Staph, MRSA, HIV, Hep A/B/C, C. diff, Norovirus, RSV, Flu, COVID, Pseudomonas, etc.</td>
+            <td>1–2 min general<br>Norovirus/COVID: 1 min<br>C. diff: 4 min</td>
+          </tr>
+          <tr>
+            <td><b>PureBright Ready-to-Use Germicide Spray</b></td>
+            <td>Terminal cleaning and restroom / stains. Bleach — backup for hard-to-clean areas and stains.</td>
+            <td>Flu, colds, Staph, molds, mildew, E. coli, Strep</td>
+            <td>1 min general disinfection<br>5 min mold/mildew</td>
+          </tr>
+          <tr>
+            <td><b>Neutral Floor Cleaner</b></td>
+            <td>Floor surfaces</td>
+            <td colspan="2" style="color:var(--gray-light);font-style:italic;">Cleaner only — not a disinfectant.</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -1720,7 +1830,7 @@ function drawerNav(tab) {
 // Renamed internal version that doesn't rely on event.currentTarget
 function switchTab_direct(tab) {
   document.querySelectorAll('.sidebar .nav-item').forEach(function(b){ b.classList.remove('active'); });
-  ['dashboard','rooms','eoc','facilities','issues','compliance','reports'].forEach(function(p){
+  ['dashboard','rooms','eoc','facilities','issues','compliance','reports','policies'].forEach(function(p){
     document.getElementById('panel-'+p).style.display = p===tab ? 'block' : 'none';
   });
   currentPanel = tab;
@@ -2313,7 +2423,11 @@ async function generateReport() {
       compliancePct: r.eoc_compliance_pct,
       passCount: passCount, failCount: failCount,
       issuesCount: issues.length,
-      highIssues: issues.filter(function(i){ return i.priority==='High'; }).length
+      highIssues: issues.filter(function(i){ return i.priority==='High'; }).length,
+      // Kept for drill-down — reuses the existing round detail modal
+      loc: loc || { display_name: r.qr_identifier, unit: null, eoc_department: null },
+      roundRaw: r,
+      issuesRaw: issues
     };
   });
 
@@ -2353,10 +2467,10 @@ function renderReportTable(rows) {
   var html = '<thead><tr>' +
     '<th style="'+thStyle+'">Location</th><th style="'+thStyle+'">Type</th><th style="'+thStyle+'">Area</th>' +
     '<th style="'+thStyle+'">Completed By</th><th style="'+thStyle+'">Date / Time</th>' +
-    '<th style="'+thStyle+'">Result</th><th style="'+thStyle+'">Issues</th>' +
+    '<th style="'+thStyle+'">Result</th><th style="'+thStyle+'">Issues</th><th style="'+thStyle+'"></th>' +
     '</tr></thead><tbody>';
 
-  rows.forEach(function(r){
+  rows.forEach(function(r, idx){
     var dt = new Date(r.roundedAt);
     var dtStr = dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) + ' ' +
       dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
@@ -2372,7 +2486,7 @@ function renderReportTable(rows) {
       ? '<span style="color:'+(r.highIssues>0?'var(--red)':'var(--amber)')+';font-weight:700;">' + r.issuesCount + (r.highIssues>0?' ('+r.highIssues+' high)':'') + '</span>'
       : '<span style="color:var(--green);">0</span>';
 
-    html += '<tr>' +
+    html += '<tr style="cursor:pointer;" onclick="openReportDetail(' + idx + ')" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'transparent\'">' +
       '<td style="'+tdStyle+'font-weight:700;">' + r.name + '</td>' +
       '<td style="'+tdStyle+'">' + r.typeLabel + '</td>' +
       '<td style="'+tdStyle+'">' + (r.area||'—') + '</td>' +
@@ -2380,10 +2494,17 @@ function renderReportTable(rows) {
       '<td style="'+tdStyle+'">' + dtStr + '</td>' +
       '<td style="'+tdStyle+'">' + result + '</td>' +
       '<td style="'+tdStyle+'">' + issuesLabel + '</td>' +
+      '<td style="'+tdStyle+'color:var(--gray-light);">View →</td>' +
       '</tr>';
   });
   html += '</tbody>';
   table.innerHTML = html;
+}
+
+function openReportDetail(idx) {
+  var row = lastReportRows[idx];
+  if (!row) return;
+  openRoundModal(row.loc, row.roundRaw, row.issuesRaw);
 }
 
 function exportReportCSV() {
