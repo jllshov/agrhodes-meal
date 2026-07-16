@@ -160,6 +160,32 @@ body { min-height: 100vh; padding-bottom: 100px; }
 /* ── Inline name field ── */
 .name-field-card { padding: 14px 18px; }
 .name-field-card input { width: 100%; padding: 11px 12px; border: none; border-radius: 12px; background: var(--bg); box-shadow: var(--shadow-in); font-family: inherit; font-size: 13.5px; color: var(--black); }
+
+/* ── Cleaning tips popup ── */
+.tips-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 500;
+  align-items: flex-end; justify-content: center;
+}
+.tips-overlay.show { display: flex; }
+.tips-box {
+  background: var(--surface); border-radius: 24px 24px 0 0; width: 100%; max-width: 480px;
+  max-height: 85vh; overflow-y: auto; padding: 20px 20px 30px; box-shadow: 0 -10px 30px rgba(0,0,0,.25);
+}
+.tips-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; position: sticky; top: 0; background: var(--surface); padding-bottom: 10px; }
+.tips-title { font-size: 16px; font-weight: 800; }
+.tips-close { background: var(--bg); border: none; border-radius: 10px; width: 32px; height: 32px; font-size: 15px; cursor: pointer; box-shadow: var(--shadow-out); color: var(--gray); flex-shrink: 0; }
+.tips-callout { background: var(--orange-light); border-radius: 14px; padding: 12px 14px; font-size: 12.5px; font-weight: 700; color: #92400E; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.tips-section-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--gray); margin: 16px 0 8px; }
+.tips-step { font-size: 12.5px; line-height: 1.5; margin-bottom: 10px; }
+.tips-step b { display: block; margin-bottom: 2px; }
+.tips-sublist { margin: 6px 0 0 16px; padding: 0; list-style: disc; }
+.tips-sublist li { font-size: 11.5px; color: var(--gray); margin-bottom: 3px; line-height: 1.4; }
+.tips-warn { background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.22); border-radius: 14px; padding: 12px 14px; margin-top: 10px; }
+.tips-warn-title { font-size: 11.5px; font-weight: 800; color: var(--red); margin-bottom: 6px; }
+.tips-warn p { font-size: 11.5px; line-height: 1.5; margin-bottom: 6px; color: var(--black); }
+.tips-table { width: 100%; font-size: 11px; border-collapse: collapse; margin-top: 6px; }
+.tips-table td { padding: 9px 4px; border-bottom: 1px solid rgba(0,0,0,.07); vertical-align: top; line-height: 1.4; }
+.tips-table td:first-child { font-weight: 700; }
 </style>
 </head>
 <body>
@@ -175,6 +201,48 @@ body { min-height: 100vh; padding-bottom: 100px; }
       <button class="neu-btn" style="flex:1;" onclick="closeConfirmModal(false)">Cancel</button>
       <button class="neu-btn primary" style="flex:1;" onclick="closeConfirmModal(true)">Continue</button>
     </div>
+  </div>
+</div>
+
+<div class="tips-overlay" id="tipsOverlay" onclick="if(event.target===this) closeTipsModal()">
+  <div class="tips-box">
+    <div class="tips-header">
+      <div class="tips-title">🧹 Cleaning Instructions</div>
+      <button class="tips-close" onclick="closeTipsModal()">✕</button>
+    </div>
+    <div class="tips-callout"><span>☝️</span><span>Clean from clean to dirty, working from top to bottom.</span></div>
+
+    <div class="tips-step"><b>1. Assemble supplies.</b> Gather the disinfectant and cleaning equipment needed.</div>
+    <div class="tips-step"><b>2. Wear appropriate PPE</b> before beginning.</div>
+    <div class="tips-step"><b>3. Clean and disinfect surfaces</b> using a cloth rag or sponge immersed in germicidal solution (change rags/gloves as needed):
+      <ul class="tips-sublist">
+        <li>Bed and mattress (Terminal Clean)</li>
+        <li>High-touch surfaces: bed rails/controls, light switch, door knobs, IV/G-tube pole grab area, call box/button, remotes, bedside/tray table, chairs</li>
+        <li>Over-sink light (Terminal Clean)</li>
+        <li>Bathroom: sink, light switch, doorknobs, handrails by toilet, toilet seat/flush handle/bedpan cleaner</li>
+      </ul>
+    </div>
+    <div class="tips-step"><b>4. Clean the floor.</b> Sweep, remove litter, dust, then mop using a flat mop immersed in germicidal detergent.</div>
+    <div class="tips-step"><b>5. Privacy curtain.</b> Inspect, clean, or replace as needed — always during terminal cleaning.</div>
+    <div class="tips-step"><b>6. Change rags/gloves</b> and perform hand hygiene.</div>
+    <div class="tips-step"><b>7. Check & restock.</b> Trash cans clean before new liner; PPE, sanitizer, soap, paper products stocked.</div>
+    <div class="tips-step"><b>8. Mop the restroom floor</b> using a flat mop immersed in germicidal detergent.</div>
+    <div class="tips-step"><b>9. Clean your equipment.</b> Wipe down mop handle, bucket, and containers with germicidal solution.</div>
+    <div class="tips-step" style="margin-bottom:0;"><b>10. Remove gloves</b> and perform hand hygiene.</div>
+
+    <div class="tips-warn">
+      <div class="tips-warn-title">⚠ Special Precautions / Isolation Rooms</div>
+      <p><b>A.</b> Use the PPE indicated on the precaution sign before entering; remove before leaving.</p>
+      <p><b>B.</b> Verify the disinfectant kills the isolation organism — know its contact time.</p>
+      <p style="margin-bottom:0;"><b>C.</b> Don't dust mop or dry-dust furniture — use a mop/cloth immersed in disinfectant.</p>
+    </div>
+
+    <div class="tips-section-title">Disinfectant Reference</div>
+    <table class="tips-table">
+      <tr><td>PuRTabs</td><td>General surfaces. Dilute 4 tabs/gallon, good 24 hrs once mixed. 1–2 min general; Norovirus/COVID 1 min; C. diff 4 min.</td></tr>
+      <tr><td>PureBright Spray</td><td>Terminal cleaning, restrooms, stains. 1 min general; 5 min mold/mildew.</td></tr>
+      <tr><td>Neutral Floor Cleaner</td><td>Floors — cleaner only, not a disinfectant.</td></tr>
+    </table>
   </div>
 </div>
 
@@ -226,14 +294,55 @@ var BATHROOM_SECTIONS = [
   { title:'Additional Tasks', dept:'Housekeeping', type:'passfail', items: ADDITIONAL_CLEANING_ITEMS }
 ];
 
+// Resident room cleaning checklist — matches the full SOP on the admin
+// Policies & Procedures page (bed/mattress terminal clean, high-touch surfaces,
+// in-room bathroom, floors, curtain, restock), plus the same Additional Tasks.
+var ROOM_CLEANING_SECTIONS = [
+  { title:'Bed & High-Touch Surfaces', dept:'Housekeeping', type:'passfail', items:[
+    { key:'bed_mattress_cleaned', label:'Bed & Mattress Cleaned (Terminal Clean)' },
+    { key:'bed_rails_wiped', label:'Bed Rails / Controls Wiped' },
+    { key:'light_switch_wiped', label:'Light Switch Wiped' },
+    { key:'doorknobs_wiped', label:'Door Knobs Wiped' },
+    { key:'iv_pole_wiped', label:'IV / G-Tube Pole (Grab Area) Wiped' },
+    { key:'call_box_wiped', label:'Call Box / Button / Remotes Wiped' },
+    { key:'tray_table_wiped', label:'Bedside / Tray Table Wiped' },
+    { key:'chairs_wiped', label:'Chair(s) Wiped' }
+  ]},
+  { title:'Bathroom', dept:'Housekeeping', type:'passfail', items:[
+    { key:'oversink_light_cleaned', label:'Over-Sink Light Cleaned (Terminal Clean)' },
+    { key:'room_sink_cleaned', label:'Room Sink Cleaned' },
+    { key:'bathroom_doorknob_cleaned', label:'Bathroom Doorknob / Plate & Light Switch Cleaned' },
+    { key:'handrails_wiped', label:'Handrails By Toilet Wiped' },
+    { key:'toilet_cleaned', label:'Toilet Seat, Flush Handle & Bedpan Cleaner Cleaned' }
+  ]},
+  { title:'Floors & Curtain', dept:'Housekeeping', type:'passfail', items:[
+    { key:'room_floor_mopped', label:'Room Floor Swept & Mopped' },
+    { key:'restroom_floor_mopped', label:'Restroom Floor Mopped' },
+    { key:'privacy_curtain_checked', label:'Privacy Curtain Inspected / Cleaned / Replaced' }
+  ]},
+  { title:'Trash & Supplies', dept:'Housekeeping', type:'passfail', items:[
+    { key:'trash_clean_before_liner', label:'Trash Cans Clean Inside/Out Before New Liner' },
+    { key:'supplies_stocked', label:'PPE, Hand Sanitizer, Soap, Paper Products Stocked' }
+  ]},
+  { title:'Additional Tasks', dept:'Housekeeping', type:'passfail', items: ADDITIONAL_CLEANING_ITEMS }
+];
+
 // Per-location-type presentation: icon, wording, and which identifier to collect.
+// For resident rooms, the nursing "zone round" collects a name, but the separate
+// "room cleaning" task (mode === 'cleaning') is a housekeeping task and collects
+// an Employee ID instead — same distinction as offices/bathrooms.
 var LOCATION_CONFIG = {
   room:     { icon:'🚪', roundTitle:'Complete Zone Round', roundSub:'Run the checklist and log any issues', idLabel:'Your Name', idKey:'agrhodes_round_staff', idPlaceholder:'Enter your name' },
   eoc_area: { icon:'📋', roundTitle:'Complete Zone Round', roundSub:'Run the checklist and log any issues', idLabel:'Your Name', idKey:'agrhodes_round_staff', idPlaceholder:'Enter your name' },
   office:   { icon:'🏢', roundTitle:'Complete Cleaning Task', roundSub:'Run the cleaning checklist for this office', idLabel:'Employee ID', idKey:'agrhodes_employee_id', idPlaceholder:'Enter your employee ID' },
   bathroom: { icon:'🚻', roundTitle:'Complete Cleaning Task', roundSub:'Run the cleaning checklist for this restroom', idLabel:'Employee ID', idKey:'agrhodes_employee_id', idPlaceholder:'Enter your employee ID' }
 };
+var ROOM_CLEANING_CONFIG = { icon:'🧹', roundTitle:'Complete Room Cleaning', roundSub:'Run the housekeeping cleaning checklist', idLabel:'Employee ID', idKey:'agrhodes_employee_id', idPlaceholder:'Enter your employee ID' };
+
+var currentChecklistMode = 'round'; // 'round' (nursing zone round) or 'cleaning' (housekeeping task)
+
 function getLocConfig(loc) {
+  if (loc.location_type === 'room' && currentChecklistMode === 'cleaning') return ROOM_CLEANING_CONFIG;
   return LOCATION_CONFIG[loc.location_type] || LOCATION_CONFIG.room;
 }
 
@@ -312,6 +421,13 @@ function closeConfirmModal(result) {
   if (_confirmResolve) { _confirmResolve(result); _confirmResolve = null; }
 }
 
+function showTipsModal() {
+  document.getElementById('tipsOverlay').classList.add('show');
+}
+function closeTipsModal() {
+  document.getElementById('tipsOverlay').classList.remove('show');
+}
+
 function getIdentifierValue() {
   var input = document.getElementById('staffNameInput');
   var cfg = getLocConfig(currentLoc);
@@ -360,8 +476,10 @@ function locSubtitle(loc) {
 
 function renderLanding() {
   var loc = currentLoc;
+  currentChecklistMode = 'round';
   var cfg = getLocConfig(loc);
   var isRoom = loc.location_type === 'room' || loc.location_type === 'eoc_area';
+  var isResidentRoom = loc.location_type === 'room';
   app.innerHTML =
     '<div class="rr-header">' +
       '<div class="rr-icon">' + cfg.icon + '</div>' +
@@ -374,6 +492,13 @@ function renderLanding() {
         '<div class="choice-sub">' + cfg.roundSub + '</div></div>' +
       '<div class="choice-arrow">›</div>' +
     '</div>' +
+    (isResidentRoom ?
+      '<div class="choice-card" onclick="startRoomCleaning()">' +
+        '<div class="choice-icon">🧹</div>' +
+        '<div><div class="choice-title">' + ROOM_CLEANING_CONFIG.roundTitle + '</div>' +
+          '<div class="choice-sub">' + ROOM_CLEANING_CONFIG.roundSub + '</div></div>' +
+        '<div class="choice-arrow">›</div>' +
+      '</div>' : '') +
     '<div class="choice-card" onclick="reportIssueForm()">' +
       '<div class="choice-icon">🛠</div>' +
       '<div><div class="choice-title">Report Something That Needs Fixing</div>' +
@@ -392,13 +517,20 @@ function backToLanding() {
 
 /* ── Checklist flow ── */
 function startRound() {
+  currentChecklistMode = 'round';
+  roundValues = {}; issueDrafts = {};
+  renderChecklist();
+}
+
+function startRoomCleaning() {
+  currentChecklistMode = 'cleaning';
   roundValues = {}; issueDrafts = {};
   renderChecklist();
 }
 
 function getSections() {
   var t = currentLoc.location_type;
-  if (t === 'room') return ROOM_SECTIONS;
+  if (t === 'room') return currentChecklistMode === 'cleaning' ? ROOM_CLEANING_SECTIONS : ROOM_SECTIONS;
   if (t === 'office') return OFFICE_SECTIONS;
   if (t === 'bathroom') return BATHROOM_SECTIONS;
   return EOC_SECTIONS;
@@ -416,6 +548,10 @@ function renderChecklist() {
   html += '<div class="rr-header" style="padding:16px 18px;"><div class="rr-name" style="font-size:16px;">' + currentLoc.display_name + '</div>' +
     '<div class="rr-meta">' + locSubtitle(currentLoc) + '</div></div>';
   html += identifierFieldHTML();
+  if (currentLoc.location_type === 'office' || currentLoc.location_type === 'bathroom' ||
+      (currentLoc.location_type === 'room' && currentChecklistMode === 'cleaning')) {
+    html += '<button class="neu-btn block" style="margin-bottom:14px;" onclick="showTipsModal()">💡 View Cleaning Instructions</button>';
+  }
 
   sections.forEach(function(section, si) {
     html += '<div class="card"><div class="section-title"><span>' + section.title + '</span></div>';
@@ -567,8 +703,10 @@ async function submitRound() {
   if (wrap) { var btn = wrap.querySelector('button'); if (btn) btn.textContent = 'Saving…'; }
 
   var loc = currentLoc;
-  var isRoom = loc.location_type === 'room';
-  var roundTypeValue = loc.location_type === 'eoc_area' ? 'eoc' : loc.location_type; // room | eoc | office | bathroom
+  var isDirectColumnRound = loc.location_type === 'room' && currentChecklistMode === 'round';
+  var roundTypeValue = loc.location_type === 'eoc_area' ? 'eoc'
+    : (loc.location_type === 'room' && currentChecklistMode === 'cleaning') ? 'room_cleaning'
+    : loc.location_type; // room | eoc | office | bathroom | room_cleaning
   var roundRow = {
     facility_id: FACILITY_ID,
     qr_identifier: loc.qr_identifier,
@@ -577,7 +715,7 @@ async function submitRound() {
     rounded_at: new Date().toISOString()
   };
 
-  if (isRoom) {
+  if (isDirectColumnRound) {
     Object.keys(roundValues).forEach(function(k){ roundRow[k] = roundValues[k]; });
   } else {
     var passCount = 0, totalScored = 0;
