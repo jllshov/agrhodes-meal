@@ -510,8 +510,16 @@ function renderLanding() {
     '</div>';
 }
 
+// Room cleaning purpose (Routine vs Admissions Prep) and optional admission photo
+var cleaningPurpose = null;          // 'routine' | 'admission_prep'
+var admissionPhotoFile = null;       // File object staged for upload
+var admissionPhotoPreviewUrl = null; // local object URL for on-page preview
+
 function backToLanding() {
   roundValues = {}; issueDrafts = {}; extraIssues = [];
+  cleaningPurpose = null;
+  if (admissionPhotoPreviewUrl) { URL.revokeObjectURL(admissionPhotoPreviewUrl); }
+  admissionPhotoFile = null; admissionPhotoPreviewUrl = null;
   renderLanding();
 }
 
@@ -524,6 +532,36 @@ function startRound() {
 
 function startRoomCleaning() {
   currentChecklistMode = 'cleaning';
+  roundValues = {}; issueDrafts = {};
+  cleaningPurpose = null;
+  admissionPhotoFile = null; admissionPhotoPreviewUrl = null;
+  renderCleaningPurposeChoice();
+}
+
+function renderCleaningPurposeChoice() {
+  var loc = currentLoc;
+  app.innerHTML =
+    '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
+    '<div class="rr-header" style="padding:16px 18px;">' +
+      '<div class="rr-name" style="font-size:16px;">' + loc.display_name + '</div>' +
+      '<div class="rr-meta">What\'s this cleaning for?</div>' +
+    '</div>' +
+    '<div class="choice-card" onclick="selectCleaningPurpose(\'routine\')">' +
+      '<div class="choice-icon">🧹</div>' +
+      '<div><div class="choice-title">Routine</div>' +
+        '<div class="choice-sub">Standard scheduled cleaning</div></div>' +
+      '<div class="choice-arrow">›</div>' +
+    '</div>' +
+    '<div class="choice-card" onclick="selectCleaningPurpose(\'admission_prep\')">' +
+      '<div class="choice-icon">🛎</div>' +
+      '<div><div class="choice-title">Admissions Prep</div>' +
+        '<div class="choice-sub">Room being prepared for a new admission</div></div>' +
+      '<div class="choice-arrow">›</div>' +
+    '</div>';
+}
+
+function selectCleaningPurpose(purpose) {
+  cleaningPurpose = purpose;
   roundValues = {}; issueDrafts = {};
   renderChecklist();
 }
@@ -575,6 +613,15 @@ function renderChecklist() {
     html += '</div>';
   });
 
+  if (currentLoc.location_type === 'room' && currentChecklistMode === 'cleaning' && cleaningPurpose === 'admission_prep') {
+    html += '<div class="card" id="admissionPhotoCard">' +
+      '<div class="section-title">📸 Admission-Ready Photo <span style="text-transform:none;font-weight:400;">(optional)</span></div>' +
+      '<div id="photoPreviewWrap"></div>' +
+      '<input type="file" accept="image/*" capture="environment" id="admissionPhotoInput" style="display:none;" onchange="handlePhotoSelected(event)">' +
+      '<button class="neu-btn block" onclick="document.getElementById(\'admissionPhotoInput\').click()">📷 Take / Choose Photo</button>' +
+    '</div>';
+  }
+
   html += '<div class="card" id="extraIssuesCard"><div class="section-title"><span>Additional Issues</span><span class="section-count" id="extraIssueCount">' + extraIssues.length + '</span></div>' +
     '<div id="extraIssuesList"></div>' +
     '<button class="neu-btn block" onclick="addExtraIssue()" style="margin-top:4px;">+ Add an Issue Not Listed Above</button>' +
@@ -585,7 +632,35 @@ function renderChecklist() {
   app.innerHTML = html;
   Object.keys(issueDrafts).forEach(function(k){ renderIssueSlot(k); });
   renderExtraIssues();
+  renderPhotoPreview();
   updateProgressBar();
+}
+
+function handlePhotoSelected(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  admissionPhotoFile = file;
+  if (admissionPhotoPreviewUrl) URL.revokeObjectURL(admissionPhotoPreviewUrl);
+  admissionPhotoPreviewUrl = URL.createObjectURL(file);
+  renderPhotoPreview();
+}
+
+function renderPhotoPreview() {
+  var wrap = document.getElementById('photoPreviewWrap');
+  if (!wrap) return;
+  if (admissionPhotoPreviewUrl) {
+    wrap.innerHTML = '<img src="' + admissionPhotoPreviewUrl + '" style="width:100%;border-radius:14px;margin-bottom:10px;display:block;">' +
+      '<button class="neu-btn" style="font-size:12px;margin-bottom:10px;" onclick="removeAdmissionPhoto()">✕ Remove Photo</button>';
+  } else {
+    wrap.innerHTML = '';
+  }
+}
+
+function removeAdmissionPhoto() {
+  admissionPhotoFile = null;
+  if (admissionPhotoPreviewUrl) URL.revokeObjectURL(admissionPhotoPreviewUrl);
+  admissionPhotoPreviewUrl = null;
+  renderPhotoPreview();
 }
 
 function setCheckValue(key, val, dept, label) {
@@ -724,6 +799,10 @@ async function submitRound() {
       scores[k] = roundValues[k];
       if (roundValues[k] !== 'n/a') { totalScored++; if (roundValues[k] === 'pass') passCount++; }
     });
+    // Added after the pass/fail tally so it doesn't count as a checklist item
+    if (loc.location_type === 'room' && currentChecklistMode === 'cleaning' && cleaningPurpose) {
+      scores.cleaning_purpose = cleaningPurpose;
+    }
     roundRow.eoc_scores = JSON.stringify(scores);
     roundRow.eoc_compliance_pct = totalScored ? Math.round((passCount/totalScored)*100) : null;
   }
@@ -733,6 +812,22 @@ async function submitRound() {
     showToast('Error saving round: ' + roundErr.message, 'error');
     if (wrap) { var btn2 = wrap.querySelector('button'); if (btn2) btn2.textContent = 'Review →'; }
     return;
+  }
+
+  // Optional admission-ready photo — uploaded after the round exists so we have an
+  // id to name the file with. Failure here doesn't undo the round save.
+  if (cleaningPurpose === 'admission_prep' && admissionPhotoFile) {
+    var ext = (admissionPhotoFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
+    var photoPath = loc.qr_identifier + '/' + insertedRound.id + '.' + ext;
+    var { error: uploadErr } = await sb.storage.from('room-cleaning-photos').upload(photoPath, admissionPhotoFile, { upsert: true });
+    if (uploadErr) {
+      showToast('Round was saved, but the photo failed to upload: ' + uploadErr.message, 'error');
+    } else {
+      var pub = sb.storage.from('room-cleaning-photos').getPublicUrl(photoPath);
+      var updatedScores = JSON.parse(insertedRound.eoc_scores || '{}');
+      updatedScores.admission_photo_url = pub.data.publicUrl;
+      await sb.from('zone_rounds').update({ eoc_scores: JSON.stringify(updatedScores) }).eq('id', insertedRound.id);
+    }
   }
 
   // Build the full list of issues: auto-flagged from failed items + manually added
@@ -772,12 +867,14 @@ async function submitRound() {
 }
 
 function renderSuccess(issueCount) {
+  var photoNote = (cleaningPurpose === 'admission_prep' && admissionPhotoFile) ? '<br>📸 Photo attached.' : '';
   app.innerHTML =
     '<div class="card success-wrap">' +
       '<div class="success-icon">✅</div>' +
       '<div class="success-title">Round Complete</div>' +
       '<div class="success-sub">' + currentLoc.display_name + ' has been logged.' +
         (issueCount ? '<br>' + issueCount + ' issue' + (issueCount>1?'s':'') + ' reported.' : '<br>No issues reported.') +
+        photoNote +
       '</div>' +
       '<button class="neu-btn primary block" style="margin-top:20px;" onclick="backToLanding()">Back to Menu</button>' +
     '</div>';
