@@ -1831,6 +1831,7 @@ function openRoundModal(loc, round, issues) {
   };
 
   var checksHtml = '';
+  var parsedScores = null;
   if (round.round_type === 'room') {
     Object.keys(SECTIONS).forEach(function(section) {
       var keys = SECTIONS[section].filter(function(k){ return round[k]; });
@@ -1843,13 +1844,26 @@ function openRoundModal(loc, round, issues) {
       });
     });
   } else if (round.eoc_scores) {
-    var scores = typeof round.eoc_scores==='string' ? JSON.parse(round.eoc_scores) : round.eoc_scores;
-    Object.keys(scores).forEach(function(k) {
-      var val = scores[k];
+    parsedScores = typeof round.eoc_scores==='string' ? JSON.parse(round.eoc_scores) : round.eoc_scores;
+    Object.keys(parsedScores).forEach(function(k) {
+      if (k === 'cleaning_purpose' || k === 'admission_photo_url') return; // rendered separately below
+      var val = parsedScores[k];
       var lbl2 = k.replace(/_/g,' ').replace(/\b\w/g,function(l){return l.toUpperCase();});
       var cls2 = val==='pass'?'val-pass':val==='fail'?'val-fail':'val-other';
       checksHtml += '<div class="check-item"><span class="check-label">'+lbl2+'</span><span class="check-val '+cls2+'">'+val+'</span></div>';
     });
+  }
+
+  // Cleaning purpose badge + admission-ready photo, if this was a room cleaning task
+  if (parsedScores && parsedScores.cleaning_purpose) {
+    var purposeLabel = parsedScores.cleaning_purpose === 'admission_prep' ? '🛎 Admissions Prep' : '🧹 Routine';
+    body.innerHTML += '<div class="modal-section" style="margin-bottom:12px;">' +
+      '<span class="issue-badge" style="background:var(--accent-dim);color:#5B5A0E;padding:6px 14px;font-size:12px;border-radius:999px;">'+purposeLabel+'</span>' +
+    '</div>';
+  }
+  if (parsedScores && parsedScores.admission_photo_url) {
+    body.innerHTML += '<div class="modal-section"><div class="modal-section-title">Admission-Ready Photo</div>' +
+      '<img src="'+parsedScores.admission_photo_url+'" style="width:100%;border-radius:14px;cursor:pointer;" onclick="window.open(this.src)"></div>';
   }
 
   if (checksHtml) {
@@ -2561,6 +2575,7 @@ async function generateReport() {
     // Use the round's own round_type (not just the location's type) to decide how
     // to score it — a resident room can have both nursing zone rounds (direct
     // columns) and cleaning tasks (JSON scores) against the same location.
+    var cleaningPurposeVal = null;
     if (r.round_type === 'room') {
       passCount = ROOM_CHECK_KEYS.filter(function(k){ return r[k]==='pass' || r[k]==='yes'; }).length;
       failCount = ROOM_CHECK_KEYS.filter(function(k){ return r[k]==='fail' || r[k]==='no'; }).length;
@@ -2569,11 +2584,16 @@ async function generateReport() {
       var keys = Object.keys(scores);
       passCount = keys.filter(function(k){ return scores[k]==='pass'; }).length;
       failCount = keys.filter(function(k){ return scores[k]==='fail'; }).length;
+      cleaningPurposeVal = scores.cleaning_purpose || null;
     }
 
     var typeLabel = REPORT_TYPE_LABELS[type] || type;
     if (type === 'room') {
-      typeLabel = r.round_type === 'room_cleaning' ? 'Resident Room (Cleaning)' : 'Resident Room (Zone Round)';
+      if (r.round_type === 'room_cleaning') {
+        typeLabel = 'Resident Room (Cleaning — ' + (cleaningPurposeVal === 'admission_prep' ? 'Admissions Prep' : 'Routine') + ')';
+      } else {
+        typeLabel = 'Resident Room (Zone Round)';
+      }
     }
 
     return {
