@@ -294,14 +294,55 @@ var BATHROOM_SECTIONS = [
   { title:'Additional Tasks', dept:'Housekeeping', type:'passfail', items: ADDITIONAL_CLEANING_ITEMS }
 ];
 
+// Resident room cleaning checklist — matches the full SOP on the admin
+// Policies & Procedures page (bed/mattress terminal clean, high-touch surfaces,
+// in-room bathroom, floors, curtain, restock), plus the same Additional Tasks.
+var ROOM_CLEANING_SECTIONS = [
+  { title:'Bed & High-Touch Surfaces', dept:'Housekeeping', type:'passfail', items:[
+    { key:'bed_mattress_cleaned', label:'Bed & Mattress Cleaned (Terminal Clean)' },
+    { key:'bed_rails_wiped', label:'Bed Rails / Controls Wiped' },
+    { key:'light_switch_wiped', label:'Light Switch Wiped' },
+    { key:'doorknobs_wiped', label:'Door Knobs Wiped' },
+    { key:'iv_pole_wiped', label:'IV / G-Tube Pole (Grab Area) Wiped' },
+    { key:'call_box_wiped', label:'Call Box / Button / Remotes Wiped' },
+    { key:'tray_table_wiped', label:'Bedside / Tray Table Wiped' },
+    { key:'chairs_wiped', label:'Chair(s) Wiped' }
+  ]},
+  { title:'Bathroom', dept:'Housekeeping', type:'passfail', items:[
+    { key:'oversink_light_cleaned', label:'Over-Sink Light Cleaned (Terminal Clean)' },
+    { key:'room_sink_cleaned', label:'Room Sink Cleaned' },
+    { key:'bathroom_doorknob_cleaned', label:'Bathroom Doorknob / Plate & Light Switch Cleaned' },
+    { key:'handrails_wiped', label:'Handrails By Toilet Wiped' },
+    { key:'toilet_cleaned', label:'Toilet Seat, Flush Handle & Bedpan Cleaner Cleaned' }
+  ]},
+  { title:'Floors & Curtain', dept:'Housekeeping', type:'passfail', items:[
+    { key:'room_floor_mopped', label:'Room Floor Swept & Mopped' },
+    { key:'restroom_floor_mopped', label:'Restroom Floor Mopped' },
+    { key:'privacy_curtain_checked', label:'Privacy Curtain Inspected / Cleaned / Replaced' }
+  ]},
+  { title:'Trash & Supplies', dept:'Housekeeping', type:'passfail', items:[
+    { key:'trash_clean_before_liner', label:'Trash Cans Clean Inside/Out Before New Liner' },
+    { key:'supplies_stocked', label:'PPE, Hand Sanitizer, Soap, Paper Products Stocked' }
+  ]},
+  { title:'Additional Tasks', dept:'Housekeeping', type:'passfail', items: ADDITIONAL_CLEANING_ITEMS }
+];
+
 // Per-location-type presentation: icon, wording, and which identifier to collect.
+// For resident rooms, the nursing "zone round" collects a name, but the separate
+// "room cleaning" task (mode === 'cleaning') is a housekeeping task and collects
+// an Employee ID instead — same distinction as offices/bathrooms.
 var LOCATION_CONFIG = {
   room:     { icon:'🚪', roundTitle:'Complete Zone Round', roundSub:'Run the checklist and log any issues', idLabel:'Your Name', idKey:'agrhodes_round_staff', idPlaceholder:'Enter your name' },
   eoc_area: { icon:'📋', roundTitle:'Complete Zone Round', roundSub:'Run the checklist and log any issues', idLabel:'Your Name', idKey:'agrhodes_round_staff', idPlaceholder:'Enter your name' },
   office:   { icon:'🏢', roundTitle:'Complete Cleaning Task', roundSub:'Run the cleaning checklist for this office', idLabel:'Employee ID', idKey:'agrhodes_employee_id', idPlaceholder:'Enter your employee ID' },
   bathroom: { icon:'🚻', roundTitle:'Complete Cleaning Task', roundSub:'Run the cleaning checklist for this restroom', idLabel:'Employee ID', idKey:'agrhodes_employee_id', idPlaceholder:'Enter your employee ID' }
 };
+var ROOM_CLEANING_CONFIG = { icon:'🧹', roundTitle:'Complete Room Cleaning', roundSub:'Run the housekeeping cleaning checklist', idLabel:'Employee ID', idKey:'agrhodes_employee_id', idPlaceholder:'Enter your employee ID' };
+
+var currentChecklistMode = 'round'; // 'round' (nursing zone round) or 'cleaning' (housekeeping task)
+
 function getLocConfig(loc) {
+  if (loc.location_type === 'room' && currentChecklistMode === 'cleaning') return ROOM_CLEANING_CONFIG;
   return LOCATION_CONFIG[loc.location_type] || LOCATION_CONFIG.room;
 }
 
@@ -435,8 +476,10 @@ function locSubtitle(loc) {
 
 function renderLanding() {
   var loc = currentLoc;
+  currentChecklistMode = 'round';
   var cfg = getLocConfig(loc);
   var isRoom = loc.location_type === 'room' || loc.location_type === 'eoc_area';
+  var isResidentRoom = loc.location_type === 'room';
   app.innerHTML =
     '<div class="rr-header">' +
       '<div class="rr-icon">' + cfg.icon + '</div>' +
@@ -449,6 +492,13 @@ function renderLanding() {
         '<div class="choice-sub">' + cfg.roundSub + '</div></div>' +
       '<div class="choice-arrow">›</div>' +
     '</div>' +
+    (isResidentRoom ?
+      '<div class="choice-card" onclick="startRoomCleaning()">' +
+        '<div class="choice-icon">🧹</div>' +
+        '<div><div class="choice-title">' + ROOM_CLEANING_CONFIG.roundTitle + '</div>' +
+          '<div class="choice-sub">' + ROOM_CLEANING_CONFIG.roundSub + '</div></div>' +
+        '<div class="choice-arrow">›</div>' +
+      '</div>' : '') +
     '<div class="choice-card" onclick="reportIssueForm()">' +
       '<div class="choice-icon">🛠</div>' +
       '<div><div class="choice-title">Report Something That Needs Fixing</div>' +
@@ -467,13 +517,20 @@ function backToLanding() {
 
 /* ── Checklist flow ── */
 function startRound() {
+  currentChecklistMode = 'round';
+  roundValues = {}; issueDrafts = {};
+  renderChecklist();
+}
+
+function startRoomCleaning() {
+  currentChecklistMode = 'cleaning';
   roundValues = {}; issueDrafts = {};
   renderChecklist();
 }
 
 function getSections() {
   var t = currentLoc.location_type;
-  if (t === 'room') return ROOM_SECTIONS;
+  if (t === 'room') return currentChecklistMode === 'cleaning' ? ROOM_CLEANING_SECTIONS : ROOM_SECTIONS;
   if (t === 'office') return OFFICE_SECTIONS;
   if (t === 'bathroom') return BATHROOM_SECTIONS;
   return EOC_SECTIONS;
@@ -491,7 +548,8 @@ function renderChecklist() {
   html += '<div class="rr-header" style="padding:16px 18px;"><div class="rr-name" style="font-size:16px;">' + currentLoc.display_name + '</div>' +
     '<div class="rr-meta">' + locSubtitle(currentLoc) + '</div></div>';
   html += identifierFieldHTML();
-  if (currentLoc.location_type === 'office' || currentLoc.location_type === 'bathroom') {
+  if (currentLoc.location_type === 'office' || currentLoc.location_type === 'bathroom' ||
+      (currentLoc.location_type === 'room' && currentChecklistMode === 'cleaning')) {
     html += '<button class="neu-btn block" style="margin-bottom:14px;" onclick="showTipsModal()">💡 View Cleaning Instructions</button>';
   }
 
@@ -645,8 +703,10 @@ async function submitRound() {
   if (wrap) { var btn = wrap.querySelector('button'); if (btn) btn.textContent = 'Saving…'; }
 
   var loc = currentLoc;
-  var isRoom = loc.location_type === 'room';
-  var roundTypeValue = loc.location_type === 'eoc_area' ? 'eoc' : loc.location_type; // room | eoc | office | bathroom
+  var isDirectColumnRound = loc.location_type === 'room' && currentChecklistMode === 'round';
+  var roundTypeValue = loc.location_type === 'eoc_area' ? 'eoc'
+    : (loc.location_type === 'room' && currentChecklistMode === 'cleaning') ? 'room_cleaning'
+    : loc.location_type; // room | eoc | office | bathroom | room_cleaning
   var roundRow = {
     facility_id: FACILITY_ID,
     qr_identifier: loc.qr_identifier,
@@ -655,7 +715,7 @@ async function submitRound() {
     rounded_at: new Date().toISOString()
   };
 
-  if (isRoom) {
+  if (isDirectColumnRound) {
     Object.keys(roundValues).forEach(function(k){ roundRow[k] = roundValues[k]; });
   } else {
     var passCount = 0, totalScored = 0;
