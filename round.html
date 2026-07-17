@@ -819,11 +819,11 @@ async function submitRound() {
   if (cleaningPurpose === 'admission_prep' && admissionPhotoFile) {
     var ext = (admissionPhotoFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
     var photoPath = loc.qr_identifier + '/' + insertedRound.id + '.' + ext;
-    var { error: uploadErr } = await sb.storage.from('room-cleaning-photos').upload(photoPath, admissionPhotoFile, { upsert: true });
+    var { error: uploadErr } = await sb.storage.from('round-photos').upload(photoPath, admissionPhotoFile, { upsert: true });
     if (uploadErr) {
       showToast('Round was saved, but the photo failed to upload: ' + uploadErr.message, 'error');
     } else {
-      var pub = sb.storage.from('room-cleaning-photos').getPublicUrl(photoPath);
+      var pub = sb.storage.from('round-photos').getPublicUrl(photoPath);
       var updatedScores = JSON.parse(insertedRound.eoc_scores || '{}');
       updatedScores.admission_photo_url = pub.data.publicUrl;
       await sb.from('zone_rounds').update({ eoc_scores: JSON.stringify(updatedScores) }).eq('id', insertedRound.id);
