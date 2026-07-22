@@ -242,9 +242,14 @@ function showManualEntry() {
 async function loadItem(qrIdentifier) {
   showToast('Loading…', '');
   try {
-    var { data, error } = await sb.from('dietary_items').select('*').eq('qr_identifier', qrIdentifier).single();
-    if (error || !data) throw new Error('Item not found');
-    currentItem = data;
+    var { data: inv, error } = await sb.from('dietary_inventory').select('*').eq('qr_identifier', qrIdentifier).single();
+    if (error || !inv) throw new Error('Item not found');
+    var { data: cat } = await sb.from('dietary_item_catalog').select('*').eq('id', inv.catalog_item_id).single();
+    currentItem = Object.assign({}, inv, {
+      item_name: cat ? cat.item_name : '(item not found)',
+      sku: cat ? cat.sku : null,
+      unit_type: cat ? cat.unit_type : inv.unit_type,
+    });
     renderItemScreen();
     document.getElementById('scanScreen').style.display = 'none';
     document.getElementById('itemScreen').style.display = 'block';
@@ -324,7 +329,7 @@ async function submitScanAction() {
 
   var before = currentItem.current_quantity;
   var after = before;
-  var payload = { facility_id: FACILITY_ID, item_id: currentItem.id, action: currentAction, performed_by: staffName, device: 'mobile' };
+  var payload = { facility_id: FACILITY_ID, inventory_id: currentItem.id, action: currentAction, performed_by: staffName, device: 'mobile' };
   var itemUpdate = {};
 
   if (currentAction === 'Receive') {
@@ -353,7 +358,7 @@ async function submitScanAction() {
   try {
     var { error: txnErr } = await sb.from('dietary_transactions').insert(payload);
     if (txnErr) throw txnErr;
-    var { error: updErr } = await sb.from('dietary_items').update(itemUpdate).eq('id', currentItem.id);
+    var { error: updErr } = await sb.from('dietary_inventory').update(itemUpdate).eq('id', currentItem.id);
     if (updErr) throw updErr;
 
     document.getElementById('actionFormScreen').style.display = 'none';
