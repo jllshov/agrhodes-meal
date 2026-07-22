@@ -176,10 +176,11 @@ h1,h2,.page-title,.stat-num,.rr-name,.room-hero-name { font-family: 'Outfit', 'I
 /* ── Heat map ── */
 #heatmapGrid {
   display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 100%;
-  max-height: 600px; overflow-y: auto; padding-right: 6px;
+  max-height: 560px; overflow-y: auto; padding-right: 6px;
 }
 #heatmapGrid::-webkit-scrollbar { width: 6px; }
 #heatmapGrid::-webkit-scrollbar-thumb { background: var(--gray-light); border-radius: 3px; }
+.heatmap-card { max-width: 1450px; max-height: 700px; overflow: hidden; }
 
 /* ── Bottom activity scrubber ── */
 .activity-scrubber {
@@ -721,7 +722,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
     </div>
 
     <div class="content-grid">
-      <div class="card">
+      <div class="card heatmap-card">
         <div class="card-title">Rounding Heat Map</div>
         <div class="card-sub">Click any tile to view round details</div>
         <div id="heatmapGrid"></div>
