@@ -174,7 +174,12 @@ h1,h2,.page-title,.stat-num,.rr-name,.room-hero-name { font-family: 'Outfit', 'I
 .card-sub { font-size: 12px; color: var(--gray); margin-bottom: 18px; }
 
 /* ── Heat map ── */
-#heatmapGrid { display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 100%; }
+#heatmapGrid {
+  display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 100%;
+  max-height: 600px; overflow-y: auto; padding-right: 6px;
+}
+#heatmapGrid::-webkit-scrollbar { width: 6px; }
+#heatmapGrid::-webkit-scrollbar-thumb { background: var(--gray-light); border-radius: 3px; }
 
 /* ── Bottom activity scrubber ── */
 .activity-scrubber {
