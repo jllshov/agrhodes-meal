@@ -628,7 +628,10 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   <div id="panel-inventory" style="display:none;">
     <div class="page-header">
       <div><div class="page-title">Inventory</div><div class="page-sub">All dietary stock items</div></div>
-      <button class="neu-btn primary" data-perm="addItem" onclick="showAddItem()">+ Add Item</button>
+      <div style="display:flex;gap:10px;">
+        <button class="neu-btn" data-perm="addItem" onclick="showBulkImport()">⬆ Bulk Import</button>
+        <button class="neu-btn primary" data-perm="addItem" onclick="showAddItem()">+ Add Item</button>
+      </div>
     </div>
     <div class="search-bar">
       <input class="search-input" id="invSearch" placeholder="Search item, vendor, lot, SKU…" oninput="renderInventoryTable()">
@@ -955,6 +958,55 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
       <button class="modal-close" onclick="closeMonthlyReportView()">✕</button>
     </div>
     <div class="modal-body" id="mrvBody"></div>
+  </div>
+</div>
+
+
+<div class="modal-overlay" id="bulkImportModal">
+  <div class="modal-box" style="max-width:760px;">
+    <div class="modal-header">
+      <div><div class="modal-title">Bulk Import Inventory</div><div class="modal-meta">Upload a CSV file or paste rows directly</div></div>
+      <button class="modal-close" onclick="closeBulkImport()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="biStep1">
+        <div class="card" style="background:var(--bg);box-shadow:none;padding:16px;margin-bottom:14px;">
+          <div style="font-size:12.5px;font-weight:700;margin-bottom:8px;">Expected columns (header row required):</div>
+          <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gray);line-height:1.8;">
+            item_name, category, storage_location, unit_type, quantity, cost_per_unit, par_level, minimum_level, vendor, sku, lot_number, expiration_date
+          </div>
+          <div style="font-size:11px;color:var(--gray-light);margin-top:8px;">Only <b>item_name</b> is required — everything else is optional. Categories/storage/vendors that don't exist yet are created automatically.</div>
+        </div>
+
+        <div class="field" style="margin-bottom:12px;">
+          <label>Upload CSV File</label>
+          <input type="file" id="bi-file-input" accept=".csv" onchange="handleCSVFile(this)" style="width:100%;padding:10px 12px;border:none;border-radius:12px;background:var(--bg);box-shadow:var(--shadow-in);font-family:inherit;font-size:12.5px;">
+        </div>
+
+        <div style="text-align:center;font-size:11px;color:var(--gray-light);margin:10px 0;">— or —</div>
+
+        <div class="field" style="margin-bottom:12px;">
+          <label>Paste CSV Text</label>
+          <textarea id="bi-paste" rows="8" placeholder="item_name,category,storage_location,unit_type,quantity,cost_per_unit&#10;Whole Milk 1gal,Dairy,Walk-in Refrigerator,gal,12,3.50" style="font-family:'DM Mono',monospace;font-size:11.5px;"></textarea>
+        </div>
+
+        <button class="neu-btn primary" style="width:100%;" onclick="parseBulkImport()">Preview Import</button>
+      </div>
+
+      <div id="biStep2" style="display:none;">
+        <div id="biPreviewSummary" style="margin-bottom:14px;"></div>
+        <div style="max-height:340px;overflow-y:auto;border-radius:14px;border:1px solid var(--border);">
+          <table class="inv-table" style="font-size:11.5px;">
+            <thead><tr><th>Item</th><th>Category</th><th>Storage</th><th>Qty</th><th>Cost</th><th>Status</th></tr></thead>
+            <tbody id="biPreviewBody"></tbody>
+          </table>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button class="neu-btn" style="flex:1;" onclick="backToBulkStep1()">← Back</button>
+          <button class="neu-btn primary" style="flex:2;" id="biConfirmBtn" onclick="confirmBulkImport()">Import All</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2152,6 +2204,201 @@ function editMonthlyReport() {
   document.getElementById('mr-other').value = r.other_measures || '';
 
   document.getElementById('monthlyReportModal').classList.add('open');
+}
+
+/* ════════════════════════════════════════════
+   BULK IMPORT — CSV upload/paste for inventory
+════════════════════════════════════════════ */
+var bulkImportRows = [];
+
+function showBulkImport() {
+  document.getElementById('bi-file-input').value = '';
+  document.getElementById('bi-paste').value = '';
+  document.getElementById('biStep1').style.display = 'block';
+  document.getElementById('biStep2').style.display = 'none';
+  document.getElementById('bulkImportModal').classList.add('open');
+}
+function closeBulkImport() { document.getElementById('bulkImportModal').classList.remove('open'); }
+function backToBulkStep1() {
+  document.getElementById('biStep1').style.display = 'block';
+  document.getElementById('biStep2').style.display = 'none';
+}
+
+function handleCSVFile(input) {
+  if (!input.files || !input.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e) { document.getElementById('bi-paste').value = e.target.result; };
+  reader.readAsText(input.files[0]);
+}
+
+function parseCSV(text) {
+  var lines = text.split(/\r?\n/).filter(function(l){ return l.trim().length; });
+  if (!lines.length) return [];
+  var headers = splitCSVLine(lines[0]).map(function(h){ return h.trim().toLowerCase().replace(/\s+/g,'_'); });
+  var rows = [];
+  for (var i = 1; i < lines.length; i++) {
+    var vals = splitCSVLine(lines[i]);
+    var row = {};
+    headers.forEach(function(h, idx){ row[h] = (vals[idx]||'').trim(); });
+    rows.push(row);
+  }
+  return rows;
+}
+
+function splitCSVLine(line) {
+  var result = [], cur = '', inQuotes = false;
+  for (var i = 0; i < line.length; i++) {
+    var ch = line[i];
+    if (ch === '"') { inQuotes = !inQuotes; }
+    else if (ch === ',' && !inQuotes) { result.push(cur); cur = ''; }
+    else { cur += ch; }
+  }
+  result.push(cur);
+  return result;
+}
+
+async function parseBulkImport() {
+  var text = document.getElementById('bi-paste').value.trim();
+  if (!text) { alert('Upload a CSV file or paste CSV text first'); return; }
+
+  var rows = parseCSV(text);
+  if (!rows.length) { alert('No rows found'); return; }
+
+  await loadRefData(); // ensure categories/storage/vendors are current
+
+  var catMap = {}; cachedCategories.forEach(function(c){ catMap[c.name.toLowerCase()] = c.id; });
+  var storMap = {}; cachedStorage.forEach(function(s){ storMap[s.name.toLowerCase()] = s.id; });
+  var vendMap = {}; cachedVendors.forEach(function(v){ vendMap[v.name.toLowerCase()] = v.id; });
+
+  var newCats = {}, newStor = {}, newVend = {};
+
+  bulkImportRows = rows.map(function(r, idx) {
+    var name = r.item_name || r.name || '';
+    var valid = !!name;
+
+    var catName = (r.category||'').trim();
+    var storName = (r.storage_location||r.storage||'').trim();
+    var vendName = (r.vendor||'').trim();
+
+    if (catName && !catMap[catName.toLowerCase()] && !newCats[catName.toLowerCase()]) newCats[catName.toLowerCase()] = catName;
+    if (storName && !storMap[storName.toLowerCase()] && !newStor[storName.toLowerCase()]) newStor[storName.toLowerCase()] = storName;
+    if (vendName && !vendMap[vendName.toLowerCase()] && !newVend[vendName.toLowerCase()]) newVend[vendName.toLowerCase()] = vendName;
+
+    return {
+      row_num: idx+2, item_name: name, category: catName, storage_location: storName, vendor: vendName,
+      unit_type: r.unit_type || r.unit || '', quantity: +(r.quantity||r.qty||0) || 0,
+      cost_per_unit: r.cost_per_unit || r.cost ? +(r.cost_per_unit||r.cost) : null,
+      par_level: r.par_level ? +r.par_level : null, minimum_level: r.minimum_level ? +r.minimum_level : null,
+      sku: r.sku || null, lot_number: r.lot_number || null, expiration_date: r.expiration_date || null,
+      valid: valid,
+    };
+  });
+
+  var newCatCount = Object.keys(newCats).length, newStorCount = Object.keys(newStor).length, newVendCount = Object.keys(newVend).length;
+  var validCount = bulkImportRows.filter(function(r){ return r.valid; }).length;
+  var invalidCount = bulkImportRows.length - validCount;
+
+  document.getElementById('biPreviewSummary').innerHTML =
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+    '<span class="qty-badge qty-ok">'+validCount+' ready to import</span>' +
+    (invalidCount ? '<span class="qty-badge qty-out">'+invalidCount+' missing item name</span>' : '') +
+    (newCatCount ? '<span class="qty-badge" style="background:rgba(59,130,246,.12);color:var(--blue);">+'+newCatCount+' new categories</span>' : '') +
+    (newStorCount ? '<span class="qty-badge" style="background:rgba(59,130,246,.12);color:var(--blue);">+'+newStorCount+' new storage locations</span>' : '') +
+    (newVendCount ? '<span class="qty-badge" style="background:rgba(59,130,246,.12);color:var(--blue);">+'+newVendCount+' new vendors</span>' : '') +
+    '</div>';
+
+  document.getElementById('biPreviewBody').innerHTML = bulkImportRows.map(function(r) {
+    var statusBadge = r.valid ? '<span class="qty-badge qty-ok">Ready</span>' : '<span class="qty-badge qty-out">No name</span>';
+    return '<tr><td>'+(r.item_name||'—')+'</td><td>'+(r.category||'—')+'</td><td>'+(r.storage_location||'—')+'</td>' +
+      '<td>'+r.quantity+' '+(r.unit_type||'')+'</td><td>'+(r.cost_per_unit!=null?fmtMoney(r.cost_per_unit):'—')+'</td><td>'+statusBadge+'</td></tr>';
+  }).join('');
+
+  document.getElementById('biConfirmBtn').textContent = 'Import ' + validCount + ' Item' + (validCount!==1?'s':'');
+  document.getElementById('biConfirmBtn').disabled = validCount === 0;
+
+  document.getElementById('biStep1').style.display = 'none';
+  document.getElementById('biStep2').style.display = 'block';
+}
+
+async function confirmBulkImport() {
+  var btn = document.getElementById('biConfirmBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="border-color:rgba(0,0,0,.2);border-top-color:#1A1A1A;"></span> Importing…';
+
+  var validRows = bulkImportRows.filter(function(r){ return r.valid; });
+
+  // Step 1: create any missing categories/storage/vendors
+  var catMap = {}; cachedCategories.forEach(function(c){ catMap[c.name.toLowerCase()] = c.id; });
+  var storMap = {}; cachedStorage.forEach(function(s){ storMap[s.name.toLowerCase()] = s.id; });
+  var vendMap = {}; cachedVendors.forEach(function(v){ vendMap[v.name.toLowerCase()] = v.id; });
+
+  var neededCats = {}, neededStor = {}, neededVend = {};
+  validRows.forEach(function(r) {
+    if (r.category && !catMap[r.category.toLowerCase()]) neededCats[r.category.toLowerCase()] = r.category;
+    if (r.storage_location && !storMap[r.storage_location.toLowerCase()]) neededStor[r.storage_location.toLowerCase()] = r.storage_location;
+    if (r.vendor && !vendMap[r.vendor.toLowerCase()]) neededVend[r.vendor.toLowerCase()] = r.vendor;
+  });
+
+  for (var key in neededCats) {
+    var { data } = await sb.from('dietary_categories').insert({ facility_id: FACILITY_ID, name: neededCats[key] }).select().single();
+    if (data) catMap[key] = data.id;
+  }
+  for (var key2 in neededStor) {
+    var { data: sd } = await sb.from('dietary_storage_locations').insert({ facility_id: FACILITY_ID, name: neededStor[key2], location_type: 'Other' }).select().single();
+    if (sd) storMap[key2] = sd.id;
+  }
+  for (var key3 in neededVend) {
+    var { data: vd } = await sb.from('dietary_vendors').insert({ facility_id: FACILITY_ID, name: neededVend[key3] }).select().single();
+    if (vd) vendMap[key3] = vd.id;
+  }
+
+  // Step 2: build item payloads with QR identifiers
+  var staff = getStaffName();
+  var payloads = validRows.map(function(r, i) {
+    return {
+      facility_id: FACILITY_ID,
+      qr_identifier: 'agrhodes-atl-diet-' + Date.now() + '-' + i,
+      item_name: r.item_name,
+      category_id: r.category ? catMap[r.category.toLowerCase()] || null : null,
+      storage_location_id: r.storage_location ? storMap[r.storage_location.toLowerCase()] || null : null,
+      vendor_id: r.vendor ? vendMap[r.vendor.toLowerCase()] || null : null,
+      unit_type: r.unit_type || null, current_quantity: r.quantity || 0,
+      cost_per_unit: r.cost_per_unit, par_level: r.par_level, minimum_level: r.minimum_level,
+      sku: r.sku, lot_number: r.lot_number, expiration_date: r.expiration_date || null,
+      received_date: new Date().toISOString().split('T')[0],
+    };
+  });
+
+  // Step 3: batch insert (chunks of 100 to stay safe)
+  var inserted = [];
+  for (var i = 0; i < payloads.length; i += 100) {
+    var chunk = payloads.slice(i, i+100);
+    var { data: rows, error } = await sb.from('dietary_items').insert(chunk).select();
+    if (error) { alert('Import error on batch ' + (i/100+1) + ': ' + error.message); btn.disabled = false; btn.textContent = 'Retry Import'; return; }
+    inserted = inserted.concat(rows || []);
+  }
+
+  // Step 4: log initial Receive transactions for items with quantity > 0
+  var txnPayloads = inserted.filter(function(it){ return it.current_quantity > 0; }).map(function(it) {
+    return { facility_id: FACILITY_ID, item_id: it.id, action: 'Receive', reason: 'Bulk Import',
+      quantity: it.current_quantity, before_quantity: 0, after_quantity: it.current_quantity,
+      performed_by: staff, device: 'web' };
+  });
+  for (var j = 0; j < txnPayloads.length; j += 100) {
+    await sb.from('dietary_transactions').insert(txnPayloads.slice(j, j+100));
+  }
+
+  closeBulkImport();
+  showToastMsg('✓ Imported ' + inserted.length + ' items');
+  loadInventoryTab();
+}
+
+function showToastMsg(msg) {
+  var t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1A1A1A;color:white;padding:12px 22px;border-radius:999px;font-size:13px;font-weight:700;z-index:300;box-shadow:0 8px 24px rgba(0,0,0,.2);';
+  document.body.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 2500);
 }
 
 
