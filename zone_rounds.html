@@ -174,22 +174,7 @@ h1,h2,.page-title,.stat-num,.rr-name,.room-hero-name { font-family: 'Outfit', 'I
 .card-sub { font-size: 12px; color: var(--gray); margin-bottom: 18px; }
 
 /* ── Heat map ── */
-#heatmapGrid { display: flex; flex-direction: column; gap: 22px; width: 100%; }
-.heatmap-group { position: relative; }
-.heatmap-group-label {
-  font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
-  color: var(--gray); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
-}
-.heatmap-group-count {
-  font-family: 'DM Mono', monospace; font-size: 10.5px; font-weight: 600;
-  background: var(--bg); padding: 2px 9px; border-radius: 999px; color: var(--black);
-  box-shadow: var(--shadow-out);
-}
-.heatmap-node {
-  width: 26px; height: 26px; border-radius: 50%; background: var(--accent);
-  display: inline-flex; align-items: center; justify-content: center; font-size: 12px;
-  box-shadow: 0 4px 10px rgba(216,249,60,.5); flex-shrink: 0;
-}
+#heatmapGrid { display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 100%; }
 
 /* ── Bottom activity scrubber ── */
 .activity-scrubber {
@@ -209,10 +194,11 @@ h1,h2,.page-title,.stat-num,.rr-name,.room-hero-name { font-family: 'Outfit', 'I
   position: absolute; top: -6px; right: -2px; background: var(--accent); color: var(--black);
   font-size: 9px; font-weight: 800; border-radius: 999px; padding: 1px 5px; line-height: 1.4;
 }
-.heatmap-row-wrap { position: relative; }
+.heatmap-row-wrap { position: relative; width: 100%; max-width: 100%; overflow: hidden; }
 .heatmap-grid {
   display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 12px; padding: 2px 2px 8px;
   -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity;
+  width: 100%; max-width: 100%;
 }
 .heatmap-grid .heat-tile { flex: 0 0 78px; scroll-snap-align: start; }
 .heatmap-grid::-webkit-scrollbar { height: 5px; }
@@ -231,10 +217,8 @@ h1,h2,.page-title,.stat-num,.rr-name,.room-hero-name { font-family: 'Outfit', 'I
 .heat-tile:hover { transform: translateY(-2px) scale(1.04); }
 
 @media (max-width: 900px) {
-  .heatmap-grid { max-width: calc(5 * 78px + 4 * 12px); }
-  .heatmap-grid .heat-tile { flex: 0 0 68px; }
-  .heatmap-row-wrap::after { bottom: 8px; }
-  #heatmapGrid { gap: 18px; }
+  .heatmap-grid .heat-tile { flex: 0 0 62px; }
+  #heatmapGrid { gap: 12px; }
 }
 .heat-tile:active { transform: scale(.95); }
 .heat-green  { background: rgba(34,197,94,.15); color: #16A34A; box-shadow: 3px 3px 8px rgba(34,197,94,.2), -2px -2px 6px #FFFFFF; }
@@ -1170,6 +1154,8 @@ function setHeatmapFilter(type, btn) {
   renderHeatmap(type);
 }
 
+var heatmapGroupOpenState = JSON.parse(localStorage.getItem('agrhodes_heatmap_open') || '{}');
+
 function renderHeatmap(filterType) {
   var hmGrid = document.getElementById('heatmapGrid');
   if (!hmGrid) return;
@@ -1197,18 +1183,8 @@ function renderHeatmap(filterType) {
     });
     var groupRounded = 0;
 
-    var wrap = document.createElement('div');
-    wrap.className = 'heatmap-group';
-    var label = document.createElement('div');
-    label.className = 'heatmap-group-label';
-    wrap.appendChild(label);
-
-    var rowWrap = document.createElement('div');
-    rowWrap.className = 'heatmap-row-wrap';
-
-    var subGrid = document.createElement('div');
-    subGrid.className = 'heatmap-grid';
-
+    // Build tiles first so we can count rounded-today before rendering the header
+    var tilesHtml = '';
     locs.forEach(function(loc) {
       var todaysRound = roundsToday
         .filter(function(r){return r.qr_identifier===loc.qr_identifier;})
@@ -1225,22 +1201,67 @@ function renderHeatmap(filterType) {
           cls = hasHigh ? 'heat-red' : hasMed ? 'heat-orange' : 'heat-yellow';
         } else { cls = 'heat-green'; }
       }
-      var tile = document.createElement('div');
-      tile.className = 'heat-tile ' + cls;
-      tile.textContent = loc.room_number || (loc.eoc_section||'').replace(/_/g,' ') || loc.display_name;
-      tile.onclick = (function(l,r,issues){ return function(){ openRoundModal(l,r,issues); }; })(loc, todaysRound, issuesForLoc);
-      subGrid.appendChild(tile);
+      tilesHtml += '<div class="heat-tile ' + cls + '" data-qr="' + loc.qr_identifier + '"></div>';
     });
 
-    label.innerHTML = '<span class="heatmap-node">📋</span><span>' + groupKey + '</span><span class="heatmap-group-count">' + groupRounded + '/' + locs.length + ' rounded</span>';
+    var isOpen = heatmapGroupOpenState[groupKey] !== false; // default open
+
+    var section = document.createElement('div');
+    section.className = 'hall-section' + (isOpen ? ' open' : '');
+    section.id = 'heatmap-group-' + groupKey.replace(/\s+/g,'-');
+
+    var header = document.createElement('div');
+    header.className = 'hall-header';
+    header.onclick = (function(g){ return function(){ toggleHeatmapGroup(g); }; })(groupKey);
+    header.innerHTML =
+      '<div class="hall-icon" style="background:var(--accent);">📋</div>' +
+      '<div class="hall-title-wrap">' +
+        '<div class="hall-title">' + groupKey + '</div>' +
+        '<div class="hall-sub">' + groupRounded + '/' + locs.length + ' rounded today</div>' +
+      '</div>' +
+      '<div class="hall-chevron">▼</div>';
+    section.appendChild(header);
+
+    var body = document.createElement('div');
+    body.className = 'hall-body';
+    var bodyInner = document.createElement('div');
+    bodyInner.className = 'hall-body-inner';
+
+    var rowWrap = document.createElement('div');
+    rowWrap.className = 'heatmap-row-wrap';
+    var subGrid = document.createElement('div');
+    subGrid.className = 'heatmap-grid';
+    subGrid.innerHTML = tilesHtml;
+    // Wire click handlers now that tiles are real DOM nodes
+    Array.prototype.forEach.call(subGrid.querySelectorAll('.heat-tile'), function(tileEl){
+      var qr = tileEl.getAttribute('data-qr');
+      var loc = locs.find(function(l){ return l.qr_identifier === qr; });
+      var todaysRound = roundsToday.filter(function(r){return r.qr_identifier===qr;})
+        .sort(function(a,b){return new Date(b.rounded_at)-new Date(a.rounded_at);})[0];
+      var issuesForLoc = openIssues.filter(function(i){ return todaysRound && i.round_id === todaysRound.id; });
+      tileEl.textContent = loc.room_number || (loc.eoc_section||'').replace(/_/g,' ') || loc.display_name;
+      tileEl.onclick = function(){ openRoundModal(loc, todaysRound, issuesForLoc); };
+    });
+
     rowWrap.appendChild(subGrid);
-    wrap.appendChild(rowWrap);
-    hmGrid.appendChild(wrap);
+    bodyInner.appendChild(rowWrap);
+    body.appendChild(bodyInner);
+    section.appendChild(body);
+    hmGrid.appendChild(section);
   });
 
   if (!orderedGroups.length) {
     hmGrid.innerHTML = '<div style="padding:16px;color:var(--gray);font-size:12.5px;">No locations match this filter yet.</div>';
   }
+}
+
+function toggleHeatmapGroup(groupKey) {
+  var section = document.getElementById('heatmap-group-' + groupKey.replace(/\s+/g,'-'));
+  if (!section) return;
+  var nowOpen = !section.classList.contains('open');
+  section.classList.toggle('open', nowOpen);
+  heatmapGroupOpenState[groupKey] = nowOpen;
+  localStorage.setItem('agrhodes_heatmap_open', JSON.stringify(heatmapGroupOpenState));
 }
 
 function switchTab(tab) {
