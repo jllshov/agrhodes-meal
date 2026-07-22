@@ -489,7 +489,27 @@ h1,h2,.page-title,.stat-num,.rr-name,.room-hero-name { font-family: 'Outfit', 'I
 .ls-alert-sub { font-size: 12px; color: var(--gray); margin-top: 2px; }
 
 /* ── Life Safety: view toggle ── */
-.ls-view-toggle { display: flex; gap: 8px; margin-bottom: 18px; }
+.ls-view-toggle { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+
+/* ── PM Calendar ── */
+.pm-cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.pm-cal-month-label { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 17px; }
+.pm-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.pm-cal-dow { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--gray); text-align: center; padding-bottom: 8px; }
+.pm-cal-day {
+  background: var(--surface); border-radius: 14px; min-height: 76px; padding: 8px;
+  cursor: pointer; box-shadow: var(--shadow-card); transition: transform .1s;
+}
+.pm-cal-day:hover { transform: translateY(-1px); }
+.pm-cal-day.empty { background: transparent; box-shadow: none; cursor: default; }
+.pm-cal-day.empty:hover { transform: none; }
+.pm-cal-day.today { box-shadow: 0 0 0 2px var(--accent), var(--shadow-card); }
+.pm-cal-day-num { font-size: 11.5px; font-weight: 700; color: var(--gray); }
+.pm-cal-day.today .pm-cal-day-num { color: var(--black); }
+.pm-cal-dots { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 8px; }
+.pm-cal-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+.pm-cal-dot.critical { background: var(--red); }
+.pm-cal-count { font-size: 9.5px; font-weight: 800; color: var(--gray); margin-top: 4px; }
 
 /* ── Life Safety: task card ── */
 .ls-row { display: flex; align-items: flex-start; gap: 14px; }
@@ -874,9 +894,11 @@ table.policy-table tr:last-child td { border-bottom: none; }
     <div class="ls-view-toggle">
       <button class="tab-pill active" id="lsview-freq" onclick="setComplianceView('freq')">🗓 By Frequency</button>
       <button class="tab-pill" id="lsview-system" onclick="setComplianceView('system')">🧯 By System</button>
+      <button class="tab-pill" id="lsview-calendar" onclick="setComplianceView('calendar')">📅 PM Calendar</button>
     </div>
 
     <div id="complianceList"></div>
+    <div id="complianceCalendar" style="display:none;"></div>
   </div>
 
   <!-- ── Reports ── -->
@@ -2348,7 +2370,17 @@ function setComplianceView(view) {
   localStorage.setItem('agrhodes_compliance_view', view);
   document.getElementById('lsview-freq').classList.toggle('active', view==='freq');
   document.getElementById('lsview-system').classList.toggle('active', view==='system');
-  renderComplianceGroups(lastComplianceData);
+  document.getElementById('lsview-calendar').classList.toggle('active', view==='calendar');
+
+  if (view === 'calendar') {
+    document.getElementById('complianceList').style.display = 'none';
+    document.getElementById('complianceCalendar').style.display = 'block';
+    renderComplianceCalendar();
+  } else {
+    document.getElementById('complianceCalendar').style.display = 'none';
+    document.getElementById('complianceList').style.display = 'block';
+    renderComplianceGroups(lastComplianceData);
+  }
 }
 
 async function loadCompliance() {
@@ -2356,6 +2388,9 @@ async function loadCompliance() {
   listEl.innerHTML = '<div style="padding:20px;color:var(--gray)">Loading\u2026</div>';
   document.getElementById('lsview-freq').classList.toggle('active', complianceView==='freq');
   document.getElementById('lsview-system').classList.toggle('active', complianceView==='system');
+  document.getElementById('lsview-calendar').classList.toggle('active', complianceView==='calendar');
+  document.getElementById('complianceList').style.display = complianceView==='calendar' ? 'none' : 'block';
+  document.getElementById('complianceCalendar').style.display = complianceView==='calendar' ? 'block' : 'none';
 
   var { data: tasks } = await sb.from('compliance_tasks').select('*')
     .eq('facility_id', FACILITY_ID).eq('is_active', true).order('sort_order');
@@ -2420,7 +2455,8 @@ async function loadCompliance() {
     return;
   }
 
-  renderComplianceGroups(withStatus);
+  if (complianceView === 'calendar') renderComplianceCalendar();
+  else renderComplianceGroups(withStatus);
 }
 
 // Priority sort within a group: overdue-critical > overdue > due-soon > never > ok
@@ -2588,6 +2624,91 @@ async function markComplianceComplete(taskId) {
   });
   if (error) { alert('Error: ' + error.message); return; }
   loadCompliance();
+}
+
+/* ── PM Calendar ── */
+var calendarViewDate = new Date(); // first of the currently displayed month
+var pmCalendarData = {}; // 'YYYY-MM-DD' -> [{ taskName, completedBy, critical, category }]
+
+function buildPmCalendarData() {
+  pmCalendarData = {};
+  lastComplianceData.forEach(function(t){
+    (t.lastCompletions || []).forEach(function(c){
+      var key = c.completed_date;
+      if (!pmCalendarData[key]) pmCalendarData[key] = [];
+      pmCalendarData[key].push({ taskName: t.task_name, completedBy: c.completed_by, critical: t.critical, category: t.category });
+    });
+  });
+}
+
+function renderComplianceCalendar() {
+  var calEl = document.getElementById('complianceCalendar');
+  if (!calEl) return;
+  buildPmCalendarData();
+
+  var year = calendarViewDate.getFullYear();
+  var month = calendarViewDate.getMonth();
+  var monthLabel = calendarViewDate.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+  var firstDay = new Date(year, month, 1);
+  var startWeekday = firstDay.getDay();
+  var daysInMonth = new Date(year, month+1, 0).getDate();
+  var todayStr = new Date().toISOString().split('T')[0];
+
+  var dowLabels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(d){
+    return '<div class="pm-cal-dow">'+d+'</div>';
+  }).join('');
+
+  var cells = '';
+  for (var i=0; i<startWeekday; i++) cells += '<div class="pm-cal-day empty"></div>';
+  for (var d=1; d<=daysInMonth; d++) {
+    var dateStr = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    var entries = pmCalendarData[dateStr] || [];
+    var isToday = dateStr === todayStr;
+    var dots = entries.slice(0,8).map(function(e){
+      return '<span class="pm-cal-dot' + (e.critical ? ' critical' : '') + '"></span>';
+    }).join('');
+    cells += '<div class="pm-cal-day' + (isToday ? ' today' : '') + '" onclick="openPmCalendarDay(\'' + dateStr + '\')">' +
+      '<div class="pm-cal-day-num">' + d + '</div>' +
+      (entries.length ? '<div class="pm-cal-dots">' + dots + '</div><div class="pm-cal-count">' + entries.length + ' done</div>' : '') +
+    '</div>';
+  }
+
+  calEl.innerHTML =
+    '<div class="card">' +
+      '<div class="pm-cal-header">' +
+        '<button class="neu-btn" onclick="navigatePmCalendar(-1)">‹ Prev</button>' +
+        '<div class="pm-cal-month-label">' + monthLabel + '</div>' +
+        '<button class="neu-btn" onclick="navigatePmCalendar(1)">Next ›</button>' +
+      '</div>' +
+      '<div class="pm-cal-grid">' + dowLabels + cells + '</div>' +
+    '</div>';
+}
+
+function navigatePmCalendar(delta) {
+  calendarViewDate = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + delta, 1);
+  renderComplianceCalendar();
+}
+
+function openPmCalendarDay(dateStr) {
+  var entries = pmCalendarData[dateStr] || [];
+  document.getElementById('roundModal').classList.add('open');
+  document.getElementById('modalFooter').style.display = 'none';
+  document.getElementById('modalTitle').textContent =
+    new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'});
+  document.getElementById('modalMeta').textContent = entries.length + ' item' + (entries.length!==1?'s':'') + ' completed';
+
+  var body = document.getElementById('modalBody');
+  if (!entries.length) {
+    body.innerHTML = '<div class="no-round-msg">No PM items completed this day</div>';
+    return;
+  }
+  body.innerHTML = '<div class="modal-section">' + entries.map(function(e){
+    return '<div class="modal-issue-row">' +
+      '<div class="modal-issue-header"><span class="modal-issue-type" style="color:var(--black);">' + e.taskName +
+        (e.critical ? ' <span class="ls-crit-badge" style="margin-left:6px;">\ud83d\udd25 Critical</span>' : '') + '</span></div>' +
+      '<div class="modal-issue-desc">Completed by ' + e.completedBy + (e.category ? ' \u00b7 ' + e.category : '') + '</div>' +
+    '</div>';
+  }).join('') + '</div>';
 }
 
 /* ── Patient Inventory ── */
