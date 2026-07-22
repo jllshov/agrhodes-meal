@@ -545,6 +545,38 @@ table.policy-table th { text-align: left; padding: 10px 8px; border-bottom: 2px 
 table.policy-table td { padding: 12px 8px; border-bottom: 1px solid rgba(0,0,0,.06); vertical-align: top; line-height: 1.4; }
 table.policy-table tr:last-child td { border-bottom: none; }
 
+/* ── Patient Inventory ── */
+.inv-check-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; }
+.inv-check-item {
+  display: flex; align-items: center; gap: 9px; background: var(--bg); border-radius: 12px;
+  padding: 11px 13px; cursor: pointer; font-size: 12.5px; font-weight: 600;
+  box-shadow: var(--shadow-out); transition: all .15s;
+}
+.inv-check-item.checked { background: var(--accent-dim); box-shadow: var(--shadow-in); }
+.inv-check-item input { width: 16px; height: 16px; accent-color: var(--black); flex-shrink: 0; }
+.inv-expand-card {
+  background: var(--bg); border-radius: 16px; padding: 14px 16px; margin-top: 12px; box-shadow: var(--shadow-in);
+}
+.inv-expand-title { font-size: 13px; font-weight: 800; margin-bottom: 10px; }
+.inv-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.inv-field label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--gray); margin-bottom: 5px; }
+.inv-field input, .inv-field select, .inv-field textarea {
+  width: 100%; padding: 9px 11px; border: none; border-radius: 10px;
+  background: var(--surface); box-shadow: var(--shadow-out); font-family: inherit; font-size: 12.5px; color: var(--black);
+}
+.inv-yn-row { display: flex; gap: 6px; }
+.inv-yn-btn {
+  flex: 1; padding: 8px; border-radius: 10px; border: none; cursor: pointer;
+  font-family: inherit; font-size: 11.5px; font-weight: 700; background: var(--surface); box-shadow: var(--shadow-out); color: var(--gray);
+}
+.inv-yn-btn.sel-yes { background: rgba(76,175,110,.18); color: #2E7D46; box-shadow: none; }
+.inv-yn-btn.sel-no { background: rgba(225,91,78,.15); color: var(--red); box-shadow: none; }
+.inv-saved-row {
+  display: flex; align-items: center; gap: 14px; padding: 13px 16px; background: var(--bg);
+  border-radius: 14px; box-shadow: var(--shadow-out); margin-bottom: 8px; cursor: pointer;
+}
+.inv-saved-row:hover { box-shadow: var(--shadow-card); }
+
 </style>
 </head>
 <body>
@@ -596,6 +628,9 @@ table.policy-table tr:last-child td { border-bottom: none; }
   <button class="nav-item" id="drawer-policies" onclick="drawerNav('policies')">
     <span class="nav-icon">📚</span> Policies & Procedures
   </button>
+  <button class="nav-item" id="drawer-inventory" onclick="drawerNav('inventory')">
+    <span class="nav-icon">🧳</span> Patient Inventory
+  </button>
   <button class="nav-item" onclick="window.print();closeDrawer();">
     <span class="nav-icon">🖨</span> Print QR Codes
   </button>
@@ -637,6 +672,9 @@ table.policy-table tr:last-child td { border-bottom: none; }
     </button>
     <button class="nav-item" onclick="switchTab('policies')">
       <span class="nav-icon">📚</span> Policies
+    </button>
+    <button class="nav-item" onclick="switchTab('inventory')">
+      <span class="nav-icon">🧳</span> Patient Inventory
     </button>
   </div>
 
@@ -956,6 +994,48 @@ table.policy-table tr:last-child td { border-bottom: none; }
           </tr>
         </tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- ── Patient Inventory ── -->
+  <div class="panel" id="panel-inventory" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Patient Inventory</div><div class="page-sub">Resident belongings intake — designed to complete in under 2 minutes</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title">📱 Start New Intake on a Phone</div>
+      <div class="card-sub">Scan or share this to fill out an intake with photo capture — no login needed</div>
+      <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+        <div id="invNewQr" style="background:white;border-radius:16px;padding:12px;box-shadow:var(--shadow-out);width:132px;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:220px;">
+          <input type="text" id="invNewLinkInput" readonly style="width:100%;padding:11px 12px;border:none;border-radius:12px;background:var(--bg);box-shadow:var(--shadow-in);font-family:'DM Mono',monospace;font-size:11.5px;color:var(--gray);margin-bottom:10px;" onclick="this.select()">
+          <button class="neu-btn" style="font-size:12px;" onclick="copyInvLink('invNewLinkInput')">📋 Copy Link</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title">New Intake (Desktop)</div>
+      <div class="card-sub">Check what the resident brought in, then fill in quick details only for what's checked. No photo capture from this form — use the phone link above for that.</div>
+
+      <div class="bulk-form" style="grid-template-columns:1fr 1fr 1fr 1fr;margin-bottom:18px;">
+        <div class="field"><label>Resident Name</label><input type="text" id="inv-resident-name" placeholder="Jane Doe"></div>
+        <div class="field"><label>Room</label><input type="text" id="inv-room" placeholder="Room 112"></div>
+        <div class="field"><label>Admission Date</label><input type="date" id="inv-date"></div>
+        <div class="field"><label>Completed By</label><input type="text" id="inv-completed-by" placeholder="Your name"></div>
+      </div>
+
+      <div class="inv-check-grid" id="invCheckGrid"></div>
+      <div id="invExpandList"></div>
+
+      <button class="neu-btn primary block" style="margin-top:16px;" onclick="saveInventory()">✓ Save Inventory</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Saved Inventories</div>
+      <div class="card-sub">Click any entry to view full detail, or use the share button for a QR/link to that record</div>
+      <div id="invSavedList"></div>
     </div>
   </div>
 
@@ -1831,6 +1911,7 @@ function openRoundModal(loc, round, issues) {
   };
 
   var checksHtml = '';
+  var parsedScores = null;
   if (round.round_type === 'room') {
     Object.keys(SECTIONS).forEach(function(section) {
       var keys = SECTIONS[section].filter(function(k){ return round[k]; });
@@ -1843,13 +1924,26 @@ function openRoundModal(loc, round, issues) {
       });
     });
   } else if (round.eoc_scores) {
-    var scores = typeof round.eoc_scores==='string' ? JSON.parse(round.eoc_scores) : round.eoc_scores;
-    Object.keys(scores).forEach(function(k) {
-      var val = scores[k];
+    parsedScores = typeof round.eoc_scores==='string' ? JSON.parse(round.eoc_scores) : round.eoc_scores;
+    Object.keys(parsedScores).forEach(function(k) {
+      if (k === 'cleaning_purpose' || k === 'admission_photo_url') return; // rendered separately below
+      var val = parsedScores[k];
       var lbl2 = k.replace(/_/g,' ').replace(/\b\w/g,function(l){return l.toUpperCase();});
       var cls2 = val==='pass'?'val-pass':val==='fail'?'val-fail':'val-other';
       checksHtml += '<div class="check-item"><span class="check-label">'+lbl2+'</span><span class="check-val '+cls2+'">'+val+'</span></div>';
     });
+  }
+
+  // Cleaning purpose badge + admission-ready photo, if this was a room cleaning task
+  if (parsedScores && parsedScores.cleaning_purpose) {
+    var purposeLabel = parsedScores.cleaning_purpose === 'admission_prep' ? '🛎 Admissions Prep' : '🧹 Routine';
+    body.innerHTML += '<div class="modal-section" style="margin-bottom:12px;">' +
+      '<span class="issue-badge" style="background:var(--accent-dim);color:#5B5A0E;padding:6px 14px;font-size:12px;border-radius:999px;">'+purposeLabel+'</span>' +
+    '</div>';
+  }
+  if (parsedScores && parsedScores.admission_photo_url) {
+    body.innerHTML += '<div class="modal-section"><div class="modal-section-title">Admission-Ready Photo</div>' +
+      '<img src="'+parsedScores.admission_photo_url+'" style="width:100%;border-radius:14px;cursor:pointer;" onclick="window.open(this.src)"></div>';
   }
 
   if (checksHtml) {
@@ -1985,7 +2079,7 @@ function drawerNav(tab) {
 // Renamed internal version that doesn't rely on event.currentTarget
 function switchTab_direct(tab) {
   document.querySelectorAll('.pill-nav .nav-item').forEach(function(b){ b.classList.remove('active'); });
-  ['dashboard','rooms','eoc','facilities','issues','compliance','reports','policies'].forEach(function(p){
+  ['dashboard','rooms','eoc','facilities','issues','compliance','reports','policies','inventory'].forEach(function(p){
     document.getElementById('panel-'+p).style.display = p===tab ? 'block' : 'none';
   });
   currentPanel = tab;
@@ -1996,6 +2090,7 @@ function switchTab_direct(tab) {
   if (tab==='issues') loadIssues();
   if (tab==='compliance') loadCompliance();
   if (tab==='reports') initReportsPanel();
+  if (tab==='inventory') initInventoryPanel();
 }
 
 
@@ -2495,6 +2590,230 @@ async function markComplianceComplete(taskId) {
   loadCompliance();
 }
 
+/* ── Patient Inventory ── */
+var INVENTORY_ITEMS = [
+  { key:'glasses', label:'Glasses' },
+  { key:'hearing_aid_l', label:'Hearing Aid (L)' },
+  { key:'hearing_aid_r', label:'Hearing Aid (R)' },
+  { key:'dentures_upper', label:'Dentures (Upper)' },
+  { key:'dentures_lower', label:'Dentures (Lower)' },
+  { key:'jewelry', label:'Jewelry' },
+  { key:'cell_phone', label:'Cell Phone' },
+  { key:'phone_charger', label:'Phone Charger' },
+  { key:'wallet_purse', label:'Wallet/Purse' },
+  { key:'cash', label:'Cash', special:'cash' },
+  { key:'keys', label:'Keys' },
+  { key:'clothing', label:'Clothing', qtyLabel:'Count (items)' },
+  { key:'shoes', label:'Shoes', qtyLabel:'Pairs' },
+  { key:'walker', label:'Walker' },
+  { key:'wheelchair', label:'Wheelchair' },
+  { key:'cane', label:'Cane' },
+  { key:'cpap_bipap', label:'CPAP/BiPAP' },
+  { key:'hygiene_bag', label:'Personal Hygiene Bag' },
+  { key:'other', label:'Other', special:'other' }
+];
+var invSelected = {}; // key -> { quantity, amount, condition, label_applied, photo_taken, comments, other_desc }
+var lastInventoryRows = [];
+var INVENTORY_NEW_URL = window.location.origin + '/inventory.html#new';
+var INVENTORY_VIEW_BASE = window.location.origin + '/inventory.html#view=';
+var invNewQrRendered = false;
+
+function initInventoryPanel() {
+  var dateEl = document.getElementById('inv-date');
+  if (!dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
+  renderInvCheckGrid();
+  renderInvExpandList();
+  loadSavedInventories();
+
+  document.getElementById('invNewLinkInput').value = INVENTORY_NEW_URL;
+  if (!invNewQrRendered) {
+    var qrEl = document.getElementById('invNewQr');
+    qrEl.innerHTML = '';
+    new QRCode(qrEl, { text: INVENTORY_NEW_URL, width: 108, height: 108, colorDark:'#1A1A1A', colorLight:'#FFFFFF' });
+    invNewQrRendered = true;
+  }
+}
+
+function copyInvLink(inputId) {
+  var input = document.getElementById(inputId);
+  input.select();
+  try { document.execCommand('copy'); alert('✓ Link copied'); }
+  catch(e) { alert('Could not copy automatically — select the text and copy manually.'); }
+}
+
+function renderInvCheckGrid() {
+  var grid = document.getElementById('invCheckGrid');
+  grid.innerHTML = INVENTORY_ITEMS.map(function(item){
+    var checked = !!invSelected[item.key];
+    return '<label class="inv-check-item' + (checked?' checked':'') + '">' +
+      '<input type="checkbox" ' + (checked?'checked':'') + ' onchange="toggleInvItem(\''+item.key+'\')">' +
+      '<span>' + item.label + '</span>' +
+    '</label>';
+  }).join('');
+}
+
+function toggleInvItem(key) {
+  if (invSelected[key]) {
+    delete invSelected[key];
+  } else {
+    invSelected[key] = { quantity: 1, amount: '', condition: 'Good', label_applied: 'No', photo_taken: 'No', comments: '', other_desc: '' };
+  }
+  renderInvCheckGrid();
+  renderInvExpandList();
+}
+
+function renderInvExpandList() {
+  var list = document.getElementById('invExpandList');
+  var selectedItems = INVENTORY_ITEMS.filter(function(i){ return invSelected[i.key]; });
+  if (!selectedItems.length) { list.innerHTML = ''; return; }
+
+  list.innerHTML = selectedItems.map(function(item){
+    var d = invSelected[item.key];
+    var qtyField = item.special === 'cash'
+      ? '<div class="inv-field"><label>Amount ($)</label><input type="number" step="0.01" min="0" value="'+d.amount+'" oninput="updateInvField(\''+item.key+'\',\'amount\',this.value)"></div>'
+      : '<div class="inv-field"><label>' + (item.qtyLabel || 'Quantity') + '</label><input type="number" min="0" value="'+d.quantity+'" oninput="updateInvField(\''+item.key+'\',\'quantity\',this.value)"></div>';
+
+    var otherField = item.special === 'other'
+      ? '<div class="inv-field" style="grid-column:1/-1;"><label>What is it?</label><input type="text" value="'+(d.other_desc||'').replace(/"/g,'&quot;')+'" placeholder="Describe the item" oninput="updateInvField(\''+item.key+'\',\'other_desc\',this.value)"></div>'
+      : '';
+
+    return '<div class="inv-expand-card">' +
+      '<div class="inv-expand-title">' + item.label + '</div>' +
+      otherField +
+      '<div class="inv-field-row">' +
+        qtyField +
+        '<div class="inv-field"><label>Condition</label><select onchange="updateInvField(\''+item.key+'\',\'condition\',this.value)">' +
+          ['New','Good','Fair','Damaged'].map(function(c){ return '<option'+(d.condition===c?' selected':'')+'>'+c+'</option>'; }).join('') +
+        '</select></div>' +
+      '</div>' +
+      '<div class="inv-field-row">' +
+        '<div class="inv-field"><label>Resident Label Applied?</label><div class="inv-yn-row">' +
+          '<button class="inv-yn-btn'+(d.label_applied==='Yes'?' sel-yes':'')+'" onclick="updateInvField(\''+item.key+'\',\'label_applied\',\'Yes\')">Yes</button>' +
+          '<button class="inv-yn-btn'+(d.label_applied==='No'?' sel-no':'')+'" onclick="updateInvField(\''+item.key+'\',\'label_applied\',\'No\')">No</button>' +
+        '</div></div>' +
+        '<div class="inv-field"><label>Photo Taken?</label><div class="inv-yn-row">' +
+          '<button class="inv-yn-btn'+(d.photo_taken==='Yes'?' sel-yes':'')+'" onclick="updateInvField(\''+item.key+'\',\'photo_taken\',\'Yes\')">Yes</button>' +
+          '<button class="inv-yn-btn'+(d.photo_taken==='No'?' sel-no':'')+'" onclick="updateInvField(\''+item.key+'\',\'photo_taken\',\'No\')">No</button>' +
+        '</div></div>' +
+      '</div>' +
+      '<div class="inv-field"><label>Comments</label><textarea rows="2" oninput="updateInvField(\''+item.key+'\',\'comments\',this.value)">'+(d.comments||'')+'</textarea></div>' +
+    '</div>';
+  }).join('');
+}
+
+function updateInvField(key, field, value) {
+  if (!invSelected[key]) return;
+  invSelected[key][field] = value;
+  // Only re-render the whole list for Yes/No toggles (need to update button styling);
+  // free-text/number fields update silently to avoid losing focus while typing.
+  if (field === 'condition' || field === 'label_applied' || field === 'photo_taken') {
+    renderInvExpandList();
+  }
+}
+
+async function saveInventory() {
+  var residentName = document.getElementById('inv-resident-name').value.trim();
+  var room = document.getElementById('inv-room').value.trim();
+  var admissionDate = document.getElementById('inv-date').value;
+  var completedBy = document.getElementById('inv-completed-by').value.trim();
+
+  if (!residentName) { alert('Enter the resident\'s name'); return; }
+  if (!completedBy) { alert('Enter who completed this intake'); return; }
+  if (!Object.keys(invSelected).length) { alert('Check at least one item, or select "Other" if the resident brought nothing listed'); return; }
+
+  var items = INVENTORY_ITEMS.filter(function(i){ return invSelected[i.key]; }).map(function(i){
+    return Object.assign({ key: i.key, label: i.label }, invSelected[i.key]);
+  });
+
+  var { error } = await sb.from('patient_inventory').insert({
+    facility_id: FACILITY_ID,
+    resident_name: residentName,
+    room_number: room || null,
+    admission_date: admissionDate || new Date().toISOString().split('T')[0],
+    completed_by: completedBy,
+    items: items
+  });
+  if (error) { alert('Error saving inventory: ' + error.message); return; }
+
+  document.getElementById('inv-resident-name').value = '';
+  document.getElementById('inv-room').value = '';
+  document.getElementById('inv-completed-by').value = '';
+  invSelected = {};
+  renderInvCheckGrid();
+  renderInvExpandList();
+  loadSavedInventories();
+  alert('✓ Inventory saved for ' + residentName);
+}
+
+async function loadSavedInventories() {
+  var list = document.getElementById('invSavedList');
+  list.innerHTML = '<div style="padding:16px;color:var(--gray)">Loading…</div>';
+  var { data, error } = await sb.from('patient_inventory').select('*')
+    .eq('facility_id', FACILITY_ID).order('created_at', {ascending:false}).limit(50);
+  if (error) { list.innerHTML = '<div style="padding:16px;color:var(--red);">Error: '+error.message+'</div>'; return; }
+
+  lastInventoryRows = data || [];
+  if (!lastInventoryRows.length) {
+    list.innerHTML = '<div style="padding:20px;color:var(--gray-light);text-align:center;">No inventories logged yet.</div>';
+    return;
+  }
+
+  list.innerHTML = lastInventoryRows.map(function(row, idx){
+    var itemCount = (row.items||[]).length;
+    var dt = new Date(row.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    return '<div class="inv-saved-row">' +
+      '<div style="flex:1;min-width:0;cursor:pointer;" onclick="openInventoryDetail('+idx+')">' +
+        '<div style="font-weight:700;font-size:13px;">' + row.resident_name + '</div>' +
+        '<div style="font-size:11.5px;color:var(--gray);margin-top:2px;">' + (row.room_number||'—') + ' · ' + itemCount + ' item' + (itemCount!==1?'s':'') + ' · ' + row.completed_by + ' · ' + dt + '</div>' +
+      '</div>' +
+      '<button class="neu-btn" style="font-size:11px;padding:7px 12px;flex-shrink:0;" onclick="event.stopPropagation();shareInventoryLink('+idx+')">🔗 Share</button>' +
+      '<span style="color:var(--gray-light);cursor:pointer;" onclick="openInventoryDetail('+idx+')">View →</span>' +
+    '</div>';
+  }).join('');
+}
+
+function shareInventoryLink(idx) {
+  var row = lastInventoryRows[idx];
+  if (!row) return;
+  var link = INVENTORY_VIEW_BASE + row.id;
+  var copied = false;
+  var temp = document.createElement('textarea');
+  temp.value = link; temp.style.position = 'fixed'; temp.style.opacity = '0';
+  document.body.appendChild(temp); temp.select();
+  try { document.execCommand('copy'); copied = true; } catch(e) {}
+  document.body.removeChild(temp);
+  alert((copied ? '✓ Link copied for ' : 'Link for ') + row.resident_name + ':\n' + link);
+}
+
+function openInventoryDetail(idx) {
+  var row = lastInventoryRows[idx];
+  if (!row) return;
+  document.getElementById('roundModal').classList.add('open');
+  document.getElementById('modalFooter').style.display = 'none';
+  document.getElementById('modalTitle').textContent = row.resident_name;
+  var dt = new Date(row.created_at);
+  document.getElementById('modalMeta').textContent =
+    (row.room_number || '') + ' · Admitted ' + row.admission_date + ' · Logged by ' + row.completed_by;
+
+  var body = document.getElementById('modalBody');
+  body.innerHTML = '<div class="modal-section"><div class="modal-section-title">Belongings (' + (row.items||[]).length + ')</div>';
+  (row.items||[]).forEach(function(it){
+    var qtyText = it.amount !== undefined && it.amount !== '' && it.amount !== null && it.key === 'cash'
+      ? '$' + it.amount : (it.quantity !== undefined ? 'Qty: ' + it.quantity : '');
+    body.innerHTML +=
+      '<div class="modal-issue-row">' +
+        '<div class="modal-issue-header"><span class="modal-issue-type" style="color:var(--black);">' +
+          it.label + (it.other_desc ? ' — ' + it.other_desc : '') + '</span>' +
+          '<span class="issue-badge" style="background:var(--accent-dim);color:#5B5A0E;">' + (it.condition||'') + '</span></div>' +
+        '<div class="modal-issue-desc">' + qtyText +
+          ' · Label: ' + (it.label_applied||'—') + ' · Photo: ' + (it.photo_taken||'—') +
+          (it.comments ? '<br>"' + it.comments + '"' : '') +
+        '</div>' +
+      '</div>';
+  });
+  body.innerHTML += '</div>';
+}
+
 /* ── Reports ── */
 var ROOM_CHECK_KEYS = [
   'resident_contacted','satisfaction','no_concerns','call_light','bed_low_locked','room_clutter',
@@ -2561,6 +2880,7 @@ async function generateReport() {
     // Use the round's own round_type (not just the location's type) to decide how
     // to score it — a resident room can have both nursing zone rounds (direct
     // columns) and cleaning tasks (JSON scores) against the same location.
+    var cleaningPurposeVal = null;
     if (r.round_type === 'room') {
       passCount = ROOM_CHECK_KEYS.filter(function(k){ return r[k]==='pass' || r[k]==='yes'; }).length;
       failCount = ROOM_CHECK_KEYS.filter(function(k){ return r[k]==='fail' || r[k]==='no'; }).length;
@@ -2569,11 +2889,16 @@ async function generateReport() {
       var keys = Object.keys(scores);
       passCount = keys.filter(function(k){ return scores[k]==='pass'; }).length;
       failCount = keys.filter(function(k){ return scores[k]==='fail'; }).length;
+      cleaningPurposeVal = scores.cleaning_purpose || null;
     }
 
     var typeLabel = REPORT_TYPE_LABELS[type] || type;
     if (type === 'room') {
-      typeLabel = r.round_type === 'room_cleaning' ? 'Resident Room (Cleaning)' : 'Resident Room (Zone Round)';
+      if (r.round_type === 'room_cleaning') {
+        typeLabel = 'Resident Room (Cleaning — ' + (cleaningPurposeVal === 'admission_prep' ? 'Admissions Prep' : 'Routine') + ')';
+      } else {
+        typeLabel = 'Resident Room (Zone Round)';
+      }
     }
 
     return {
