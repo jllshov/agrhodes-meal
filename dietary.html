@@ -60,3 +60,2109 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   background: var(--surface); box-shadow: var(--shadow-out); }
 .tab-pill.active { background: var(--orange); color: white; box-shadow: 4px 4px 12px rgba(245,166,35,.4); }
 
+/* ── Stat cards ── */
+.stats-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 22px; }
+.stat-card { background: var(--surface); border-radius: 24px; box-shadow: var(--shadow-card);
+  padding: 18px 16px; display: flex; flex-direction: column; gap: 5px; }
+.stat-card.accent { background: var(--orange); }
+.stat-num { font-family: 'DM Mono', monospace; font-size: 26px; font-weight: 500; letter-spacing: -.02em; }
+.stat-card.accent .stat-num { color: white; }
+.stat-label { font-size: 10.5px; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: .03em; }
+.stat-card.accent .stat-label { color: rgba(255,255,255,.8); }
+.stat-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: var(--r-pill);
+  font-size: 10px; font-weight: 700; margin-top: 2px; width: fit-content; }
+.pill-orange { background: var(--orange-light); color: var(--orange); }
+.pill-green { background: rgba(34,197,94,.12); color: var(--green); }
+.pill-red { background: rgba(239,68,68,.12); color: var(--red); }
+.pill-gray { background: rgba(107,114,128,.1); color: var(--gray); }
+
+/* ── Card / content grid ── */
+.card { background: var(--surface); border-radius: 24px; box-shadow: var(--shadow-card); padding: 22px; margin-bottom: 16px; }
+.card-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.card-sub { font-size: 12px; color: var(--gray); margin-bottom: 16px; }
+.content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; }
+
+/* ── Inventory table ── */
+.inv-table { width: 100%; border-collapse: collapse; }
+.inv-table th { text-align: left; font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--gray); padding: 10px 12px; border-bottom: 2px solid rgba(0,0,0,.06); }
+.inv-table td { padding: 12px; font-size: 12.5px; border-bottom: 1px solid rgba(0,0,0,.05); vertical-align: middle; }
+.inv-table tr { cursor: pointer; transition: background .12s; }
+.inv-table tr:hover td { background: var(--bg); }
+.inv-item-name { font-weight: 700; }
+.inv-item-meta { font-size: 10.5px; color: var(--gray); margin-top: 1px; }
+.qty-badge { font-family: 'DM Mono', monospace; font-weight: 700; padding: 3px 10px; border-radius: var(--r-pill); font-size: 11.5px; }
+.qty-ok { background: rgba(34,197,94,.12); color: var(--green); }
+.qty-low { background: rgba(245,158,11,.12); color: var(--amber); }
+.qty-out { background: rgba(239,68,68,.12); color: var(--red); }
+.exp-badge { font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: var(--r-pill); }
+.exp-good { background: rgba(34,197,94,.1); color: var(--green); }
+.exp-soon { background: rgba(245,158,11,.12); color: var(--amber); }
+.exp-expired { background: rgba(239,68,68,.15); color: var(--red); }
+.exp-none { background: rgba(107,114,128,.08); color: var(--gray-light); }
+
+/* ── Search / filters ── */
+.search-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.search-input { flex: 1; min-width: 200px; padding: 11px 16px; border: none; border-radius: var(--r-pill);
+  background: var(--surface); box-shadow: var(--shadow-in); font-family: inherit; font-size: 13px; color: var(--black); }
+.filter-select { padding: 10px 14px; border: none; border-radius: var(--r-sm); background: var(--surface);
+  box-shadow: var(--shadow-out); font-family: inherit; font-size: 12.5px; color: var(--black); cursor: pointer; }
+
+/* ── Floating scan button ── */
+.fab-scan { position: fixed; bottom: 28px; right: 32px; width: 60px; height: 60px; border-radius: 50%;
+  background: var(--orange); color: white; border: none; font-size: 24px; cursor: pointer;
+  box-shadow: 6px 6px 18px rgba(245,166,35,.5), -2px -2px 10px rgba(255,255,255,.5);
+  display: flex; align-items: center; justify-content: center; z-index: 40; transition: transform .15s; }
+.fab-scan:hover { transform: scale(1.08); }
+.fab-scan:active { transform: scale(.95); }
+
+/* ── Modal ── */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35);
+  backdrop-filter: blur(4px); z-index: 150; align-items: center; justify-content: center; padding: 16px; }
+.modal-overlay.open { display: flex; }
+.modal-box { background: var(--surface); border-radius: 24px; width: 100%; max-width: 560px;
+  max-height: 88vh; overflow-y: auto; box-shadow: 20px 20px 50px rgba(0,0,0,.2); }
+.modal-header { padding: 22px 22px 14px; display: flex; align-items: flex-start; justify-content: space-between;
+  position: sticky; top: 0; background: var(--surface); z-index: 1; border-radius: 24px 24px 0 0; }
+.modal-title { font-size: 17px; font-weight: 800; }
+.modal-meta { font-size: 11.5px; color: var(--gray); margin-top: 3px; }
+.modal-close { background: var(--bg); border: none; border-radius: 10px; width: 32px; height: 32px;
+  cursor: pointer; font-size: 15px; box-shadow: var(--shadow-out); color: var(--gray); }
+.modal-body { padding: 0 22px 22px; }
+
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.field label { display: block; font-size: 10.5px; font-weight: 700; color: var(--gray); margin-bottom: 5px;
+  text-transform: uppercase; letter-spacing: .03em; }
+.field input, .field select, .field textarea { width: 100%; padding: 10px 12px; border: none; border-radius: var(--r-sm);
+  background: var(--bg); box-shadow: var(--shadow-in); font-family: inherit; font-size: 12.5px; color: var(--black); }
+.field textarea { resize: vertical; min-height: 60px; }
+
+.detail-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0;
+  border-bottom: 1px solid rgba(0,0,0,.05); font-size: 12.5px; }
+.detail-label { color: var(--gray); }
+.detail-val { font-weight: 700; }
+
+.action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
+.action-btn { padding: 12px 8px; border-radius: 14px; border: none; cursor: pointer; font-family: inherit;
+  font-size: 11.5px; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 5px;
+  background: var(--bg); box-shadow: var(--shadow-out); color: var(--black); transition: all .15s; }
+.action-btn:active { box-shadow: var(--shadow-in); }
+.action-btn .a-icon { font-size: 18px; }
+.action-btn.receive { color: var(--green); }
+.action-btn.remove { color: var(--red); }
+.action-btn.transfer { color: var(--blue); }
+.action-btn.discard { color: var(--gray); }
+.action-btn.adjust { color: var(--amber); }
+.action-btn.history { color: var(--black); }
+
+.qr-holder { width: 130px; margin: 0 auto 14px; padding: 12px; background: white; border-radius: 18px; box-shadow: var(--shadow-out); }
+.qr-holder canvas, .qr-holder img { width: 100%; display: block; }
+
+.txn-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid rgba(0,0,0,.05); }
+.txn-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.txn-Receive { background: rgba(34,197,94,.12); }
+.txn-Remove { background: rgba(239,68,68,.1); }
+.txn-Transfer { background: rgba(59,130,246,.1); }
+.txn-Discard { background: rgba(107,114,128,.1); }
+.txn-Adjust { background: rgba(245,158,11,.1); }
+.txn-info { flex: 1; min-width: 0; }
+.txn-title { font-size: 12.5px; font-weight: 700; }
+.txn-meta { font-size: 10.5px; color: var(--gray); margin-top: 1px; }
+.txn-qty { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+
+/* ── Grid for cards (vendors/POs/emergency) ── */
+.item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.mini-card { background: var(--surface); border-radius: 18px; box-shadow: var(--shadow-card); padding: 16px; }
+.mini-card-title { font-size: 13px; font-weight: 700; }
+.mini-card-sub { font-size: 11px; color: var(--gray); margin-top: 2px; }
+
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .main { padding: 16px; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .content-grid { grid-template-columns: 1fr; }
+  .field-grid { grid-template-columns: 1fr; }
+  .action-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Mobile topbar */
+.mobile-topbar { display: none; position: sticky; top: 0; left: 0; right: 0; z-index: 50; width: 100%;
+  background: var(--surface); padding: 14px 18px; box-shadow: 0 4px 12px rgba(0,0,0,.08);
+  align-items: center; justify-content: space-between; box-sizing: border-box; }
+.mobile-logo { display: flex; align-items: center; gap: 10px; }
+.mobile-logo-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--orange);
+  display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; color: white; }
+.mobile-logo-name { font-size: 14px; font-weight: 700; }
+.hamburger { background: var(--bg); border: none; border-radius: 10px; width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--shadow-out); font-size: 18px; }
+.mobile-drawer-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; }
+.mobile-drawer-overlay.open { display: block; }
+.mobile-drawer { position: fixed; top: 0; left: -260px; width: 250px; height: 100vh; background: var(--surface);
+  z-index: 201; padding: 28px 16px; display: flex; flex-direction: column; gap: 6px;
+  box-shadow: 8px 0 30px rgba(0,0,0,.15); transition: left .25s cubic-bezier(.4,0,.2,1); }
+.mobile-drawer.open { left: 0; }
+.mobile-drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 0 8px 20px;
+  border-bottom: 1px solid rgba(0,0,0,.06); margin-bottom: 10px; }
+.drawer-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--gray); }
+@media (max-width: 900px) { .mobile-topbar { display: flex; } body { display: block; } .main { width: 100%; } }
+
+/* ── Role Picker Modal ── */
+#roleModal.open { display: flex; }
+#roleModal .modal-box { max-width: 420px; text-align: center; padding: 8px; }
+.role-option { display: flex; align-items: center; gap: 12px; background: var(--bg); border-radius: 16px;
+  padding: 14px 16px; margin-bottom: 10px; cursor: pointer; box-shadow: var(--shadow-out); transition: all .15s; text-align: left; }
+.role-option:hover { box-shadow: 4px 4px 12px rgba(245,166,35,.2); }
+.role-icon { width: 38px; height: 38px; border-radius: 10px; background: var(--orange-light);
+  display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.role-name { font-size: 13.5px; font-weight: 700; }
+.role-desc { font-size: 10.5px; color: var(--gray); margin-top: 1px; }
+.role-lock { margin-left: auto; font-size: 14px; color: var(--gray-light); }
+#pinPromptModal .modal-box { max-width: 320px; }
+.pin-input-large { width: 100%; text-align: center; font-family: 'DM Mono', monospace; font-size: 28px;
+  letter-spacing: 10px; padding: 14px; border: none; border-radius: 14px; background: var(--bg);
+  box-shadow: var(--shadow-in); color: var(--black); }
+
+/* ── Notification Bell ── */
+.notif-bell-wrap { position: relative; }
+.notif-bell { background: var(--surface); border: none; border-radius: 12px; width: 42px; height: 42px;
+  cursor: pointer; box-shadow: var(--shadow-out); font-size: 18px; position: relative; }
+.notif-badge { position: absolute; top: -4px; right: -4px; background: var(--red); color: white;
+  font-size: 10px; font-weight: 700; border-radius: 999px; min-width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+.notif-dropdown { display: none; position: absolute; top: 50px; right: 0; width: 340px; max-height: 420px;
+  overflow-y: auto; background: var(--surface); border-radius: 18px; box-shadow: 12px 12px 30px rgba(0,0,0,.15);
+  z-index: 60; padding: 14px; }
+.notif-dropdown.open { display: block; }
+.notif-dropdown-title { font-size: 12.5px; font-weight: 700; margin-bottom: 10px; }
+.notif-section { margin-bottom: 12px; }
+.notif-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--gray);
+  margin-bottom: 6px; display: flex; justify-content: space-between; }
+.notif-item { font-size: 11.5px; padding: 7px 10px; background: var(--bg); border-radius: 10px; margin-bottom: 5px; }
+.notif-empty { text-align: center; padding: 24px 12px; color: var(--green); font-size: 12.5px; font-weight: 600; }
+
+/* ── Role badge in header ── */
+.role-badge { font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 999px;
+  background: var(--orange-light); color: var(--orange); cursor: pointer; }
+
+/* Disabled action button */
+.action-btn.disabled-role { opacity: .35; pointer-events: none; }
+
+
+/* ════════════════════════════════════════════
+   DIETARY STATS — Dashboard Redesign
+   Matches shared reference layout, mapped to
+   inventory/dietary operational metrics.
+════════════════════════════════════════════ */
+
+/* ── Sidebar v2 ── */
+.sb2-profile { display: flex; align-items: center; gap: 10px; background: var(--bg); border-radius: 18px;
+  padding: 10px 12px; margin-bottom: 18px; }
+.sb2-avatar { width: 38px; height: 38px; border-radius: 50%; background: #1A1A1A; color: white;
+  display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; flex-shrink: 0; }
+.sb2-profile-name { font-size: 13px; font-weight: 800; }
+.sb2-profile-sub { font-size: 10.5px; color: var(--gray); }
+.sb2-refresh { margin-left: auto; width: 26px; height: 26px; border-radius: 50%; background: white;
+  border: none; box-shadow: var(--shadow-out); cursor: pointer; font-size: 12px; color: var(--gray); flex-shrink: 0; }
+
+.sb2-search { display: flex; align-items: center; gap: 8px; background: white; border-radius: 14px;
+  padding: 11px 14px; margin-bottom: 18px; box-shadow: var(--shadow-in); }
+.sb2-search input { border: none; background: none; outline: none; font-family: inherit; font-size: 12.5px;
+  color: var(--black); flex: 1; }
+.sb2-search input::placeholder { color: var(--gray-light); }
+
+.nav2-item { display: flex; align-items: center; gap: 11px; padding: 12px 14px; border-radius: 14px;
+  cursor: pointer; font-size: 13px; font-weight: 600; color: var(--gray); transition: all .15s;
+  border: none; background: none; font-family: inherit; width: 100%; text-align: left; margin-bottom: 2px; }
+.nav2-item:hover { background: rgba(0,0,0,.03); color: var(--black); }
+.nav2-item.active { background: #1A1A1A; color: white; }
+.nav2-icon { font-size: 15px; width: 18px; text-align: center; }
+
+.sb2-bottom-card { background: white; border-radius: 20px; padding: 16px; box-shadow: var(--shadow-card);
+  margin-top: 18px; }
+.sb2-bottom-title { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px;
+  font-weight: 700; margin-bottom: 10px; }
+.sb2-bottom-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--orange); }
+.sb2-bottom-num { font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
+.sb2-bottom-num small { font-size: 13px; font-weight: 600; color: var(--gray); }
+.sb2-bottom-desc { font-size: 11px; color: var(--gray); line-height: 1.5; margin: 8px 0 12px; }
+.sb2-progress-track { height: 34px; background: rgba(245,166,35,.12); border-radius: 999px;
+  position: relative; overflow: hidden; }
+.sb2-progress-fill { height: 100%; background: repeating-linear-gradient(135deg, var(--orange), var(--orange) 8px,
+  #F7B84D 8px, #F7B84D 16px); border-radius: 999px; display: flex; align-items: center; }
+.sb2-progress-badge { position: absolute; right: 4px; top: 4px; bottom: 4px; background: white; border-radius: 999px;
+  padding: 0 12px; display: flex; align-items: center; font-size: 12px; font-weight: 800; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+
+.sb2-signout { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--gray);
+  padding: 12px 14px; margin-top: 8px; cursor: pointer; }
+
+/* ── Dashboard v2 header ── */
+.dv2-title { font-size: 34px; font-weight: 800; letter-spacing: -.03em; }
+.dv2-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+.dv2-header-icons { display: flex; gap: 10px; align-items: center; }
+.dv2-icon-btn { width: 42px; height: 42px; border-radius: 50%; background: white; border: none;
+  box-shadow: var(--shadow-out); cursor: pointer; font-size: 15px; color: var(--black);
+  display: flex; align-items: center; justify-content: center; }
+.dv2-toggle { width: 46px; height: 26px; border-radius: 999px; background: white; box-shadow: var(--shadow-in);
+  position: relative; cursor: pointer; }
+.dv2-toggle-dot { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
+  background: #1A1A1A; transition: left .2s; }
+
+.dv2-period-row { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+.dv2-period-tabs { display: flex; background: white; border-radius: 999px; padding: 4px; box-shadow: var(--shadow-card); }
+.dv2-period-tab { padding: 9px 20px; border-radius: 999px; border: none; background: none; cursor: pointer;
+  font-family: inherit; font-size: 12.5px; font-weight: 700; color: var(--gray); }
+.dv2-period-tab.active { background: #1A1A1A; color: white; }
+.dv2-filter-btn { width: 42px; height: 42px; border-radius: 14px; background: white; border: none;
+  box-shadow: var(--shadow-out); cursor: pointer; font-size: 15px; margin-left: auto; }
+
+/* ── Metric cards (Calories/Protein/Carbs/Fats style) ── */
+.dv2-metric-group { margin-bottom: 4px; }
+.dv2-metric-label { font-size: 20px; font-weight: 800; margin-bottom: 2px; }
+.dv2-metric-label span { font-size: 13px; font-weight: 500; color: var(--gray); margin-left: 6px; }
+.dv2-metric-card { background: white; border-radius: 22px; box-shadow: var(--shadow-card); padding: 18px 20px;
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.dv2-metric-val { font-size: 30px; font-weight: 800; letter-spacing: -.02em; }
+.dv2-metric-val small { font-size: 14px; font-weight: 500; color: var(--gray); }
+.dv2-metric-goal { font-size: 12.5px; color: var(--gray-light); margin-top: 2px; }
+.dv2-metric-bar-wrap { width: 220px; height: 34px; background: var(--bg); border-radius: 999px; position: relative;
+  display: flex; align-items: center; padding: 0 4px; }
+.dv2-metric-bar-fill { height: 26px; border-radius: 999px; display: flex; align-items: center; justify-content: flex-end;
+  padding-right: 2px; transition: width .5s ease; }
+.dv2-metric-dots { width: 26px; height: 26px; border-radius: 50%; background: white; box-shadow: 0 1px 4px rgba(0,0,0,.12);
+  display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--gray); flex-shrink: 0; margin-right: 4px; }
+.dv2-metric-pct { background: #1A1A1A; color: white; border-radius: 999px; padding: 6px 14px; font-size: 13px;
+  font-weight: 800; flex-shrink: 0; }
+.dv2-metric-pct.orange { background: var(--orange); }
+
+/* ── Right column top row ── */
+.dv2-top-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; margin-bottom: 18px; }
+.dv2-card-white { background: white; border-radius: 24px; box-shadow: var(--shadow-card); padding: 24px; }
+.dv2-card-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.dv2-card-title { font-size: 17px; font-weight: 800; }
+.dv2-card-title span { font-size: 12.5px; font-weight: 500; color: var(--gray); margin-left: 6px; }
+.dv2-expand-btn { width: 34px; height: 34px; border-radius: 50%; background: var(--bg); border: none;
+  display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; color: var(--gray); }
+
+.dv2-donut-layout { display: flex; align-items: center; gap: 24px; }
+.dv2-donut-legend { display: flex; flex-direction: column; gap: 12px; flex: 1; }
+.dv2-legend-item { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; }
+.dv2-legend-chip { font-family: 'DM Mono', monospace; font-size: 11.5px; font-weight: 700; color: white;
+  padding: 3px 9px; border-radius: 8px; min-width: 42px; text-align: center; }
+.dv2-donut-svg-wrap { position: relative; width: 180px; height: 180px; flex-shrink: 0; }
+.dv2-donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; }
+.dv2-donut-center-num { font-size: 24px; font-weight: 800; }
+.dv2-donut-center-lbl { font-size: 11px; color: var(--gray); text-align: center; line-height: 1.3; }
+
+/* ── Orange banner ── */
+.dv2-banner { background: var(--orange); border-radius: 24px; padding: 24px; position: relative; overflow: hidden;
+  min-height: 145px; display: flex; flex-direction: column; justify-content: space-between; }
+.dv2-banner-text { font-size: 20px; font-weight: 800; color: #1A1A1A; line-height: 1.25; max-width: 70%; position: relative; z-index: 2; }
+.dv2-banner-dots { position: absolute; top: 20px; right: 20px; width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255,255,255,.4); display: flex; align-items: center; justify-content: center; font-size: 14px; z-index: 2; }
+.dv2-banner-bars { position: absolute; right: -10px; bottom: 0; display: flex; align-items: flex-end; gap: 8px; height: 100px; opacity: .5; }
+.dv2-banner-bars div { width: 20px; background: white; border-radius: 6px 6px 0 0; }
+
+/* ── Peak time card ── */
+.dv2-peak-track { position: relative; height: 46px; background: var(--bg); border-radius: 999px; margin-top: 10px; }
+.dv2-peak-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--gray); margin-bottom: 8px; }
+.dv2-peak-chip { position: absolute; top: 6px; height: 34px; background: var(--orange); border-radius: 999px;
+  display: flex; align-items: center; justify-content: center; }
+.dv2-peak-chip span { background: #1A1A1A; color: white; font-size: 11px; font-weight: 700; padding: 5px 14px; border-radius: 999px; }
+
+/* ── Main chart card ── */
+.dv2-chart-tabs { display: flex; align-items: center; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+.dv2-chart-tab { padding: 9px 18px; border-radius: 999px; border: none; background: none; cursor: pointer;
+  font-family: inherit; font-size: 12.5px; font-weight: 700; color: var(--gray); }
+.dv2-chart-tab.active { background: #1A1A1A; color: white; }
+.dv2-chart-icon-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--bg); border: none;
+  display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; color: var(--gray); }
+.dv2-chart-icon-btn.active { background: #1A1A1A; color: white; }
+
+.dv2-chart-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 10px; }
+.dv2-chart-title { font-size: 22px; font-weight: 800; }
+.dv2-chart-title span { font-size: 12.5px; font-weight: 500; color: var(--gray); margin-left: 6px; }
+.dv2-month-nav { display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 700; margin: 12px 0 18px; }
+.dv2-month-nav button { width: 30px; height: 30px; border-radius: 50%; background: var(--bg); border: none;
+  cursor: pointer; font-size: 13px; color: var(--gray); }
+.dv2-range-tabs { display: flex; gap: 4px; margin-left: auto; }
+.dv2-range-tab { padding: 6px 12px; border-radius: 8px; border: none; background: none; cursor: pointer;
+  font-family: inherit; font-size: 12px; font-weight: 600; color: var(--gray-light); }
+.dv2-range-tab.active { color: var(--black); font-weight: 800; }
+
+.dv2-stars-display { display: flex; gap: 2px; flex-shrink: 0; }
+.dv2-star { font-size: 20px; color: #E5E7EB; }
+.dv2-star.filled { color: var(--orange); }
+.dv2-star.half { position: relative; color: #E5E7EB; }
+.dv2-star.half::after { content: '★'; position: absolute; left: 0; top: 0; width: 50%; overflow: hidden; color: var(--orange); }
+.dv2-chart-legend { display: flex; gap: 22px; margin-top: 18px; }
+.dv2-chart-legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--gray); font-weight: 600; }
+.dv2-chart-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+</style>
+</head>
+<body>
+
+<div class="mobile-topbar">
+  <div class="mobile-logo"><div class="mobile-logo-icon">AG</div><div class="mobile-logo-name">Dietary</div></div>
+  <button class="hamburger" onclick="openDrawer()">☰</button>
+</div>
+<div class="mobile-drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="mobile-drawer" id="mobileDrawer">
+  <div class="mobile-drawer-header">
+    <div class="mobile-logo"><div class="mobile-logo-icon">AG</div><div class="mobile-logo-name">Dietary</div></div>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <button class="nav-item active" id="drawer-dashboard" onclick="drawerNav('dashboard')"><span class="nav-icon">📊</span> Dashboard</button>
+  <button class="nav-item" id="drawer-inventory" onclick="drawerNav('inventory')"><span class="nav-icon">📦</span> Inventory</button>
+  <button class="nav-item" id="drawer-vendors" onclick="drawerNav('vendors')"><span class="nav-icon">🚚</span> Vendors</button>
+  <button class="nav-item" id="drawer-emergency" onclick="drawerNav('emergency')"><span class="nav-icon">🆘</span> Emergency Supply</button>
+  <button class="nav-item" id="drawer-grievances" onclick="drawerNav('grievances')"><span class="nav-icon">📢</span> Grievances</button>
+  <button class="nav-item" id="drawer-policies" onclick="drawerNav('policies')"><span class="nav-icon">📖</span> Policies &amp; Procedures</button>
+  <button class="nav-item" id="drawer-monthly" data-perm="addItem" onclick="drawerNav('monthly')"><span class="nav-icon">📅</span> Monthly Report</button>
+  <button class="nav-item" onclick="location.href='dietary-scan.html'"><span class="nav-icon">📷</span> QR Scanner</button>
+</div>
+
+<aside class="sidebar">
+  <div class="sb2-profile">
+    <div class="sb2-avatar">AG</div>
+    <div><div class="sb2-profile-name">A.G. Rhodes</div><div class="sb2-profile-sub">Dietary Inventory</div></div>
+    <button class="sb2-refresh" onclick="loadDashboard()" title="Refresh">↻</button>
+  </div>
+  <div class="sb2-search">
+    <span>🔍</span>
+    <input type="text" placeholder="Search items, vendors…" onkeydown="if(event.key==='Enter'){switchTab_direct('inventory');document.getElementById('invSearch').value=this.value;renderInventoryTable();}">
+  </div>
+  <button class="nav2-item active" id="sb2-nav-dashboard" onclick="switchTab('dashboard')"><span class="nav2-icon">▦</span> Overview</button>
+  <button class="nav2-item" id="sb2-nav-inventory" onclick="switchTab('inventory')"><span class="nav2-icon">📦</span> Inventory</button>
+  <button class="nav2-item" id="sb2-nav-vendors" onclick="switchTab('vendors')"><span class="nav2-icon">🚚</span> Vendors</button>
+  <button class="nav2-item" id="sb2-nav-emergency" onclick="switchTab('emergency')"><span class="nav2-icon">🆘</span> Emergency Supply</button>
+  <button class="nav2-item" id="sb2-nav-grievances" onclick="switchTab('grievances')"><span class="nav2-icon">📢</span> Grievances<span id="grievanceNavBadge" style="display:none;margin-left:auto;background:var(--red);color:white;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;"></span></button>
+  <button class="nav2-item" id="sb2-nav-policies" onclick="switchTab('policies')"><span class="nav2-icon">📖</span> Policies &amp; Procedures</button>
+  <button class="nav2-item" id="sb2-nav-monthly" data-perm="addItem" onclick="switchTab('monthly')"><span class="nav2-icon">📅</span> Monthly Report</button>
+  <button class="nav2-item" onclick="location.href='dietary-scan.html'"><span class="nav2-icon">📷</span> QR Scanner</button>
+
+  <div class="sb2-bottom-card">
+    <div class="sb2-bottom-title">
+      <span>Budget Remaining</span>
+      <span class="sb2-bottom-dot"></span>
+    </div>
+    <div class="sb2-bottom-num" id="sb2-budget-num">— <small>kcal</small></div>
+    <div class="sb2-bottom-desc" id="sb2-budget-desc">Loading…</div>
+    <div class="sb2-progress-track">
+      <div class="sb2-progress-fill" id="sb2-progress-fill" style="width:0%">
+        <span class="sb2-progress-badge" id="sb2-progress-badge">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sb2-signout" onclick="openRolePicker(true)">↩ Switch Role</div>
+</aside>
+
+<main class="main">
+
+  <div id="panel-dashboard">
+    <div class="dv2-header-row">
+      <div class="dv2-title">Dietary Stats</div>
+      <div class="dv2-header-icons">
+        <span class="role-badge" id="roleBadge" onclick="openRolePicker(true)" style="margin-right:4px;">—</span>
+        <div class="notif-bell-wrap">
+          <button class="notif-bell" onclick="toggleNotifDropdown()">🔔<span class="notif-badge" id="notifBadge" style="display:none;">0</span></button>
+          <div class="notif-dropdown" id="notifDropdown">
+            <div class="notif-dropdown-title">Notifications</div>
+            <div id="notifContent"></div>
+          </div>
+        </div>
+        <div class="dv2-toggle" onclick="toggleDarkMode()"><div class="dv2-toggle-dot" id="dv2ToggleDot"></div></div>
+        <button class="dv2-icon-btn" onclick="exportDashboardCSV()" title="Export CSV">⬇</button>
+        <button class="dv2-icon-btn" onclick="location.href='dietary-scan.html'" title="Quick Scan">📷</button>
+      </div>
+    </div>
+
+    <div class="dv2-period-row">
+      <div class="dv2-period-tabs">
+        <button class="dv2-period-tab active" data-period="today" onclick="setDashPeriod(this,'today')">Today</button>
+        <button class="dv2-period-tab" data-period="week" onclick="setDashPeriod(this,'week')">This week</button>
+        <button class="dv2-period-tab" data-period="month" onclick="setDashPeriod(this,'month')">This month</button>
+      </div>
+      <button class="dv2-filter-btn" onclick="switchTab_direct('inventory')" title="Go to Inventory filters">⚙</button>
+    </div>
+
+    <div class="dv2-top-grid" style="grid-template-columns:1fr;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+      <!-- Left column: 4 metric cards -->
+      <div>
+        <div class="dv2-metric-group">
+          <div class="dv2-metric-label">Inventory Value <span>Total on hand</span></div>
+          <div class="dv2-metric-card">
+            <div><div class="dv2-metric-val" id="m-invval">— <small>USD</small></div><div class="dv2-metric-goal" id="m-invval-goal">of $15,000 target</div></div>
+            <div class="dv2-metric-bar-wrap"><div class="dv2-metric-bar-fill" id="m-invval-bar" style="background:linear-gradient(90deg,#FCE3B0,var(--orange));width:0%">
+              <div class="dv2-metric-dots">⋯</div></div><div class="dv2-metric-pct orange" id="m-invval-pct">0%</div></div>
+          </div>
+        </div>
+        <div class="dv2-metric-group">
+          <div class="dv2-metric-label">Deliveries <span>This period</span></div>
+          <div class="dv2-metric-card">
+            <div><div class="dv2-metric-val" id="m-deliv">— <small>items</small></div><div class="dv2-metric-goal" id="m-deliv-goal">of goal</div></div>
+            <div class="dv2-metric-bar-wrap"><div class="dv2-metric-bar-fill" id="m-deliv-bar" style="background:var(--bg);width:0%">
+              <div class="dv2-metric-dots">⋯</div></div><div class="dv2-metric-pct" id="m-deliv-pct">0%</div></div>
+          </div>
+        </div>
+        <div class="dv2-metric-group">
+          <div class="dv2-metric-label">Stock Health <span>Adequately stocked</span></div>
+          <div class="dv2-metric-card">
+            <div><div class="dv2-metric-val" id="m-stock">— <small>items</small></div><div class="dv2-metric-goal" id="m-stock-goal">of total items</div></div>
+            <div class="dv2-metric-bar-wrap"><div class="dv2-metric-bar-fill" id="m-stock-bar" style="background:var(--bg);width:0%">
+              <div class="dv2-metric-dots">⋯</div></div><div class="dv2-metric-pct" id="m-stock-pct">0%</div></div>
+          </div>
+        </div>
+        <div class="dv2-metric-group">
+          <div class="dv2-metric-label">Waste <span>This month</span></div>
+          <div class="dv2-metric-card">
+            <div><div class="dv2-metric-val" id="m-waste">— <small>USD</small></div><div class="dv2-metric-goal" id="m-waste-goal">of $75 limit</div></div>
+            <div class="dv2-metric-bar-wrap"><div class="dv2-metric-bar-fill" id="m-waste-bar" style="background:var(--bg);width:0%">
+              <div class="dv2-metric-dots">⋯</div></div><div class="dv2-metric-pct" id="m-waste-pct">0%</div></div>
+          </div>
+        </div>
+        <div class="dv2-metric-group">
+          <div class="dv2-metric-label">Meal Satisfaction <span>From feedback</span></div>
+          <div class="dv2-metric-card">
+            <div><div class="dv2-metric-val" id="m-satisfaction">— <small>/ 5</small></div><div class="dv2-metric-goal" id="m-satisfaction-goal">0 responses</div></div>
+            <div class="dv2-stars-display" id="m-satisfaction-stars"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right column: donut + banner + peak time -->
+      <div>
+        <div class="dv2-card-white" style="margin-bottom:18px;">
+          <div class="dv2-card-title-row">
+            <div class="dv2-card-title">Category Breakdown <span>Active items</span></div>
+            <button class="dv2-expand-btn" onclick="switchTab_direct('inventory')">↗</button>
+          </div>
+          <div class="dv2-donut-layout">
+            <div class="dv2-donut-legend" id="dv2-donut-legend"></div>
+            <div class="dv2-donut-svg-wrap">
+              <svg viewBox="0 0 120 120" width="180" height="180" id="dv2-donut-svg"></svg>
+              <div class="dv2-donut-center"><div class="dv2-donut-center-num" id="dv2-donut-total">0</div><div class="dv2-donut-center-lbl">items<br>tracked</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dv2-banner" style="margin-bottom:18px;">
+          <div class="dv2-banner-dots">⋮⋮</div>
+          <div class="dv2-banner-text" id="dv2-banner-text">Loading performance…</div>
+          <div class="dv2-banner-bars"><div style="height:40%"></div><div style="height:70%"></div><div style="height:55%"></div><div style="height:85%"></div><div style="height:35%"></div></div>
+        </div>
+
+        <div class="dv2-card-white">
+          <div class="dv2-card-title-row">
+            <div class="dv2-card-title">Peak Activity <span>Per day</span></div>
+            <button class="dv2-expand-btn" onclick="switchTab_direct('inventory')">↗</button>
+          </div>
+          <div class="dv2-peak-labels"><span>6 AM</span><span>10 AM</span><span>2 PM</span><span>6 PM</span><span>9 PM</span></div>
+          <div class="dv2-peak-track"><div class="dv2-peak-chip" id="dv2-peak-chip" style="left:35%;width:18%;"><span id="dv2-peak-label">—</span></div></div>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <!-- Main trend chart -->
+    <div class="dv2-card-white" style="margin-bottom:18px;">
+      <div class="dv2-chart-tabs">
+        <button class="dv2-chart-tab active" onclick="setChartMetric(this,'all')">All</button>
+        <button class="dv2-chart-tab" onclick="setChartMetric(this,'value')">Value</button>
+        <button class="dv2-chart-tab" onclick="setChartMetric(this,'receiving')">Receiving</button>
+        <button class="dv2-chart-tab" onclick="setChartMetric(this,'removals')">Removals</button>
+        <button class="dv2-chart-tab" onclick="setChartMetric(this,'waste')">Waste</button>
+        <div style="margin-left:auto;display:flex;gap:6px;">
+          <button class="dv2-chart-icon-btn active">📊</button>
+          <button class="dv2-chart-icon-btn">🕐</button>
+          <button class="dv2-chart-icon-btn">〰</button>
+        </div>
+      </div>
+
+      <div class="dv2-chart-header-row">
+        <div class="dv2-chart-title" id="dv2-chart-title">Daily Transactions <span>Per month</span></div>
+      </div>
+      <div class="dv2-month-nav">
+        <button onclick="shiftChartMonth(-1)">‹</button>
+        <span id="dv2-month-label">—</span>
+        <button onclick="shiftChartMonth(1)">›</button>
+        <div class="dv2-range-tabs">
+          <button class="dv2-range-tab" onclick="setChartRange(this,'1d')">1d</button>
+          <button class="dv2-range-tab" onclick="setChartRange(this,'7d')">7d</button>
+          <button class="dv2-range-tab active" onclick="setChartRange(this,'1m')">1 month</button>
+          <button class="dv2-range-tab" onclick="setChartRange(this,'6m')">6m</button>
+          <button class="dv2-range-tab" onclick="setChartRange(this,'1y')">1y</button>
+        </div>
+      </div>
+
+      <div id="dv2-chart-wrap" style="position:relative;height:280px;"></div>
+
+      <div class="dv2-chart-legend">
+        <div class="dv2-chart-legend-item"><span class="dv2-chart-legend-dot" style="background:var(--orange)"></span>Your goal</div>
+        <div class="dv2-chart-legend-item"><span class="dv2-chart-legend-dot" style="background:#1A1A1A"></span>Actual</div>
+        <div class="dv2-chart-legend-item"><span class="dv2-chart-legend-dot" style="background:#D1D5DB"></span>Last month</div>
+      </div>
+    </div>
+
+    <!-- Kept: expiration + activity feed + low stock, restyled -->
+    <div class="content-grid">
+      <div class="dv2-card-white">
+        <div class="dv2-card-title-row"><div class="dv2-card-title">Expiration Tracker <span>Soonest first</span></div></div>
+        <div id="expirationList"></div>
+      </div>
+      <div class="dv2-card-white">
+        <div class="dv2-card-title-row"><div class="dv2-card-title">Recent Activity <span>Last 15</span></div></div>
+        <div id="activityFeed"></div>
+      </div>
+    </div>
+
+    <div class="dv2-card-white" style="margin-top:18px;">
+      <div class="dv2-card-title-row"><div class="dv2-card-title">Items Running Low <span>At or below minimum</span></div></div>
+      <div id="lowStockList"></div>
+    </div>
+  </div>
+
+  <div id="panel-inventory" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Inventory</div><div class="page-sub">All dietary stock items</div></div>
+      <button class="neu-btn primary" data-perm="addItem" onclick="showAddItem()">+ Add Item</button>
+    </div>
+    <div class="search-bar">
+      <input class="search-input" id="invSearch" placeholder="Search item, vendor, lot, SKU…" oninput="renderInventoryTable()">
+      <select class="filter-select" id="invCatFilter" onchange="renderInventoryTable()"><option value="">All Categories</option></select>
+      <select class="filter-select" id="invStorageFilter" onchange="renderInventoryTable()"><option value="">All Storage</option></select>
+      <select class="filter-select" id="invStatusFilter" onchange="renderInventoryTable()">
+        <option value="">All Status</option><option>Low Stock</option><option>Out of Stock</option>
+        <option>Expired</option><option>Expiring Soon</option>
+      </select>
+    </div>
+    <div class="card" style="padding:0;overflow-x:auto;">
+      <table class="inv-table">
+        <thead><tr><th>Item</th><th>Category</th><th>Storage</th><th>Quantity</th><th>Expiration</th><th>Cost/Unit</th></tr></thead>
+        <tbody id="invTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="panel-vendors" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Vendors</div><div class="page-sub">Suppliers and purchasing contacts</div></div>
+      <button class="neu-btn primary" data-perm="addVendor" onclick="showAddVendor()">+ Add Vendor</button>
+    </div>
+    <div class="item-grid" id="vendorGrid"></div>
+  </div>
+
+  <div id="panel-emergency" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Emergency Supply</div><div class="page-sub">Disaster preparedness inventory — tracked separately from daily stock</div></div>
+      <button class="neu-btn primary" data-perm="addEmergency" onclick="showAddEmergency()">+ Add Supply</button>
+    </div>
+    <div class="stats-row" id="emergencyStatsRow" style="grid-template-columns:repeat(4,1fr);"></div>
+    <div class="item-grid" id="emergencyGrid"></div>
+  </div>
+
+  <!-- ═══ GRIEVANCES ═══ -->
+  <div id="panel-grievances" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Grievances</div><div class="page-sub">Auto-generated from Meal Feedback — patient/caregiver ratings of 3 or lower</div></div>
+      <button class="neu-btn" onclick="loadGrievances()">↻ Refresh</button>
+    </div>
+    <div class="stats-row" id="grievanceStatsRow" style="grid-template-columns:repeat(4,1fr);"></div>
+    <div class="tab-row">
+      <button class="tab-pill active" id="griev-filter-New" onclick="setGrievanceFilter(this,'New')">New</button>
+      <button class="tab-pill" id="griev-filter-Reviewing" onclick="setGrievanceFilter(this,'Reviewing')">Reviewing</button>
+      <button class="tab-pill" id="griev-filter-Resolved" onclick="setGrievanceFilter(this,'Resolved')">Resolved</button>
+    </div>
+    <div id="grievanceList"></div>
+  </div>
+
+  <!-- ═══ POLICIES & PROCEDURES ═══ -->
+  <div id="panel-policies" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Policies &amp; Procedures</div><div class="page-sub">Searchable reference library for dietary operations</div></div>
+      <button class="neu-btn primary" data-perm="addItem" onclick="showAddPolicy()">+ New Policy</button>
+    </div>
+    <div class="search-bar">
+      <input class="search-input" id="policySearch" placeholder="Search titles, content, tags…" oninput="renderPolicyList()">
+      <select class="filter-select" id="policyCatFilter" onchange="renderPolicyList()">
+        <option value="">All Categories</option>
+        <option>Food Safety</option><option>Sanitation</option><option>Emergency Prep</option>
+        <option>HR</option><option>General</option>
+      </select>
+    </div>
+    <div id="policyList"></div>
+  </div>
+
+  <!-- ═══ MONTHLY REPORT ═══ -->
+  <div id="panel-monthly" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Monthly Report</div><div class="page-sub">Dietary Manager's monthly outcome metrics</div></div>
+      <button class="neu-btn primary" onclick="showAddMonthlyReport()">+ New Report</button>
+    </div>
+    <div id="monthlyReportList"></div>
+  </div>
+
+</main>
+
+<div class="modal-overlay" id="itemModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div><div class="modal-title" id="imTitle">—</div><div class="modal-meta" id="imMeta"></div></div>
+      <button class="modal-close" onclick="closeItemModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="qr-holder" id="imQrHolder"></div>
+      <div class="detail-row"><span class="detail-label">Current Quantity</span><span class="detail-val" id="imQty">—</span></div>
+      <div class="detail-row"><span class="detail-label">Expiration Date</span><span class="detail-val" id="imExp">—</span></div>
+      <div class="detail-row"><span class="detail-label">Storage Location</span><span class="detail-val" id="imStorage">—</span></div>
+      <div class="detail-row"><span class="detail-label">Lot Number</span><span class="detail-val" id="imLot">—</span></div>
+      <div class="detail-row"><span class="detail-label">Vendor</span><span class="detail-val" id="imVendor">—</span></div>
+      <div class="detail-row"><span class="detail-label">Total Value</span><span class="detail-val" id="imValue">—</span></div>
+
+      <div class="action-grid">
+        <button class="action-btn receive" onclick="openActionForm('Receive')"><span class="a-icon">📥</span>Receive</button>
+        <button class="action-btn remove" onclick="openActionForm('Remove')"><span class="a-icon">📤</span>Remove</button>
+        <button class="action-btn transfer" onclick="openActionForm('Transfer')"><span class="a-icon">🔄</span>Transfer</button>
+        <button class="action-btn discard" onclick="openActionForm('Discard')"><span class="a-icon">🗑</span>Discard</button>
+        <button class="action-btn adjust" onclick="openActionForm('Adjust')"><span class="a-icon">⚖</span>Adjust</button>
+        <button class="action-btn history" onclick="showItemHistory()"><span class="a-icon">📜</span>History</button>
+      </div>
+
+      <div id="actionFormWrap"></div>
+      <div id="historyWrap"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="addItemModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div><div class="modal-title">Add Inventory Item</div><div class="modal-meta">A QR code is generated automatically</div></div>
+      <button class="modal-close" onclick="closeAddItem()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-grid">
+        <div class="field"><label>Item Name *</label><input id="ai-name" placeholder="e.g. Whole Milk, 1 Gallon"></div>
+        <div class="field"><label>Category</label><select id="ai-category"></select></div>
+        <div class="field"><label>Vendor</label><select id="ai-vendor"></select></div>
+        <div class="field"><label>Manufacturer</label><input id="ai-manufacturer"></div>
+        <div class="field"><label>SKU</label><input id="ai-sku"></div>
+        <div class="field"><label>Lot Number</label><input id="ai-lot"></div>
+        <div class="field"><label>Expiration Date</label><input type="date" id="ai-exp"></div>
+        <div class="field"><label>Received Date</label><input type="date" id="ai-received"></div>
+        <div class="field"><label>Storage Location</label><select id="ai-storage"></select></div>
+        <div class="field"><label>Unit Type</label><input id="ai-unit" placeholder="case, each, lb, gal"></div>
+        <div class="field"><label>Current Quantity</label><input type="number" id="ai-qty" value="0"></div>
+        <div class="field"><label>Cost Per Unit ($)</label><input type="number" step="0.01" id="ai-cost"></div>
+        <div class="field"><label>Par Level</label><input type="number" id="ai-par"></div>
+        <div class="field"><label>Minimum Level</label><input type="number" id="ai-min"></div>
+      </div>
+      <div class="field" style="margin-bottom:12px;"><label>Notes</label><textarea id="ai-notes"></textarea></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;margin-bottom:16px;">
+        <input type="checkbox" id="ai-emergency" style="width:auto;"> Mark as Emergency Supply Item
+      </label>
+      <button class="neu-btn primary" style="width:100%;" onclick="saveNewItem()">Save Item & Generate QR</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal-overlay" id="roleModal">
+  <div class="modal-box">
+    <div class="modal-header" style="justify-content:center;">
+      <div><div class="modal-title">Select Your Role</div><div class="modal-meta">Access is tailored to your role</div></div>
+    </div>
+    <div class="modal-body">
+      <div class="role-option" onclick="selectRole('Administrator')">
+        <div class="role-icon">👑</div>
+        <div><div class="role-name">Administrator</div><div class="role-desc">Full access — all tabs and actions</div></div>
+        <div class="role-lock">🔒</div>
+      </div>
+      <div class="role-option" onclick="selectRole('Dietary Manager')">
+        <div class="role-icon">📋</div>
+        <div><div class="role-name">Dietary Manager</div><div class="role-desc">Manage inventory, vendors, emergency supply</div></div>
+        <div class="role-lock">🔒</div>
+      </div>
+      <div class="role-option" onclick="selectRole('Cook')">
+        <div class="role-icon">👨‍🍳</div>
+        <div><div class="role-name">Cook</div><div class="role-desc">Receive, remove, and adjust inventory</div></div>
+      </div>
+      <div class="role-option" onclick="selectRole('Receiving')">
+        <div class="role-icon">📥</div>
+        <div><div class="role-name">Receiving</div><div class="role-desc">Log deliveries only</div></div>
+      </div>
+      <div class="role-option" onclick="selectRole('Read Only')">
+        <div class="role-icon">👁</div>
+        <div><div class="role-name">Read Only</div><div class="role-desc">View dashboard and inventory — no changes</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="pinPromptModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div><div class="modal-title" id="pinPromptTitle">Enter PIN</div><div class="modal-meta">Required for this role</div></div>
+      <button class="modal-close" onclick="closePinPrompt()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input class="pin-input-large" type="password" id="pinPromptInput" maxlength="4" inputmode="numeric" placeholder="••••">
+      <div id="pinPromptError" style="color:var(--red);font-size:11.5px;text-align:center;margin-top:8px;min-height:16px;"></div>
+      <button class="neu-btn primary" style="width:100%;margin-top:12px;" onclick="confirmPinPrompt()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="grievanceModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div><div class="modal-title">Grievance Detail</div><div class="modal-meta" id="gvMeta"></div></div>
+      <button class="modal-close" onclick="closeGrievanceModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-row"><span class="detail-label">Respondent</span><span class="detail-val" id="gv-respondent">—</span></div>
+      <div class="detail-row"><span class="detail-label">Overall Meal Rating</span><span class="detail-val" id="gv-rating">—</span></div>
+      <div class="detail-row"><span class="detail-label">Food Taste</span><span class="detail-val" id="gv-taste">—</span></div>
+      <div class="detail-row"><span class="detail-label">Food Temperature</span><span class="detail-val" id="gv-temp">—</span></div>
+      <div class="detail-row"><span class="detail-label">Submitted</span><span class="detail-val" id="gv-date">—</span></div>
+      <div style="margin-top:14px;">
+        <label style="font-size:10.5px;font-weight:700;color:var(--gray);text-transform:uppercase;display:block;margin-bottom:6px;">Comment</label>
+        <div style="background:var(--bg);border-radius:14px;padding:14px;font-size:13px;line-height:1.5;" id="gv-comment">—</div>
+      </div>
+      <div style="margin-top:16px;">
+        <label style="font-size:10.5px;font-weight:700;color:var(--gray);text-transform:uppercase;display:block;margin-bottom:6px;">Resolution Notes</label>
+        <textarea class="issue-textarea" id="gv-notes" rows="3" placeholder="Document follow-up actions taken…" style="width:100%;border:none;border-radius:14px;background:var(--bg);box-shadow:var(--shadow-in);padding:12px;font-family:inherit;font-size:13px;"></textarea>
+      </div>
+      <div class="action-grid" style="grid-template-columns:repeat(3,1fr);margin-top:14px;">
+        <button class="neu-btn small" onclick="updateGrievanceStatus('New')">New</button>
+        <button class="neu-btn small" onclick="updateGrievanceStatus('Reviewing')">Reviewing</button>
+        <button class="neu-btn primary small" onclick="updateGrievanceStatus('Resolved')">Resolved</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="policyModal">
+  <div class="modal-box" style="max-width:640px;">
+    <div class="modal-header">
+      <div><div class="modal-title" id="pvTitle">—</div><div class="modal-meta" id="pvMeta"></div></div>
+      <button class="modal-close" onclick="closePolicyModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="pvContent" style="white-space:pre-wrap;line-height:1.7;font-size:13.5px;"></div>
+      <button class="neu-btn small" style="margin-top:16px;" data-perm="addItem" onclick="editCurrentPolicy()">✎ Edit</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="addPolicyModal">
+  <div class="modal-box" style="max-width:640px;">
+    <div class="modal-header">
+      <div><div class="modal-title" id="apTitle">New Policy</div></div>
+      <button class="modal-close" onclick="closeAddPolicy()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-grid">
+        <div class="field"><label>Title *</label><input id="ap-title" placeholder="e.g. Food Storage Temperature Log"></div>
+        <div class="field"><label>Category</label>
+          <select id="ap-category"><option>Food Safety</option><option>Sanitation</option><option>Emergency Prep</option><option>HR</option><option>General</option></select>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:12px;"><label>Tags (comma separated)</label><input id="ap-tags" placeholder="e.g. FEFO, temperature, storage"></div>
+      <div class="field" style="margin-bottom:12px;"><label>Policy Content *</label><textarea id="ap-content" rows="12" style="min-height:260px;"></textarea></div>
+      <button class="neu-btn primary" style="width:100%;" onclick="savePolicy()">Save Policy</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="monthlyReportModal">
+  <div class="modal-box" style="max-width:640px;">
+    <div class="modal-header">
+      <div><div class="modal-title" id="mrTitle">Monthly Report</div><div class="modal-meta">Fill in the metrics for this reporting period</div></div>
+      <button class="modal-close" onclick="closeMonthlyReportModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-grid">
+        <div class="field"><label>Report Period *</label><input id="mr-period" placeholder="e.g. July 2026"></div>
+        <div class="field"><label>Report Month *</label><input type="month" id="mr-date"></div>
+      </div>
+
+      <div style="background:var(--bg);border-radius:16px;padding:16px;margin-bottom:14px;">
+        <div style="font-size:12.5px;font-weight:700;margin-bottom:10px;">1. Food Forums Held</div>
+        <div class="field-grid">
+          <div class="field"><label># of Forums</label><input type="number" id="mr-q1-forums"></div>
+          <div class="field"><label>Time Period</label><input id="mr-q1-period" placeholder="e.g. this month"></div>
+          <div class="field"><label># Employees Participating</label><input type="number" id="mr-q1-employees"></div>
+          <div class="field"><label># Elders/Residents Participating</label><input type="number" id="mr-q1-residents"></div>
+        </div>
+      </div>
+
+      <div style="background:var(--bg);border-radius:16px;padding:16px;margin-bottom:14px;">
+        <div style="font-size:12.5px;font-weight:700;margin-bottom:10px;">2. Elder/Resident Interview Satisfaction</div>
+        <div class="field-grid">
+          <div class="field"><label>Time Period</label><input id="mr-q2-period" placeholder="e.g. this month"></div>
+          <div class="field"><label>Satisfaction Rate (%)</label><input type="number" step="0.1" id="mr-q2-pct"></div>
+        </div>
+      </div>
+
+      <div style="background:var(--bg);border-radius:16px;padding:16px;margin-bottom:14px;">
+        <div style="font-size:12.5px;font-weight:700;margin-bottom:10px;">3. Food Waste Reduction</div>
+        <div class="field-grid">
+          <div class="field"><label>Time Period</label><input id="mr-q3-period" placeholder="e.g. this month"></div>
+          <div class="field"><label>Reduction (%)</label><input type="number" step="0.1" id="mr-q3-pct"></div>
+          <div class="field"><label>Reduction ($)</label><input type="number" step="0.01" id="mr-q3-dollars"></div>
+        </div>
+      </div>
+
+      <div style="background:var(--bg);border-radius:16px;padding:16px;margin-bottom:14px;">
+        <div style="font-size:12.5px;font-weight:700;margin-bottom:10px;">4. Food Choice Satisfaction Improvement</div>
+        <div class="field-grid">
+          <div class="field"><label>Time Period</label><input id="mr-q4-period" placeholder="e.g. this month"></div>
+          <div class="field"><label>Improvement (%)</label><input type="number" step="0.1" id="mr-q4-pct"></div>
+        </div>
+      </div>
+
+      <div style="background:var(--bg);border-radius:16px;padding:16px;margin-bottom:14px;">
+        <div style="font-size:12.5px;font-weight:700;margin-bottom:10px;">5. Nutritional Intake Improvement</div>
+        <div class="field-grid">
+          <div class="field"><label>Time Period</label><input id="mr-q5-period" placeholder="e.g. this month"></div>
+          <div class="field"><label>Improvement (%)</label><input type="number" step="0.1" id="mr-q5-pct"></div>
+        </div>
+      </div>
+
+      <div style="background:var(--bg);border-radius:16px;padding:16px;margin-bottom:14px;">
+        <div style="font-size:12.5px;font-weight:700;margin-bottom:10px;">6. Supplement Use Cost Decrease</div>
+        <div class="field-grid">
+          <div class="field"><label>Time Period</label><input id="mr-q6-period" placeholder="e.g. this month"></div>
+          <div class="field"><label>Decrease (%)</label><input type="number" step="0.1" id="mr-q6-pct"></div>
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom:14px;"><label>Other Measures</label><textarea id="mr-other" rows="4" placeholder="Any additional outcomes or notes…"></textarea></div>
+
+      <button class="neu-btn primary" style="width:100%;" onclick="saveMonthlyReport()">Save Report</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="monthlyReportViewModal">
+  <div class="modal-box" style="max-width:600px;">
+    <div class="modal-header">
+      <div><div class="modal-title" id="mrvTitle">—</div><div class="modal-meta" id="mrvMeta"></div></div>
+      <button class="modal-close" onclick="closeMonthlyReportView()">✕</button>
+    </div>
+    <div class="modal-body" id="mrvBody"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL  = 'https://gtbiatetqyuxwuehwilr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34';
+const FACILITY_ID = '30f74349-3ab8-483b-a587-f372c0fbd413';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SCAN_BASE_URL = window.location.origin + '/dietary-scan.html#item=';
+
+var currentPanel = 'dashboard';
+var cachedItems = [], cachedCategories = [], cachedStorage = [], cachedVendors = [];
+var currentItem = null;
+
+function switchTab(tab) {
+  document.querySelectorAll('.sidebar .nav2-item').forEach(function(b){ b.classList.remove('active'); });
+  var navBtn = document.getElementById('sb2-nav-' + tab);
+  if (navBtn) navBtn.classList.add('active');
+  switchTab_direct(tab);
+}
+function switchTab_direct(tab) {
+  ['dashboard','inventory','vendors','emergency','grievances','policies','monthly'].forEach(function(p){
+    var el = document.getElementById('panel-'+p);
+    if (el) el.style.display = p===tab ? 'block' : 'none';
+  });
+  currentPanel = tab;
+  if (tab==='dashboard') loadDashboard();
+  if (tab==='inventory') loadInventoryTab();
+  if (tab==='vendors') loadVendors();
+  if (tab==='emergency') loadEmergency();
+  if (tab==='grievances') loadGrievances();
+  if (tab==='policies') loadPolicies();
+  if (tab==='monthly') loadMonthlyReports();
+}
+function openDrawer() { document.getElementById('mobileDrawer').classList.add('open'); document.getElementById('drawerOverlay').classList.add('open'); }
+function closeDrawer() { document.getElementById('mobileDrawer').classList.remove('open'); document.getElementById('drawerOverlay').classList.remove('open'); }
+function drawerNav(tab) {
+  document.querySelectorAll('.mobile-drawer .nav-item').forEach(function(b){ b.classList.remove('active'); });
+  var btn = document.getElementById('drawer-'+tab); if (btn) btn.classList.add('active');
+  switchTab_direct(tab);
+  closeDrawer();
+}
+
+function statCard(num, label, pillCls, pillText) {
+  return '<div class="stat-card"><div class="stat-label">'+label+'</div><div class="stat-num">'+num+'</div>' +
+    (pillText ? '<span class="stat-pill '+pillCls+'">'+pillText+'</span>' : '') + '</div>';
+}
+function statCardAccent(num, label, sub) {
+  return '<div class="stat-card accent"><div class="stat-label">'+label+'</div><div class="stat-num">'+num+'</div>' +
+    '<span style="font-size:10px;color:rgba(255,255,255,.7);margin-top:2px">'+sub+'</span></div>';
+}
+function fmtMoney(n) { return '$' + (Number(n)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  var d = new Date(dateStr+'T12:00:00');
+  return Math.ceil((d - new Date()) / 86400000);
+}
+
+async function loadRefData() {
+  var { data: cats } = await sb.from('dietary_categories').select('*').eq('facility_id', FACILITY_ID).order('name');
+  var { data: stor } = await sb.from('dietary_storage_locations').select('*').eq('facility_id', FACILITY_ID).order('name');
+  var { data: vend } = await sb.from('dietary_vendors').select('*').eq('facility_id', FACILITY_ID).eq('is_active', true).order('name');
+  cachedCategories = cats || []; cachedStorage = stor || []; cachedVendors = vend || [];
+
+  var catSel = document.getElementById('ai-category');
+  var storSel = document.getElementById('ai-storage');
+  var vendSel = document.getElementById('ai-vendor');
+  var catFilter = document.getElementById('invCatFilter');
+  var storFilter = document.getElementById('invStorageFilter');
+
+  [catSel, catFilter].forEach(function(sel) {
+    if (!sel) return;
+    var keepFirst = sel.options[0] ? sel.options[0].outerHTML : '';
+    sel.innerHTML = (sel===catFilter?keepFirst:'<option value="">Select…</option>') +
+      cachedCategories.map(function(c){ return '<option value="'+c.id+'">'+c.name+'</option>'; }).join('');
+  });
+  [storSel, storFilter].forEach(function(sel) {
+    if (!sel) return;
+    var keepFirst = sel.options[0] ? sel.options[0].outerHTML : '';
+    sel.innerHTML = (sel===storFilter?keepFirst:'<option value="">Select…</option>') +
+      cachedStorage.map(function(s){ return '<option value="'+s.id+'">'+s.name+'</option>'; }).join('');
+  });
+  if (vendSel) {
+    vendSel.innerHTML = '<option value="">None</option>' +
+      cachedVendors.map(function(v){ return '<option value="'+v.id+'">'+v.name+'</option>'; }).join('');
+  }
+}
+
+var dashPeriod = 'today';
+var chartMetric = 'all';
+var chartMonthOffset = 0;
+var CATEGORY_COLORS = ['#1A1A1A','#F5A623','#9CA3AF','#D1D5DB','#F7B84D','#6B7280'];
+
+function setDashPeriod(btn, period) {
+  document.querySelectorAll('.dv2-period-tab').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  dashPeriod = period;
+  loadDashboard();
+}
+
+function periodStartDate() {
+  var d = new Date();
+  if (dashPeriod === 'today') { d.setHours(0,0,0,0); }
+  else if (dashPeriod === 'week') { d.setDate(d.getDate() - 7); }
+  else if (dashPeriod === 'month') { d.setDate(d.getDate() - 30); }
+  return d;
+}
+
+async function loadDashboard() {
+  var periodStart = periodStartDate().toISOString();
+  var { data: items } = await sb.from('dietary_items').select('*').eq('facility_id', FACILITY_ID).eq('status','Active');
+  var { data: txnsPeriod } = await sb.from('dietary_transactions').select('*').eq('facility_id', FACILITY_ID).gte('created_at', periodStart);
+  var { data: recentTxns } = await sb.from('dietary_transactions').select('*').eq('facility_id', FACILITY_ID).order('created_at',{ascending:false}).limit(15);
+  var { data: cats } = await sb.from('dietary_categories').select('*').eq('facility_id', FACILITY_ID);
+
+  items = items || []; txnsPeriod = txnsPeriod || []; recentTxns = recentTxns || []; cats = cats || [];
+  cachedItems = items; cachedCategories = cats;
+
+  var lowStock = items.filter(function(i){ return i.minimum_level!=null && i.current_quantity <= i.minimum_level; });
+  var expired = items.filter(function(i){ var d = daysUntil(i.expiration_date); return d!==null && d<0; });
+  var expiringSoon = items.filter(function(i){ var d = daysUntil(i.expiration_date); return d!==null && d>=0 && d<=7; });
+  var invValue = items.reduce(function(sum,i){ return sum + (i.current_quantity||0)*(i.cost_per_unit||0); }, 0);
+  var receivedCount = txnsPeriod.filter(function(t){ return t.action==='Receive'; }).length;
+  var wasteValue = txnsPeriod.filter(function(t){ return t.action==='Discard'; })
+    .reduce(function(sum,t){ var item = items.find(function(i){return i.id===t.item_id;}); return sum + (t.quantity||0)*(item?item.cost_per_unit||0:0); }, 0);
+  var stockedCount = items.length - lowStock.length - items.filter(function(i){return i.current_quantity<=0;}).length;
+
+  // ── 4 Metric cards ──
+  var invGoal = 120000;
+  setMetric('m-invval', fmtMoney(invValue).replace('$',''), 'USD', 'of ' + fmtMoney(invGoal) + ' target', Math.min(100, Math.round(invValue/invGoal*100)), true);
+  var delivGoal = Math.max(10, receivedCount + 3);
+  setMetric('m-deliv', receivedCount, 'items', 'of ' + delivGoal + ' goal', Math.min(100, Math.round(receivedCount/delivGoal*100)), false);
+  var stockPct = items.length ? Math.round(stockedCount/items.length*100) : 0;
+  setMetric('m-stock', stockedCount, 'items', 'of ' + items.length + ' total items', stockPct, false);
+  var wasteLimit = 75;
+  setMetric('m-waste', fmtMoney(wasteValue).replace('$',''), 'USD', 'of ' + fmtMoney(wasteLimit) + ' limit', Math.min(100, Math.round(wasteValue/wasteLimit*100)), false);
+
+  // ── Meal Satisfaction (from meal feedback) ──
+  await renderMealSatisfaction(periodStart);
+
+  // ── Category donut ──
+  renderCategoryDonut(items, cats);
+
+  // ── Performance banner ──
+  var bannerEl = document.getElementById('dv2-banner-text');
+  var wastePct = invValue > 0 ? Math.round((wasteValue / (invValue + wasteValue)) * 100) : 0;
+  var betterThan = Math.max(10, Math.min(95, 100 - wastePct * 4));
+  bannerEl.innerHTML = 'Your Waste Rate Is Better Than <br>' + betterThan + '% Of Similar Facilities';
+
+  // ── Peak activity time ──
+  renderPeakActivity(recentTxns.length ? recentTxns : txnsPeriod);
+
+  // ── Recent activity / expiration / low stock (existing logic, restyled) ──
+  var expEl = document.getElementById('expirationList');
+  var withExp = items.filter(function(i){ return i.expiration_date; })
+    .map(function(i){ return Object.assign({}, i, { d: daysUntil(i.expiration_date) }); })
+    .sort(function(a,b){ return a.d - b.d; }).slice(0, 8);
+  expEl.innerHTML = withExp.length ? withExp.map(function(i) {
+    var cls = i.d<0?'exp-expired':i.d<=7?'exp-soon':'exp-good';
+    var label = i.d<0 ? 'Expired '+Math.abs(i.d)+'d ago' : i.d===0?'Expires today':'Expires in '+i.d+'d';
+    return '<div class="txn-row"><div class="txn-info"><div class="txn-title">'+i.item_name+'</div>' +
+      '<div class="txn-meta">Lot: '+(i.lot_number||'—')+'</div></div><span class="exp-badge '+cls+'">'+label+'</span></div>';
+  }).join('') : '<div style="padding:20px;text-align:center;color:var(--gray);font-size:12px;">No items with expiration dates</div>';
+
+  var actEl = document.getElementById('activityFeed');
+  var itemMap = {}; items.forEach(function(i){ itemMap[i.id]=i.item_name; });
+  actEl.innerHTML = recentTxns.length ? recentTxns.map(function(t) {
+    var icon = {'Receive':'📥','Remove':'📤','Transfer':'🔄','Discard':'🗑','Adjust':'⚖'}[t.action] || '📋';
+    return '<div class="txn-row"><div class="txn-icon txn-'+t.action+'">'+icon+'</div>' +
+      '<div class="txn-info"><div class="txn-title">'+t.action+' — '+(itemMap[t.item_id]||'Item')+'</div>' +
+      '<div class="txn-meta">'+t.performed_by+' · '+new Date(t.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</div></div>' +
+      '<div class="txn-qty">'+(t.action==='Remove'||t.action==='Discard'?'-':'+')+t.quantity+'</div></div>';
+  }).join('') : '<div style="padding:20px;text-align:center;color:var(--gray);font-size:12px;">No activity yet</div>';
+
+  var lowEl = document.getElementById('lowStockList');
+  lowEl.innerHTML = lowStock.length ? lowStock.map(function(i) {
+    var cls = i.current_quantity<=0?'qty-out':'qty-low';
+    return '<div class="txn-row" style="cursor:pointer;" onclick="openItemDetail(\'' + '' + i.id + '\'' + ')">' +
+      '<div class="txn-info"><div class="txn-title">'+i.item_name+'</div><div class="txn-meta">Min: '+i.minimum_level+' '+(i.unit_type||'')+'</div></div>' +
+      '<span class="qty-badge '+cls+'">'+i.current_quantity+' '+(i.unit_type||'')+'</span></div>';
+  }).join('') : '<div style="padding:20px;text-align:center;color:var(--green);font-weight:600;font-size:12.5px;">✓ All items adequately stocked</div>';
+
+  // ── Sidebar budget card ──
+  var budgetRemaining = Math.max(0, invGoal - invValue);
+  document.getElementById('sb2-budget-num').innerHTML = fmtMoney(budgetRemaining).replace('$','$') + ' <small>left</small>';
+  var budgetPct = Math.min(100, Math.round(invValue/invGoal*100));
+  document.getElementById('sb2-budget-desc').textContent = 'Hit ' + budgetPct + '% of monthly budget — track waste to stay under target.';
+  document.getElementById('sb2-progress-fill').style.width = budgetPct + '%';
+  document.getElementById('sb2-progress-badge').textContent = budgetPct + '%';
+
+  // ── Main trend chart ──
+  await renderTrendChart(items);
+}
+
+function setMetric(prefix, val, unit, goalText, pct, orangeFill) {
+  document.getElementById(prefix).innerHTML = val + ' <small>' + unit + '</small>';
+  document.getElementById(prefix+'-goal').textContent = goalText;
+  document.getElementById(prefix+'-pct').textContent = pct + '%';
+  document.getElementById(prefix+'-bar').style.width = pct + '%';
+  if (!orangeFill) {
+    document.getElementById(prefix+'-bar').style.background = pct >= 90 ? 'linear-gradient(90deg,#111,#333)' : 'linear-gradient(90deg,#E5E7EB,#D1D5DB)';
+  }
+}
+
+function renderCategoryDonut(items, cats) {
+  var byCat = {};
+  items.forEach(function(i) {
+    var cat = cats.find(function(c){return c.id===i.category_id;});
+    var name = cat ? cat.name : 'Uncategorized';
+    byCat[name] = (byCat[name]||0) + 1;
+  });
+  var entries = Object.entries(byCat).sort(function(a,b){return b[1]-a[1];}).slice(0,4);
+  var total = items.length;
+
+  document.getElementById('dv2-donut-total').textContent = total;
+
+  var legend = document.getElementById('dv2-donut-legend');
+  legend.innerHTML = entries.map(function(e, i) {
+    return '<div class="dv2-legend-item"><span class="dv2-legend-chip" style="background:'+CATEGORY_COLORS[i]+'">'+e[1]+'</span>'+e[0]+'</div>';
+  }).join('') || '<div style="font-size:12px;color:var(--gray);">No items yet</div>';
+
+  var svg = document.getElementById('dv2-donut-svg');
+  var r = 50, cx = 60, cy = 60, circumference = 2 * Math.PI * r;
+  var offset = 0;
+  var paths = '';
+  if (total > 0) {
+    entries.forEach(function(e, i) {
+      var frac = e[1] / total;
+      var dash = frac * circumference;
+      paths += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+CATEGORY_COLORS[i]+'" stroke-width="16" ' +
+        'stroke-dasharray="'+dash+' '+circumference+'" stroke-dashoffset="'+(-offset)+'" transform="rotate(-90 '+cx+' '+cy+')"/>';
+      offset += dash;
+    });
+    var remaining = circumference - offset;
+    if (remaining > 0.5) {
+      paths += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#EAEEF2" stroke-width="16" ' +
+        'stroke-dasharray="'+remaining+' '+circumference+'" stroke-dashoffset="'+(-offset)+'" transform="rotate(-90 '+cx+' '+cy+')"/>';
+    }
+  } else {
+    paths = '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#EAEEF2" stroke-width="16"/>';
+  }
+  svg.innerHTML = paths;
+}
+
+function renderPeakActivity(txns) {
+  var hourCounts = new Array(24).fill(0);
+  txns.forEach(function(t) { hourCounts[new Date(t.created_at).getHours()]++; });
+  var peakHour = hourCounts.indexOf(Math.max.apply(null, hourCounts));
+  if (Math.max.apply(null, hourCounts) === 0) peakHour = 12;
+  var pct = ((peakHour - 6) / (21 - 6)) * 82;
+  document.getElementById('dv2-peak-chip').style.left = Math.max(0, Math.min(80, pct)) + '%';
+  var label = peakHour === 0 ? '12 AM' : peakHour < 12 ? peakHour+' AM' : peakHour===12 ? '12 PM' : (peakHour-12)+' PM';
+  document.getElementById('dv2-peak-label').textContent = label;
+}
+
+async function renderMealSatisfaction(periodStart) {
+  var { data: fb } = await sb.from('feedback').select('overall_meal')
+    .eq('facility_id', FACILITY_ID)
+    .gte('submitted_at', periodStart)
+    .not('overall_meal', 'is', null);
+  fb = fb || [];
+
+  var count = fb.length;
+  var avg = count ? fb.reduce(function(sum, f){ return sum + f.overall_meal; }, 0) / count : 0;
+  var avgRounded = Math.round(avg * 10) / 10;
+
+  document.getElementById('m-satisfaction').innerHTML = (count ? avgRounded : '—') + ' <small>/ 5</small>';
+  document.getElementById('m-satisfaction-goal').textContent = count + ' response' + (count!==1?'s':'') + ' this period';
+
+  var starsEl = document.getElementById('m-satisfaction-stars');
+  var starsHtml = '';
+  for (var i = 1; i <= 5; i++) {
+    if (avg >= i) starsHtml += '<span class="dv2-star filled">★</span>';
+    else if (avg >= i - 0.5) starsHtml += '<span class="dv2-star half">★</span>';
+    else starsHtml += '<span class="dv2-star">★</span>';
+  }
+  starsEl.innerHTML = starsHtml;
+}
+
+function setChartMetric(btn, metric) {
+  document.querySelectorAll('.dv2-chart-tab').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  chartMetric = metric;
+  var titles = { all:'Daily Transactions', value:'Inventory Value', receiving:'Receiving Volume', removals:'Removal Volume', waste:'Waste Volume' };
+  document.getElementById('dv2-chart-title').innerHTML = titles[metric] + ' <span>Per month</span>';
+  loadDashboard();
+}
+function setChartRange(btn) {
+  document.querySelectorAll('.dv2-range-tab').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+}
+function shiftChartMonth(dir) {
+  chartMonthOffset += dir;
+  loadDashboard();
+}
+
+async function renderTrendChart(items) {
+  var now = new Date();
+  var targetMonth = new Date(now.getFullYear(), now.getMonth() + chartMonthOffset, 1);
+  document.getElementById('dv2-month-label').textContent = targetMonth.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+
+  var monthStart = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), 1).toISOString();
+  var monthEnd = new Date(targetMonth.getFullYear(), targetMonth.getMonth()+1, 1).toISOString();
+  var { data: txns } = await sb.from('dietary_transactions').select('*').eq('facility_id', FACILITY_ID).gte('created_at', monthStart).lt('created_at', monthEnd);
+  txns = txns || [];
+
+  var daysInMonth = new Date(targetMonth.getFullYear(), targetMonth.getMonth()+1, 0).getDate();
+  var dayData = [];
+  for (var d = 1; d <= daysInMonth; d++) {
+    var dayTxns = txns.filter(function(t){ return new Date(t.created_at).getDate() === d; });
+    var val = 0;
+    if (chartMetric === 'all')       val = dayTxns.length;
+    else if (chartMetric === 'receiving') val = dayTxns.filter(function(t){return t.action==='Receive';}).length;
+    else if (chartMetric === 'removals')  val = dayTxns.filter(function(t){return t.action==='Remove';}).length;
+    else if (chartMetric === 'waste')     val = dayTxns.filter(function(t){return t.action==='Discard';}).length;
+    else if (chartMetric === 'value')     val = dayTxns.filter(function(t){return t.action==='Receive';}).reduce(function(s,t){return s+(t.quantity||0);},0);
+    dayData.push(val);
+  }
+
+  // Show last 7 days with data for readability (matches reference's 7-point view)
+  var lastDayWithData = daysInMonth;
+  for (var i = daysInMonth-1; i >= 0; i--) { if (dayData[i] > 0) { lastDayWithData = i+1; break; } }
+  var startIdx = Math.max(0, lastDayWithData - 7);
+  var slice = dayData.slice(startIdx, startIdx + 7);
+  while (slice.length < 7) slice.push(0);
+  var maxVal = Math.max.apply(null, slice.concat([1]));
+  var peakIdx = slice.indexOf(Math.max.apply(null, slice));
+
+  var wrap = document.getElementById('dv2-chart-wrap');
+  var w = 900, h = 260, padB = 30, barW = 46, gap = (w - barW*7) / 8;
+  var bars = '', dots = '', dayLabels = '';
+  var points = [];
+
+  slice.forEach(function(v, i) {
+    var x = gap + i*(barW+gap) + barW/2;
+    var barH = maxVal > 0 ? (v/maxVal) * (h-padB-40) : 0;
+    var y = h - padB - barH;
+    var isPeak = i === peakIdx && v > 0;
+    var color = isPeak ? 'var(--orange)' : (i%2===0 ? '#1A1A1A' : '#D1D5DB');
+    bars += '<rect x="'+(x-barW/2)+'" y="'+y+'" width="'+barW+'" height="'+Math.max(barH,4)+'" rx="10" fill="'+(isPeak?'#F5A623':(i%2===0?'#1A1A1A':'#E5E7EB'))+'"/>';
+    points.push([x, y]);
+    var dayNum = startIdx + i + 1;
+    var dLabel = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), dayNum).toLocaleDateString('en-US',{day:'2-digit',month:'short'});
+    dayLabels += '<div style="position:absolute;left:'+(x-30)+'px;bottom:0;width:60px;text-align:center;font-size:11px;color:'+(isPeak?'#111':'#9CA3AF')+';font-weight:'+(isPeak?'800':'600')+';">'+dLabel+'</div>';
+  });
+
+  var linePath = 'M' + points.map(function(p){return p[0]+','+p[1];}).join(' L');
+  var circles = points.map(function(p){return '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="5" fill="white" stroke="#1A1A1A" stroke-width="2"/>';}).join('');
+  var peakVal = slice[peakIdx];
+  var peakX = points[peakIdx] ? points[peakIdx][0] : 0;
+  var peakY = points[peakIdx] ? points[peakIdx][1] : 0;
+
+  wrap.innerHTML =
+    '<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="100%" style="overflow:visible;">' +
+      bars +
+      '<path d="'+linePath+'" fill="none" stroke="#1A1A1A" stroke-width="2"/>' +
+      circles +
+      (peakVal>0 ? '<g><rect x="'+(peakX-38)+'" y="'+(peakY-38)+'" width="76" height="26" rx="13" fill="#1A1A1A"/>' +
+        '<text x="'+peakX+'" y="'+(peakY-20)+'" text-anchor="middle" fill="white" font-size="12" font-weight="700" font-family="DM Mono, monospace">'+peakVal+'</text></g>' : '') +
+    '</svg>' +
+    '<div style="position:absolute;bottom:0;left:0;right:0;height:20px;">' + dayLabels + '</div>';
+}
+
+function toggleDarkMode() {
+  var dot = document.getElementById('dv2ToggleDot');
+  var isOn = dot.style.left === '23px';
+  dot.style.left = isOn ? '3px' : '23px';
+  showBriefToast(isOn ? 'Light mode' : 'Dark mode coming soon');
+}
+function showBriefToast(msg) { /* placeholder — could wire to a toast element if added */ console.log(msg); }
+
+function exportDashboardCSV() {
+  var rows = [['Item','Category','Quantity','Unit','Expiration','Cost/Unit','Value']];
+  cachedItems.forEach(function(i) {
+    var cat = cachedCategories.find(function(c){return c.id===i.category_id;});
+    rows.push([i.item_name, cat?cat.name:'', i.current_quantity, i.unit_type||'', i.expiration_date||'', i.cost_per_unit||0, ((i.current_quantity||0)*(i.cost_per_unit||0)).toFixed(2)]);
+  });
+  var csv = rows.map(function(r){ return r.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+  var blob = new Blob([csv], {type:'text/csv'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'dietary_inventory_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+}
+
+async function loadInventoryTab() {
+  await loadRefData();
+  var { data: items } = await sb.from('dietary_items').select('*').eq('facility_id', FACILITY_ID).eq('status','Active').order('item_name');
+  cachedItems = items || [];
+  renderInventoryTable();
+}
+
+function renderInventoryTable() {
+  var search = (document.getElementById('invSearch').value || '').toLowerCase();
+  var catF = document.getElementById('invCatFilter').value;
+  var storF = document.getElementById('invStorageFilter').value;
+  var statusF = document.getElementById('invStatusFilter').value;
+
+  var catMap = {}; cachedCategories.forEach(function(c){ catMap[c.id]=c.name; });
+  var storMap = {}; cachedStorage.forEach(function(s){ storMap[s.id]=s.name; });
+
+  var filtered = cachedItems.filter(function(i) {
+    if (search && !(i.item_name.toLowerCase().includes(search) || (i.sku||'').toLowerCase().includes(search) || (i.lot_number||'').toLowerCase().includes(search))) return false;
+    if (catF && i.category_id !== catF) return false;
+    if (storF && i.storage_location_id !== storF) return false;
+    if (statusF) {
+      var d = daysUntil(i.expiration_date);
+      if (statusF==='Low Stock' && !(i.minimum_level!=null && i.current_quantity<=i.minimum_level && i.current_quantity>0)) return false;
+      if (statusF==='Out of Stock' && i.current_quantity>0) return false;
+      if (statusF==='Expired' && !(d!==null && d<0)) return false;
+      if (statusF==='Expiring Soon' && !(d!==null && d>=0 && d<=7)) return false;
+    }
+    return true;
+  });
+
+  var tbody = document.getElementById('invTableBody');
+  if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gray);">No items found</td></tr>'; return; }
+
+  tbody.innerHTML = filtered.map(function(i) {
+    var qtyCls = i.current_quantity<=0 ? 'qty-out' : (i.minimum_level!=null && i.current_quantity<=i.minimum_level) ? 'qty-low' : 'qty-ok';
+    var d = daysUntil(i.expiration_date);
+    var expCls = !i.expiration_date ? 'exp-none' : d<0 ? 'exp-expired' : d<=7 ? 'exp-soon' : 'exp-good';
+    var expLabel = !i.expiration_date ? '—' : d<0 ? 'Expired' : d===0 ? 'Today' : d+'d';
+    return '<tr onclick="openItemDetail(\'' + i.id + '\')">' +
+      '<td><div class="inv-item-name">'+i.item_name+'</div><div class="inv-item-meta">'+(i.sku||'No SKU')+'</div></td>' +
+      '<td>'+(catMap[i.category_id]||'—')+'</td>' +
+      '<td>'+(storMap[i.storage_location_id]||'—')+'</td>' +
+      '<td><span class="qty-badge '+qtyCls+'">'+i.current_quantity+' '+(i.unit_type||'')+'</span></td>' +
+      '<td><span class="exp-badge '+expCls+'">'+expLabel+'</span></td>' +
+      '<td>'+fmtMoney(i.cost_per_unit)+'</td></tr>';
+  }).join('');
+}
+
+function showAddItem() {
+  document.getElementById('addItemModal').classList.add('open');
+  ['ai-name','ai-manufacturer','ai-sku','ai-lot','ai-exp','ai-received','ai-cost','ai-par','ai-min','ai-notes'].forEach(function(id){
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('ai-qty').value = 0;
+  document.getElementById('ai-unit').value = '';
+  document.getElementById('ai-emergency').checked = false;
+}
+function closeAddItem() { document.getElementById('addItemModal').classList.remove('open'); }
+
+async function saveNewItem() {
+  var name = document.getElementById('ai-name').value.trim();
+  if (!name) { alert('Item name is required'); return; }
+
+  var qrId = 'agrhodes-atl-diet-' + Date.now();
+  var payload = {
+    facility_id: FACILITY_ID, qr_identifier: qrId, item_name: name,
+    category_id: document.getElementById('ai-category').value || null,
+    vendor_id: document.getElementById('ai-vendor').value || null,
+    manufacturer: document.getElementById('ai-manufacturer').value || null,
+    sku: document.getElementById('ai-sku').value || null,
+    lot_number: document.getElementById('ai-lot').value || null,
+    expiration_date: document.getElementById('ai-exp').value || null,
+    received_date: document.getElementById('ai-received').value || null,
+    storage_location_id: document.getElementById('ai-storage').value || null,
+    unit_type: document.getElementById('ai-unit').value || null,
+    current_quantity: +document.getElementById('ai-qty').value || 0,
+    cost_per_unit: +document.getElementById('ai-cost').value || null,
+    par_level: document.getElementById('ai-par').value ? +document.getElementById('ai-par').value : null,
+    minimum_level: document.getElementById('ai-min').value ? +document.getElementById('ai-min').value : null,
+    is_emergency_supply: document.getElementById('ai-emergency').checked,
+    notes: document.getElementById('ai-notes').value || null,
+  };
+
+  var { data, error } = await sb.from('dietary_items').insert(payload).select().single();
+  if (error) { alert('Error: ' + error.message); return; }
+
+  if (payload.current_quantity > 0) {
+    await sb.from('dietary_transactions').insert({
+      facility_id: FACILITY_ID, item_id: data.id, action: 'Receive', reason: 'Initial Stock',
+      quantity: payload.current_quantity, before_quantity: 0, after_quantity: payload.current_quantity,
+      performed_by: getStaffName(), device: 'web',
+    });
+  }
+
+  closeAddItem();
+  loadInventoryTab();
+}
+
+async function openItemDetail(itemId) {
+  var item = cachedItems.find(function(i){ return i.id===itemId; });
+  if (!item) return;
+  currentItem = item;
+  document.getElementById('actionFormWrap').innerHTML = '';
+  document.getElementById('historyWrap').innerHTML = '';
+
+  var catMap = {}; cachedCategories.forEach(function(c){ catMap[c.id]=c.name; });
+  var storMap = {}; cachedStorage.forEach(function(s){ storMap[s.id]=s.name; });
+  var vendMap = {}; cachedVendors.forEach(function(v){ vendMap[v.id]=v.name; });
+
+  document.getElementById('imTitle').textContent = item.item_name;
+  document.getElementById('imMeta').textContent = (catMap[item.category_id]||'') + ' · ' + item.qr_identifier;
+  document.getElementById('imQty').textContent = item.current_quantity + ' ' + (item.unit_type||'');
+  var d = daysUntil(item.expiration_date);
+  document.getElementById('imExp').innerHTML = item.expiration_date ? item.expiration_date +
+    (d<0 ? ' <span style="color:var(--red)">(Expired)</span>' : d<=7 ? ' <span style="color:var(--amber)">(Soon)</span>' : '') : '—';
+  document.getElementById('imStorage').textContent = storMap[item.storage_location_id] || '—';
+  document.getElementById('imLot').textContent = item.lot_number || '—';
+  document.getElementById('imVendor').textContent = vendMap[item.vendor_id] || '—';
+  document.getElementById('imValue').textContent = fmtMoney((item.current_quantity||0)*(item.cost_per_unit||0));
+
+  var qrHolder = document.getElementById('imQrHolder');
+  qrHolder.innerHTML = '';
+  new QRCode(qrHolder, { text: SCAN_BASE_URL + item.qr_identifier, width: 110, height: 110, colorDark:'#1A1A1A', colorLight:'#FFFFFF' });
+
+  document.getElementById('itemModal').classList.add('open');
+}
+function closeItemModal() { document.getElementById('itemModal').classList.remove('open'); currentItem = null; }
+
+function getStaffName() {
+  var name = localStorage.getItem('agrhodes_round_staff') || prompt('Your name:') || 'Staff';
+  localStorage.setItem('agrhodes_round_staff', name);
+  return name;
+}
+
+var REMOVE_REASONS = ['Meal Production','Resident Snack','Nourishment Cart','Employee Meal','Spoilage','Expired','Damaged','Transfer','Other'];
+
+function openActionForm(action) {
+  var wrap = document.getElementById('actionFormWrap');
+  document.getElementById('historyWrap').innerHTML = '';
+  var html = '<div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(0,0,0,.06);">' +
+    '<div style="font-size:13px;font-weight:700;margin-bottom:10px;">'+action+' Inventory</div>';
+
+  if (action === 'Receive') {
+    html += '<div class="field-grid">' +
+      '<div class="field"><label>Quantity Received</label><input type="number" id="af-qty"></div>' +
+      '<div class="field"><label>Vendor</label><select id="af-vendor">' + '<option value="">Select…</option>' + cachedVendors.map(function(v){return '<option value="'+v.id+'">'+v.name+'</option>';}).join('') + '</select></div>' +
+      '<div class="field"><label>Invoice #</label><input id="af-invoice"></div>' +
+      '<div class="field"><label>Lot Number</label><input id="af-lot"></div>' +
+      '<div class="field"><label>Expiration Date</label><input type="date" id="af-exp"></div>' +
+      '<div class="field"><label>Storage Location</label><select id="af-storage">' + cachedStorage.map(function(s){return '<option value="'+s.id+'">'+s.name+'</option>';}).join('') + '</select></div>' +
+      '</div>';
+  } else if (action === 'Remove') {
+    html += '<div class="field-grid">' +
+      '<div class="field"><label>Quantity</label><input type="number" id="af-qty"></div>' +
+      '<div class="field"><label>Reason</label><select id="af-reason">' + REMOVE_REASONS.map(function(r){return '<option>'+r+'</option>';}).join('') + '</select></div>' +
+      '</div>';
+  } else if (action === 'Transfer') {
+    html += '<div class="field-grid">' +
+      '<div class="field"><label>Quantity</label><input type="number" id="af-qty"></div>' +
+      '<div class="field"><label>Transfer To</label><select id="af-transfer-to">' + cachedStorage.map(function(s){return '<option value="'+s.id+'">'+s.name+'</option>';}).join('') + '</select></div>' +
+      '</div>';
+  } else if (action === 'Discard') {
+    html += '<div class="field-grid">' +
+      '<div class="field"><label>Quantity</label><input type="number" id="af-qty"></div>' +
+      '<div class="field"><label>Reason</label><select id="af-reason"><option>Spoilage</option><option>Expired</option><option>Damaged</option><option>Recalled</option></select></div>' +
+      '</div>';
+  } else if (action === 'Adjust') {
+    html += '<div class="field-grid">' +
+      '<div class="field"><label>New Quantity</label><input type="number" id="af-qty" value="'+(currentItem?currentItem.current_quantity:0)+'"></div>' +
+      '<div class="field"><label>Reason</label><input id="af-reason" placeholder="e.g. Cycle count correction"></div>' +
+      '</div>';
+  }
+
+  html += '<div class="field" style="margin-bottom:10px;"><label>Notes (optional)</label><textarea id="af-notes"></textarea></div>' +
+    '<button class="neu-btn primary" style="width:100%;" onclick="submitAction(\'' + action + '\')">Confirm '+action+'</button></div>';
+  wrap.innerHTML = html;
+}
+
+async function submitAction(action) {
+  if (!currentItem) return;
+  var qtyInput = +document.getElementById('af-qty').value;
+  if (!qtyInput && action !== 'Adjust') { alert('Enter a quantity'); return; }
+  var staff = getStaffName();
+  var before = currentItem.current_quantity;
+  var after = before;
+  var payload = { facility_id: FACILITY_ID, item_id: currentItem.id, action: action, performed_by: staff, device: 'web' };
+
+  if (action === 'Receive') {
+    after = before + qtyInput;
+    payload.quantity = qtyInput;
+    payload.reason = 'Receiving';
+    payload.vendor_id = document.getElementById('af-vendor').value || null;
+    payload.invoice_number = document.getElementById('af-invoice').value || null;
+    payload.lot_number = document.getElementById('af-lot').value || null;
+    payload.expiration_date = document.getElementById('af-exp').value || null;
+    payload.storage_location_id = document.getElementById('af-storage').value || null;
+  } else if (action === 'Remove') {
+    after = Math.max(0, before - qtyInput);
+    payload.quantity = qtyInput;
+    payload.reason = document.getElementById('af-reason').value;
+  } else if (action === 'Transfer') {
+    after = before;
+    payload.quantity = qtyInput;
+    payload.reason = 'Transfer';
+    payload.transfer_to_location = document.getElementById('af-transfer-to').value || null;
+  } else if (action === 'Discard') {
+    after = Math.max(0, before - qtyInput);
+    payload.quantity = qtyInput;
+    payload.reason = document.getElementById('af-reason').value;
+  } else if (action === 'Adjust') {
+    after = qtyInput;
+    payload.quantity = Math.abs(after - before);
+    payload.reason = document.getElementById('af-reason').value || 'Manual adjustment';
+  }
+
+  payload.before_quantity = before;
+  payload.after_quantity = after;
+  payload.notes = document.getElementById('af-notes').value || null;
+
+  var { error: txnErr } = await sb.from('dietary_transactions').insert(payload);
+  if (txnErr) { alert('Error: ' + txnErr.message); return; }
+
+  var itemUpdate = { current_quantity: after, updated_at: new Date().toISOString() };
+  if (action === 'Transfer' && payload.transfer_to_location) itemUpdate.storage_location_id = payload.transfer_to_location;
+  if (action === 'Receive') {
+    if (payload.lot_number) itemUpdate.lot_number = payload.lot_number;
+    if (payload.expiration_date) itemUpdate.expiration_date = payload.expiration_date;
+    if (payload.storage_location_id) itemUpdate.storage_location_id = payload.storage_location_id;
+    if (payload.vendor_id) itemUpdate.vendor_id = payload.vendor_id;
+    itemUpdate.received_date = new Date().toISOString().split('T')[0];
+  }
+
+  var { error: updErr } = await sb.from('dietary_items').update(itemUpdate).eq('id', currentItem.id);
+  if (updErr) { alert('Error: ' + updErr.message); return; }
+
+  document.getElementById('actionFormWrap').innerHTML = '<div style="text-align:center;padding:16px;color:var(--green);font-weight:700;font-size:13px;">✓ '+action+' recorded</div>';
+  closeItemModal();
+  loadInventoryTab();
+  if (currentPanel==='dashboard') loadDashboard();
+}
+
+async function showItemHistory() {
+  if (!currentItem) return;
+  document.getElementById('actionFormWrap').innerHTML = '';
+  var wrap = document.getElementById('historyWrap');
+  wrap.innerHTML = '<div style="padding:12px;color:var(--gray);font-size:12px;">Loading…</div>';
+  var { data: txns } = await sb.from('dietary_transactions').select('*').eq('item_id', currentItem.id).order('created_at',{ascending:false}).limit(30);
+  if (!txns || !txns.length) { wrap.innerHTML = '<div style="padding:16px;text-align:center;color:var(--gray);font-size:12px;">No transaction history yet</div>'; return; }
+  wrap.innerHTML = '<div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(0,0,0,.06);"><div style="font-size:13px;font-weight:700;margin-bottom:10px;">Transaction History</div>' +
+    txns.map(function(t) {
+      var icon = {'Receive':'📥','Remove':'📤','Transfer':'🔄','Discard':'🗑','Adjust':'⚖'}[t.action] || '📋';
+      return '<div class="txn-row"><div class="txn-icon txn-'+t.action+'">'+icon+'</div>' +
+        '<div class="txn-info"><div class="txn-title">'+t.action+(t.reason?' — '+t.reason:'')+'</div>' +
+        '<div class="txn-meta">'+t.performed_by+' · '+new Date(t.created_at).toLocaleString()+' · '+t.before_quantity+'→'+t.after_quantity+'</div></div></div>';
+    }).join('') + '</div>';
+}
+
+async function loadVendors() {
+  var { data: vendors } = await sb.from('dietary_vendors').select('*').eq('facility_id', FACILITY_ID).eq('is_active', true).order('name');
+  var grid = document.getElementById('vendorGrid');
+  if (!vendors || !vendors.length) { grid.innerHTML = '<div class="card" style="padding:24px;text-align:center;color:var(--gray);">No vendors yet — add one above.</div>'; return; }
+  grid.innerHTML = vendors.map(function(v) {
+    return '<div class="mini-card"><div class="mini-card-title">'+v.name+'</div>' +
+      '<div class="mini-card-sub">'+(v.contact_name||'')+(v.phone?' · '+v.phone:'')+'</div>' +
+      (v.email ? '<div class="mini-card-sub">'+v.email+'</div>' : '') +
+      (v.account_number ? '<div class="mini-card-sub">Acct: '+v.account_number+'</div>' : '') + '</div>';
+  }).join('');
+}
+
+function showAddVendor() {
+  var name = prompt('Vendor name:'); if (!name) return;
+  var contact = prompt('Contact name (optional):') || null;
+  var phone = prompt('Phone (optional):') || null;
+  sb.from('dietary_vendors').insert({ facility_id: FACILITY_ID, name: name, contact_name: contact, phone: phone })
+    .then(function(){ loadVendors(); loadRefData(); });
+}
+
+async function loadEmergency() {
+  var { data: supplies } = await sb.from('dietary_emergency_inventory').select('*').eq('facility_id', FACILITY_ID).order('supply_type');
+  supplies = supplies || [];
+
+  var byType = {};
+  supplies.forEach(function(s){ (byType[s.supply_type]=byType[s.supply_type]||[]).push(s); });
+  var totalDays = supplies.length ? Math.min.apply(null, supplies.map(function(s){return s.days_supply||0;})) : 0;
+
+  document.getElementById('emergencyStatsRow').innerHTML =
+    statCard(supplies.length, 'Tracked Items', 'pill-gray', '📦') +
+    statCard((byType['Water']||[]).length, 'Water Supplies', 'pill-orange', '💧') +
+    statCard((byType['Shelf-Stable Food']||[]).length, 'Shelf-Stable Food', 'pill-orange', '🥫') +
+    statCardAccent(totalDays + ' days', 'Minimum Coverage', totalDays>=3?'✓ Compliant':'⚠ Below 3-Day Min');
+
+  var grid = document.getElementById('emergencyGrid');
+  grid.innerHTML = supplies.length ? supplies.map(function(s) {
+    return '<div class="mini-card"><div class="mini-card-title">'+s.item_name+'</div>' +
+      '<div class="mini-card-sub">'+s.supply_type+'</div>' +
+      '<div style="margin-top:8px;font-family:\'DM Mono\',monospace;font-size:18px;font-weight:700;">'+s.quantity+' '+(s.unit||'')+'</div>' +
+      (s.days_supply ? '<div class="mini-card-sub">'+s.days_supply+' days supply</div>' : '') + '</div>';
+  }).join('') : '<div class="card" style="padding:24px;text-align:center;color:var(--gray);">No emergency supply items tracked yet.</div>';
+}
+
+function showAddEmergency() {
+  var type = prompt('Supply type (Shelf-Stable Food / Water / Emergency Beverages / Disaster Supplies):');
+  if (!type) return;
+  var name = prompt('Item name:'); if (!name) return;
+  var qty = +prompt('Quantity:') || 0;
+  var unit = prompt('Unit (optional):') || null;
+  var days = +prompt('Days of supply this represents (optional):') || null;
+  sb.from('dietary_emergency_inventory').insert({
+    facility_id: FACILITY_ID, supply_type: type, item_name: name, quantity: qty, unit: unit, days_supply: days,
+  }).then(function(){ loadEmergency(); });
+}
+
+
+/* ════════════════════════════════════════════
+   ROLE-BASED ACCESS CONTROL
+   Shared-PIN convention (matches existing Nursaio pattern) —
+   UI-level access control, not database-enforced per-user auth.
+════════════════════════════════════════════ */
+var ROLE_PINS = { 'Administrator': '350', 'Dietary Manager': '1200' };
+var PERMISSIONS = {
+  'Administrator':    { addItem:true,  addVendor:true, addEmergency:true, receive:true, remove:true, transfer:true, discard:true, adjust:true, viewHistory:true },
+  'Dietary Manager':  { addItem:true,  addVendor:true, addEmergency:true, receive:true, remove:true, transfer:true, discard:true, adjust:true, viewHistory:true },
+  'Cook':             { addItem:false, addVendor:false, addEmergency:false, receive:true, remove:true, transfer:false, discard:false, adjust:true, viewHistory:true },
+  'Receiving':        { addItem:false, addVendor:false, addEmergency:false, receive:true, remove:false, transfer:false, discard:false, adjust:false, viewHistory:true },
+  'Read Only':        { addItem:false, addVendor:false, addEmergency:false, receive:false, remove:false, transfer:false, discard:false, adjust:false, viewHistory:true },
+};
+var currentRole = localStorage.getItem('agrhodes_dietary_role') || null;
+var pendingRole = null;
+
+function can(action) {
+  if (!currentRole) return false;
+  return !!(PERMISSIONS[currentRole] && PERMISSIONS[currentRole][action]);
+}
+
+function openRolePicker(isSwitch) {
+  document.getElementById('roleModal').classList.add('open');
+}
+
+function selectRole(role) {
+  if (ROLE_PINS[role]) {
+    pendingRole = role;
+    document.getElementById('pinPromptTitle').textContent = role + ' PIN';
+    document.getElementById('pinPromptInput').value = '';
+    document.getElementById('pinPromptError').textContent = '';
+    document.getElementById('roleModal').classList.remove('open');
+    document.getElementById('pinPromptModal').classList.add('open');
+    setTimeout(function(){ document.getElementById('pinPromptInput').focus(); }, 100);
+  } else {
+    setRole(role);
+  }
+}
+
+function closePinPrompt() {
+  document.getElementById('pinPromptModal').classList.remove('open');
+  if (!currentRole) document.getElementById('roleModal').classList.add('open');
+  pendingRole = null;
+}
+
+function confirmPinPrompt() {
+  var entered = document.getElementById('pinPromptInput').value;
+  if (entered === ROLE_PINS[pendingRole]) {
+    document.getElementById('pinPromptModal').classList.remove('open');
+    setRole(pendingRole);
+    pendingRole = null;
+  } else {
+    document.getElementById('pinPromptError').textContent = 'Incorrect PIN';
+    document.getElementById('pinPromptInput').value = '';
+  }
+}
+
+function setRole(role) {
+  currentRole = role;
+  localStorage.setItem('agrhodes_dietary_role', role);
+  document.getElementById('roleModal').classList.remove('open');
+  document.getElementById('roleBadge').textContent = role;
+  applyRolePermissions();
+}
+
+function applyRolePermissions() {
+  // Add-item / add-vendor / add-emergency buttons
+  document.querySelectorAll('[data-perm]').forEach(function(el) {
+    var perm = el.getAttribute('data-perm');
+    el.style.display = can(perm) ? '' : 'none';
+  });
+  // Action buttons inside item modal
+  ['receive','remove','transfer','discard','adjust'].forEach(function(a) {
+    var btn = document.querySelector('.action-btn.' + a);
+    if (btn) btn.classList.toggle('disabled-role', !can(a));
+  });
+}
+
+/* ════════════════════════════════════════════
+   NOTIFICATION CENTER
+════════════════════════════════════════════ */
+function toggleNotifDropdown() {
+  var dd = document.getElementById('notifDropdown');
+  dd.classList.toggle('open');
+  if (dd.classList.contains('open')) loadNotifications();
+}
+document.addEventListener('click', function(e) {
+  var wrap = document.querySelector('.notif-bell-wrap');
+  if (wrap && !wrap.contains(e.target)) document.getElementById('notifDropdown').classList.remove('open');
+});
+
+async function loadNotifications() {
+  var content = document.getElementById('notifContent');
+  content.innerHTML = '<div style="padding:16px;text-align:center;color:var(--gray);font-size:11.5px;">Loading…</div>';
+
+  var { data: items } = await sb.from('dietary_items').select('*').eq('facility_id', FACILITY_ID).eq('status','Active');
+  var { data: emergency } = await sb.from('dietary_emergency_inventory').select('*').eq('facility_id', FACILITY_ID);
+  var { data: pos } = await sb.from('dietary_purchase_orders').select('*').eq('facility_id', FACILITY_ID).eq('status','Submitted');
+  items = items || []; emergency = emergency || []; pos = pos || [];
+
+  var lowStock = items.filter(function(i){ return i.minimum_level!=null && i.current_quantity <= i.minimum_level && i.current_quantity>0; });
+  var outStock = items.filter(function(i){ return i.current_quantity<=0; });
+  var expired = items.filter(function(i){ var d=daysUntil(i.expiration_date); return d!==null && d<0; });
+  var expSoon = items.filter(function(i){ var d=daysUntil(i.expiration_date); return d!==null && d>=0 && d<=3; });
+  var emergLow = emergency.filter(function(e){ return e.days_supply!=null && e.days_supply < 3; });
+
+  var totalCount = lowStock.length + outStock.length + expired.length + expSoon.length + emergLow.length + pos.length;
+  var badge = document.getElementById('notifBadge');
+  if (totalCount > 0) { badge.style.display = 'flex'; badge.textContent = totalCount > 99 ? '99+' : totalCount; }
+  else { badge.style.display = 'none'; }
+
+  function section(label, arr, render) {
+    if (!arr.length) return '';
+    return '<div class="notif-section"><div class="notif-section-label"><span>'+label+'</span><span>'+arr.length+'</span></div>' +
+      arr.slice(0,5).map(render).join('') +
+      (arr.length>5 ? '<div style="font-size:10.5px;color:var(--gray-light);padding:2px 4px;">+'+(arr.length-5)+' more</div>' : '') + '</div>';
+  }
+
+  var html = '';
+  html += section('🔴 Out of Stock', outStock, function(i){ return '<div class="notif-item">'+i.item_name+'</div>'; });
+  html += section('🟠 Running Low', lowStock, function(i){ return '<div class="notif-item">'+i.item_name+' — '+i.current_quantity+' left</div>'; });
+  html += section('⚠ Expired', expired, function(i){ return '<div class="notif-item">'+i.item_name+' — Lot '+(i.lot_number||'—')+'</div>'; });
+  html += section('🟡 Expiring ≤3 Days', expSoon, function(i){ return '<div class="notif-item">'+i.item_name+' — '+i.expiration_date+'</div>'; });
+  html += section('🆘 Emergency Supply Low', emergLow, function(e){ return '<div class="notif-item">'+e.item_name+' — '+e.days_supply+' days left</div>'; });
+  html += section('📄 POs Awaiting Approval', pos, function(p){ return '<div class="notif-item">'+(p.po_number||'PO')+' — '+fmtMoney(p.total_cost)+'</div>'; });
+
+  content.innerHTML = html || '<div class="notif-empty">✓ Everything looks good</div>';
+}
+
+// Poll notifications every 90 seconds while page is open
+setInterval(function() { if (currentRole) loadNotifications(); }, 90000);
+
+/* ════════════════════════════════════════════
+   GRIEVANCES — derived from meal `feedback` table
+   Trigger: respondent_type in (patient, caregiver)
+            AND overall_meal <= 3
+════════════════════════════════════════════ */
+var grievanceFilter = 'New';
+var cachedGrievances = [];
+var currentGrievance = null;
+
+function setGrievanceFilter(btn, status) {
+  document.querySelectorAll('#panel-grievances .tab-pill').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  grievanceFilter = status;
+  renderGrievanceList();
+}
+
+async function loadGrievances() {
+  var list = document.getElementById('grievanceList');
+  list.innerHTML = '<div style="padding:20px;color:var(--gray);">Loading…</div>';
+
+  var { data: fb } = await sb.from('feedback').select('*')
+    .eq('facility_id', FACILITY_ID)
+    .in('respondent_type', ['patient','caregiver'])
+    .lte('overall_meal', 3)
+    .order('submitted_at', {ascending:false});
+  var { data: tracking } = await sb.from('dietary_grievance_tracking').select('*').eq('facility_id', FACILITY_ID);
+
+  fb = fb || []; tracking = tracking || [];
+  var trackMap = {}; tracking.forEach(function(t){ trackMap[t.feedback_id] = t; });
+
+  cachedGrievances = fb.map(function(f) {
+    var t = trackMap[f.id];
+    return Object.assign({}, f, {
+      grievance_status: t ? t.status : 'New',
+      resolution_notes: t ? t.resolution_notes : '',
+      tracking_id: t ? t.id : null,
+    });
+  });
+
+  var counts = { New:0, Reviewing:0, Resolved:0 };
+  cachedGrievances.forEach(function(g){ counts[g.grievance_status] = (counts[g.grievance_status]||0)+1; });
+
+  document.getElementById('grievanceStatsRow').innerHTML =
+    statCard(cachedGrievances.length, 'Total Grievances', 'pill-gray', '📢') +
+    statCard(counts.New, 'New', counts.New>0?'pill-red':'pill-green', counts.New>0?'⚠ Needs Review':'✓ Clear') +
+    statCard(counts.Reviewing, 'Reviewing', 'pill-orange', '⏳ In Progress') +
+    statCard(counts.Resolved, 'Resolved', 'pill-green', '✓ Closed');
+
+  var navBadge = document.getElementById('grievanceNavBadge');
+  if (counts.New > 0) { navBadge.style.display = 'inline-flex'; navBadge.textContent = counts.New; }
+  else { navBadge.style.display = 'none'; }
+
+  renderGrievanceList();
+}
+
+function renderGrievanceList() {
+  var list = document.getElementById('grievanceList');
+  var filtered = cachedGrievances.filter(function(g){ return g.grievance_status === grievanceFilter; });
+
+  if (!filtered.length) {
+    var emptyMsg = grievanceFilter==='New' ? '✓ No new grievances' : grievanceFilter==='Reviewing' ? 'Nothing currently in review' : 'No resolved grievances yet';
+    var emptyColor = grievanceFilter==='New' ? 'var(--green)' : 'var(--gray)';
+    list.innerHTML = '<div class="card" style="padding:32px;text-align:center;color:'+emptyColor+';font-weight:600;">'+emptyMsg+'</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(function(g) {
+    var ratingColor = g.overall_meal <= 1 ? 'var(--red)' : g.overall_meal === 2 ? 'var(--amber)' : 'var(--gray)';
+    var respLabel = g.respondent_type === 'patient' ? '🛏 Patient' : '🧑‍🤝‍🧑 Caregiver';
+    var dateStr = new Date(g.submitted_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    return '<div class="card" style="cursor:pointer;margin-bottom:10px;" onclick="openGrievanceDetail(\''+g.id+'\')">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
+            '<span style="font-size:12px;font-weight:700;">'+respLabel+'</span>' +
+            '<span class="qty-badge" style="background:rgba(239,68,68,.1);color:'+ratingColor+';">Rating: '+g.overall_meal+'/5</span>' +
+          '</div>' +
+          '<div style="font-size:12.5px;color:var(--gray);line-height:1.4;">'+(g.comment ? g.comment.substring(0,120)+(g.comment.length>120?'…':'') : 'No comment provided')+'</div>' +
+          '<div style="font-size:10.5px;color:var(--gray-light);margin-top:6px;">'+dateStr+'</div>' +
+        '</div>' +
+      '</div></div>';
+  }).join('');
+}
+
+async function openGrievanceDetail(feedbackId) {
+  var g = cachedGrievances.find(function(x){ return x.id === feedbackId; });
+  if (!g) return;
+  currentGrievance = g;
+
+  document.getElementById('gvMeta').textContent = new Date(g.submitted_at).toLocaleString();
+  document.getElementById('gv-respondent').textContent = g.respondent_type === 'patient' ? 'Patient' : 'Caregiver';
+  document.getElementById('gv-rating').textContent = g.overall_meal + ' / 5';
+  document.getElementById('gv-taste').textContent = g.food_taste ? g.food_taste+' / 5' : '—';
+  document.getElementById('gv-temp').textContent = g.food_temperature ? g.food_temperature+' / 5' : '—';
+  document.getElementById('gv-date').textContent = new Date(g.submitted_at).toLocaleString();
+  document.getElementById('gv-comment').textContent = g.comment || 'No comment provided';
+  document.getElementById('gv-notes').value = g.resolution_notes || '';
+
+  document.getElementById('grievanceModal').classList.add('open');
+}
+function closeGrievanceModal() { document.getElementById('grievanceModal').classList.remove('open'); currentGrievance = null; }
+
+async function updateGrievanceStatus(status) {
+  if (!currentGrievance) return;
+  var notes = document.getElementById('gv-notes').value;
+  var staff = getStaffName();
+
+  var payload = {
+    facility_id: FACILITY_ID, feedback_id: currentGrievance.id, status: status,
+    resolution_notes: notes, updated_at: new Date().toISOString(),
+  };
+  if (status === 'Resolved') { payload.resolved_by = staff; payload.resolved_at = new Date().toISOString(); }
+
+  var { error } = await sb.from('dietary_grievance_tracking').upsert(payload, { onConflict: 'feedback_id' });
+  if (error) { alert('Error: ' + error.message); return; }
+
+  closeGrievanceModal();
+  loadGrievances();
+}
+
+/* ════════════════════════════════════════════
+   POLICIES & PROCEDURES
+════════════════════════════════════════════ */
+var cachedPolicies = [];
+var currentPolicy = null;
+
+async function loadPolicies() {
+  var { data } = await sb.from('dietary_policies').select('*').eq('facility_id', FACILITY_ID).order('category').order('title');
+  cachedPolicies = data || [];
+  renderPolicyList();
+}
+
+function renderPolicyList() {
+  var search = (document.getElementById('policySearch').value || '').toLowerCase();
+  var catF = document.getElementById('policyCatFilter').value;
+
+  var filtered = cachedPolicies.filter(function(p) {
+    if (catF && p.category !== catF) return false;
+    if (search) {
+      var haystack = (p.title + ' ' + p.content + ' ' + (p.tags||[]).join(' ')).toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+    return true;
+  });
+
+  var list = document.getElementById('policyList');
+  if (!filtered.length) {
+    list.innerHTML = '<div class="card" style="padding:32px;text-align:center;color:var(--gray);">No policies found — create one above.</div>';
+    return;
+  }
+
+  var byCat = {};
+  filtered.forEach(function(p){ (byCat[p.category]=byCat[p.category]||[]).push(p); });
+
+  list.innerHTML = Object.keys(byCat).sort().map(function(cat) {
+    return '<div class="hall-section open"><div class="hall-header" style="cursor:default;" onclick="event.stopPropagation();">' +
+      '<div class="hall-icon">📖</div><div class="hall-title-wrap"><div class="hall-title">'+cat+'</div>' +
+      '<div class="hall-sub">'+byCat[cat].length+' polic'+(byCat[cat].length>1?'ies':'y')+'</div></div></div>' +
+      '<div class="hall-body open" style="max-height:none;"><div class="hall-body-inner">' +
+      byCat[cat].map(function(p) {
+        var preview = p.content.substring(0,100) + (p.content.length>100?'…':'');
+        return '<div class="mini-card" style="cursor:pointer;margin-bottom:8px;" onclick="viewPolicy(\''+p.id+'\')">' +
+          '<div class="mini-card-title">'+p.title+'</div><div class="mini-card-sub">'+preview+'</div></div>';
+      }).join('') + '</div></div></div>';
+  }).join('');
+}
+
+function viewPolicy(id) {
+  var p = cachedPolicies.find(function(x){ return x.id===id; });
+  if (!p) return;
+  currentPolicy = p;
+  document.getElementById('pvTitle').textContent = p.title;
+  document.getElementById('pvMeta').textContent = p.category + (p.tags&&p.tags.length ? ' · ' + p.tags.join(', ') : '') + ' · Updated ' + new Date(p.updated_at).toLocaleDateString();
+  document.getElementById('pvContent').textContent = p.content;
+  document.getElementById('policyModal').classList.add('open');
+}
+function closePolicyModal() { document.getElementById('policyModal').classList.remove('open'); }
+
+function editCurrentPolicy() {
+  if (!currentPolicy) return;
+  closePolicyModal();
+  document.getElementById('apTitle').textContent = 'Edit Policy';
+  document.getElementById('ap-title').value = currentPolicy.title;
+  document.getElementById('ap-category').value = currentPolicy.category;
+  document.getElementById('ap-tags').value = (currentPolicy.tags||[]).join(', ');
+  document.getElementById('ap-content').value = currentPolicy.content;
+  document.getElementById('addPolicyModal').classList.add('open');
+}
+
+function showAddPolicy() {
+  currentPolicy = null;
+  document.getElementById('apTitle').textContent = 'New Policy';
+  document.getElementById('ap-title').value = '';
+  document.getElementById('ap-category').value = 'Food Safety';
+  document.getElementById('ap-tags').value = '';
+  document.getElementById('ap-content').value = '';
+  document.getElementById('addPolicyModal').classList.add('open');
+}
+function closeAddPolicy() { document.getElementById('addPolicyModal').classList.remove('open'); }
+
+async function savePolicy() {
+  var title = document.getElementById('ap-title').value.trim();
+  var content = document.getElementById('ap-content').value.trim();
+  if (!title || !content) { alert('Title and content are required'); return; }
+
+  var tags = document.getElementById('ap-tags').value.split(',').map(function(t){return t.trim();}).filter(Boolean);
+  var staff = getStaffName();
+
+  var payload = {
+    facility_id: FACILITY_ID, title: title,
+    category: document.getElementById('ap-category').value,
+    content: content, tags: tags, updated_by: staff, updated_at: new Date().toISOString(),
+  };
+
+  var error;
+  if (currentPolicy) {
+    ({ error } = await sb.from('dietary_policies').update(payload).eq('id', currentPolicy.id));
+  } else {
+    payload.created_by = staff;
+    ({ error } = await sb.from('dietary_policies').insert(payload));
+  }
+  if (error) { alert('Error: ' + error.message); return; }
+
+  closeAddPolicy();
+  loadPolicies();
+}
+
+/* ════════════════════════════════════════════
+   MONTHLY REPORT — Dietary Manager's monthly metrics
+════════════════════════════════════════════ */
+var cachedMonthlyReports = [];
+var currentMonthlyReport = null;
+
+async function loadMonthlyReports() {
+  var list = document.getElementById('monthlyReportList');
+  list.innerHTML = '<div style="padding:20px;color:var(--gray);">Loading…</div>';
+
+  var { data } = await sb.from('dietary_monthly_reports').select('*').eq('facility_id', FACILITY_ID).order('report_date', {ascending:false});
+  cachedMonthlyReports = data || [];
+
+  if (!cachedMonthlyReports.length) {
+    list.innerHTML = '<div class="card" style="padding:32px;text-align:center;color:var(--gray);">No monthly reports yet — click + New Report to submit the first one.</div>';
+    return;
+  }
+
+  list.innerHTML = cachedMonthlyReports.map(function(r) {
+    return '<div class="card" style="cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;" onclick="viewMonthlyReport(\''+r.id+'\')">' +
+      '<div><div style="font-size:14px;font-weight:800;">'+r.report_period+'</div>' +
+      '<div style="font-size:11.5px;color:var(--gray);margin-top:2px;">Submitted by '+r.submitted_by+' · '+new Date(r.submitted_at).toLocaleDateString()+'</div></div>' +
+      '<div style="font-size:18px;color:var(--gray-light);">›</div></div>';
+  }).join('');
+}
+
+function showAddMonthlyReport() {
+  currentMonthlyReport = null;
+  document.getElementById('mrTitle').textContent = 'New Monthly Report';
+  ['mr-period','mr-date','mr-q1-forums','mr-q1-period','mr-q1-employees','mr-q1-residents',
+   'mr-q2-period','mr-q2-pct','mr-q3-period','mr-q3-pct','mr-q3-dollars',
+   'mr-q4-period','mr-q4-pct','mr-q5-period','mr-q5-pct','mr-q6-period','mr-q6-pct','mr-other'
+  ].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('monthlyReportModal').classList.add('open');
+}
+function closeMonthlyReportModal() { document.getElementById('monthlyReportModal').classList.remove('open'); }
+
+async function saveMonthlyReport() {
+  var period = document.getElementById('mr-period').value.trim();
+  var monthVal = document.getElementById('mr-date').value;
+  if (!period || !monthVal) { alert('Report Period and Report Month are required'); return; }
+
+  var staff = getStaffName();
+  var payload = {
+    facility_id: FACILITY_ID, report_period: period, report_date: monthVal + '-01',
+    q1_forums_count: numOrNull('mr-q1-forums'), q1_period: strOrNull('mr-q1-period'),
+    q1_employees_count: numOrNull('mr-q1-employees'), q1_residents_count: numOrNull('mr-q1-residents'),
+    q2_period: strOrNull('mr-q2-period'), q2_satisfaction_pct: numOrNull('mr-q2-pct'),
+    q3_period: strOrNull('mr-q3-period'), q3_reduction_pct: numOrNull('mr-q3-pct'), q3_reduction_dollars: numOrNull('mr-q3-dollars'),
+    q4_period: strOrNull('mr-q4-period'), q4_improvement_pct: numOrNull('mr-q4-pct'),
+    q5_period: strOrNull('mr-q5-period'), q5_improvement_pct: numOrNull('mr-q5-pct'),
+    q6_period: strOrNull('mr-q6-period'), q6_decrease_pct: numOrNull('mr-q6-pct'),
+    other_measures: strOrNull('mr-other'),
+    submitted_by: staff, updated_at: new Date().toISOString(),
+  };
+
+  var error;
+  if (currentMonthlyReport) {
+    ({ error } = await sb.from('dietary_monthly_reports').update(payload).eq('id', currentMonthlyReport.id));
+  } else {
+    ({ error } = await sb.from('dietary_monthly_reports').insert(payload));
+  }
+  if (error) { alert('Error: ' + error.message); return; }
+
+  closeMonthlyReportModal();
+  loadMonthlyReports();
+}
+
+function numOrNull(id) { var v = document.getElementById(id).value; return v === '' ? null : +v; }
+function strOrNull(id) { var v = document.getElementById(id).value.trim(); return v === '' ? null : v; }
+
+function viewMonthlyReport(id) {
+  var r = cachedMonthlyReports.find(function(x){ return x.id===id; });
+  if (!r) return;
+  currentMonthlyReport = r;
+
+  document.getElementById('mrvTitle').textContent = r.report_period;
+  document.getElementById('mrvMeta').textContent = 'Submitted by ' + r.submitted_by + ' · ' + new Date(r.submitted_at).toLocaleDateString();
+
+  function row(label, val) {
+    return '<div class="detail-row"><span class="detail-label">'+label+'</span><span class="detail-val">'+(val!=null && val!==''?val:'—')+'</span></div>';
+  }
+
+  var body =
+    '<div class="modal-section-title" style="margin-top:0;">1. Food Forums</div>' +
+    row('Forums Held', r.q1_forums_count) + row('Time Period', r.q1_period) +
+    row('Employees Participating', r.q1_employees_count) + row('Elders/Residents Participating', r.q1_residents_count) +
+    '<div class="modal-section-title" style="margin-top:16px;">2. Interview Satisfaction</div>' +
+    row('Time Period', r.q2_period) + row('Satisfaction Rate', r.q2_satisfaction_pct!=null ? r.q2_satisfaction_pct+'%' : null) +
+    '<div class="modal-section-title" style="margin-top:16px;">3. Food Waste Reduction</div>' +
+    row('Time Period', r.q3_period) + row('Reduction', r.q3_reduction_pct!=null ? r.q3_reduction_pct+'%' : null) +
+    row('Reduction ($)', r.q3_reduction_dollars!=null ? fmtMoney(r.q3_reduction_dollars) : null) +
+    '<div class="modal-section-title" style="margin-top:16px;">4. Food Choice Satisfaction Improvement</div>' +
+    row('Time Period', r.q4_period) + row('Improvement', r.q4_improvement_pct!=null ? r.q4_improvement_pct+'%' : null) +
+    '<div class="modal-section-title" style="margin-top:16px;">5. Nutritional Intake Improvement</div>' +
+    row('Time Period', r.q5_period) + row('Improvement', r.q5_improvement_pct!=null ? r.q5_improvement_pct+'%' : null) +
+    '<div class="modal-section-title" style="margin-top:16px;">6. Supplement Cost Decrease</div>' +
+    row('Time Period', r.q6_period) + row('Decrease', r.q6_decrease_pct!=null ? r.q6_decrease_pct+'%' : null);
+
+  if (r.other_measures) {
+    body += '<div class="modal-section-title" style="margin-top:16px;">Other Measures</div>' +
+      '<div style="background:var(--bg);border-radius:14px;padding:14px;font-size:13px;line-height:1.5;white-space:pre-wrap;">'+r.other_measures+'</div>';
+  }
+
+  body += '<button class="neu-btn small" style="margin-top:16px;" data-perm="addItem" onclick="editMonthlyReport()">✎ Edit</button>';
+
+  document.getElementById('mrvBody').innerHTML = body;
+  document.getElementById('monthlyReportViewModal').classList.add('open');
+  applyRolePermissions();
+}
+function closeMonthlyReportView() { document.getElementById('monthlyReportViewModal').classList.remove('open'); }
+
+function editMonthlyReport() {
+  if (!currentMonthlyReport) return;
+  var r = currentMonthlyReport;
+  closeMonthlyReportView();
+
+  document.getElementById('mrTitle').textContent = 'Edit Monthly Report';
+  document.getElementById('mr-period').value = r.report_period;
+  document.getElementById('mr-date').value = r.report_date.substring(0,7);
+  document.getElementById('mr-q1-forums').value = r.q1_forums_count ?? '';
+  document.getElementById('mr-q1-period').value = r.q1_period || '';
+  document.getElementById('mr-q1-employees').value = r.q1_employees_count ?? '';
+  document.getElementById('mr-q1-residents').value = r.q1_residents_count ?? '';
+  document.getElementById('mr-q2-period').value = r.q2_period || '';
+  document.getElementById('mr-q2-pct').value = r.q2_satisfaction_pct ?? '';
+  document.getElementById('mr-q3-period').value = r.q3_period || '';
+  document.getElementById('mr-q3-pct').value = r.q3_reduction_pct ?? '';
+  document.getElementById('mr-q3-dollars').value = r.q3_reduction_dollars ?? '';
+  document.getElementById('mr-q4-period').value = r.q4_period || '';
+  document.getElementById('mr-q4-pct').value = r.q4_improvement_pct ?? '';
+  document.getElementById('mr-q5-period').value = r.q5_period || '';
+  document.getElementById('mr-q5-pct').value = r.q5_improvement_pct ?? '';
+  document.getElementById('mr-q6-period').value = r.q6_period || '';
+  document.getElementById('mr-q6-pct').value = r.q6_decrease_pct ?? '';
+  document.getElementById('mr-other').value = r.other_measures || '';
+
+  document.getElementById('monthlyReportModal').classList.add('open');
+}
+
+
+// Boot
+if (currentRole) {
+  document.getElementById('roleBadge').textContent = currentRole;
+  
+loadRefData().then(function(){ loadDashboard(); applyRolePermissions(); loadNotifications(); });
+} else {
+  openRolePicker(false);
+}
+</script>
+</body>
+</html>
