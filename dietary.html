@@ -415,6 +415,7 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   </div>
   <button class="nav-item active" id="drawer-dashboard" onclick="drawerNav('dashboard')"><span class="nav-icon">📊</span> Dashboard</button>
   <button class="nav-item" id="drawer-inventory" onclick="drawerNav('inventory')"><span class="nav-icon">📦</span> Inventory</button>
+  <button class="nav-item" id="drawer-catalog" onclick="drawerNav('catalog')"><span class="nav-icon">📋</span> Item Catalog</button>
   <button class="nav-item" id="drawer-vendors" onclick="drawerNav('vendors')"><span class="nav-icon">🚚</span> Vendors</button>
   <button class="nav-item" id="drawer-emergency" onclick="drawerNav('emergency')"><span class="nav-icon">🆘</span> Emergency Supply</button>
   <button class="nav-item" id="drawer-grievances" onclick="drawerNav('grievances')"><span class="nav-icon">📢</span> Grievances</button>
@@ -435,6 +436,7 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   </div>
   <button class="nav2-item active" id="sb2-nav-dashboard" onclick="switchTab('dashboard')"><span class="nav2-icon">▦</span> Overview</button>
   <button class="nav2-item" id="sb2-nav-inventory" onclick="switchTab('inventory')"><span class="nav2-icon">📦</span> Inventory</button>
+  <button class="nav2-item" id="sb2-nav-catalog" onclick="switchTab('catalog')"><span class="nav2-icon">📋</span> Item Catalog</button>
   <button class="nav2-item" id="sb2-nav-vendors" onclick="switchTab('vendors')"><span class="nav2-icon">🚚</span> Vendors</button>
   <button class="nav2-item" id="sb2-nav-emergency" onclick="switchTab('emergency')"><span class="nav2-icon">🆘</span> Emergency Supply</button>
   <button class="nav2-item" id="sb2-nav-grievances" onclick="switchTab('grievances')"><span class="nav2-icon">📢</span> Grievances<span id="grievanceNavBadge" style="display:none;margin-left:auto;background:var(--red);color:white;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;"></span></button>
@@ -646,6 +648,24 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
       <table class="inv-table">
         <thead><tr><th>Item</th><th>Category</th><th>Storage</th><th>Quantity</th><th>Expiration</th><th>Cost/Unit</th></tr></thead>
         <tbody id="invTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ ITEM CATALOG ═══ -->
+  <div id="panel-catalog" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Item Catalog</div><div class="page-sub">Master list of orderable products — not tied to current stock</div></div>
+      <button class="neu-btn primary" data-perm="addItem" onclick="showAddItem()">+ Add Catalog Item</button>
+    </div>
+    <div class="search-bar">
+      <input class="search-input" id="catSearch" placeholder="Search item, vendor, SKU…" oninput="renderCatalogList()">
+      <select class="filter-select" id="catCatFilter" onchange="renderCatalogList()"><option value="">All Categories</option></select>
+    </div>
+    <div class="card" style="padding:0;overflow-x:auto;">
+      <table class="inv-table">
+        <thead><tr><th>Item</th><th>Category</th><th>Vendor</th><th>SKU</th><th>Cost/Unit</th><th></th></tr></thead>
+        <tbody id="catalogTableBody"></tbody>
       </table>
     </div>
   </div>
@@ -1010,6 +1030,26 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   </div>
 </div>
 
+<div class="modal-overlay" id="receiveStockModal">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="modal-header">
+      <div><div class="modal-title">Receive Stock</div><div class="modal-meta" id="rsItemName">—</div></div>
+      <button class="modal-close" onclick="closeReceiveStock()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-grid">
+        <div class="field"><label>Quantity *</label><input type="number" id="rs-qty"></div>
+        <div class="field"><label>Storage Location</label><select id="rs-storage"></select></div>
+        <div class="field"><label>Lot Number</label><input id="rs-lot"></div>
+        <div class="field"><label>Expiration Date</label><input type="date" id="rs-exp"></div>
+        <div class="field"><label>Par Level</label><input type="number" id="rs-par"></div>
+        <div class="field"><label>Minimum Level</label><input type="number" id="rs-min"></div>
+      </div>
+      <button class="neu-btn primary" style="width:100%;margin-top:10px;" onclick="submitReceiveStock()">Receive Stock &amp; Generate QR</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -1020,7 +1060,30 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const SCAN_BASE_URL = window.location.origin + '/dietary-scan.html#item=';
 
 var currentPanel = 'dashboard';
-var cachedItems = [], cachedCategories = [], cachedStorage = [], cachedVendors = [];
+var cachedItems = [], cachedCategories = [], cachedStorage = [], cachedVendors = [], cachedCatalog = [];
+
+async function loadCatalog() {
+  var { data } = await sb.from('dietary_item_catalog').select('*').eq('facility_id', FACILITY_ID).eq('is_active', true).order('item_name');
+  cachedCatalog = data || [];
+}
+
+async function loadInventoryJoined(statusFilter) {
+  await loadCatalog();
+  var q = sb.from('dietary_inventory').select('*').eq('facility_id', FACILITY_ID);
+  if (statusFilter) q = q.eq('status', statusFilter);
+  var { data: inv } = await q;
+  var catMapById = {}; cachedCatalog.forEach(function(c){ catMapById[c.id] = c; });
+  return (inv||[]).map(function(row) {
+    var cat = catMapById[row.catalog_item_id] || {};
+    return Object.assign({}, row, {
+      item_name: cat.item_name || '(item not found)',
+      category_id: cat.category_id || null, vendor_id: cat.vendor_id || null,
+      sku: cat.sku || null, unit_type: cat.unit_type || row.unit_type || null,
+      cost_per_unit: cat.cost_per_unit != null ? cat.cost_per_unit : null,
+      manufacturer: cat.manufacturer || null, catalog_item_id: row.catalog_item_id,
+    });
+  });
+}
 var currentItem = null;
 
 function switchTab(tab) {
@@ -1030,13 +1093,14 @@ function switchTab(tab) {
   switchTab_direct(tab);
 }
 function switchTab_direct(tab) {
-  ['dashboard','inventory','vendors','emergency','grievances','policies','monthly'].forEach(function(p){
+  ['dashboard','inventory','catalog','vendors','emergency','grievances','policies','monthly'].forEach(function(p){
     var el = document.getElementById('panel-'+p);
     if (el) el.style.display = p===tab ? 'block' : 'none';
   });
   currentPanel = tab;
   if (tab==='dashboard') loadDashboard();
   if (tab==='inventory') loadInventoryTab();
+  if (tab==='catalog') loadItemCatalogTab();
   if (tab==='vendors') loadVendors();
   if (tab==='emergency') loadEmergency();
   if (tab==='grievances') loadGrievances();
@@ -1119,7 +1183,7 @@ function periodStartDate() {
 
 async function loadDashboard() {
   var periodStart = periodStartDate().toISOString();
-  var { data: items } = await sb.from('dietary_items').select('*').eq('facility_id', FACILITY_ID).eq('status','Active');
+  var items = await loadInventoryJoined('Active');
   var { data: txnsPeriod } = await sb.from('dietary_transactions').select('*').eq('facility_id', FACILITY_ID).gte('created_at', periodStart);
   var { data: recentTxns } = await sb.from('dietary_transactions').select('*').eq('facility_id', FACILITY_ID).order('created_at',{ascending:false}).limit(15);
   var { data: cats } = await sb.from('dietary_categories').select('*').eq('facility_id', FACILITY_ID);
@@ -1396,8 +1460,8 @@ function exportDashboardCSV() {
 
 async function loadInventoryTab() {
   await loadRefData();
-  var { data: items } = await sb.from('dietary_items').select('*').eq('facility_id', FACILITY_ID).eq('status','Active').order('item_name');
-  cachedItems = items || [];
+  cachedItems = await loadInventoryJoined('Active');
+  cachedItems.sort(function(a,b){ return (a.item_name||'').localeCompare(b.item_name||''); });
   renderInventoryTable();
 }
 
@@ -1457,39 +1521,51 @@ async function saveNewItem() {
   var name = document.getElementById('ai-name').value.trim();
   if (!name) { alert('Item name is required'); return; }
 
-  var qrId = 'agrhodes-atl-diet-' + Date.now();
-  var payload = {
-    facility_id: FACILITY_ID, qr_identifier: qrId, item_name: name,
+  var startQty = +document.getElementById('ai-qty').value || 0;
+
+  var catalogPayload = {
+    facility_id: FACILITY_ID, item_name: name,
     category_id: document.getElementById('ai-category').value || null,
     vendor_id: document.getElementById('ai-vendor').value || null,
     manufacturer: document.getElementById('ai-manufacturer').value || null,
     sku: document.getElementById('ai-sku').value || null,
-    lot_number: document.getElementById('ai-lot').value || null,
-    expiration_date: document.getElementById('ai-exp').value || null,
-    received_date: document.getElementById('ai-received').value || null,
-    storage_location_id: document.getElementById('ai-storage').value || null,
     unit_type: document.getElementById('ai-unit').value || null,
-    current_quantity: +document.getElementById('ai-qty').value || 0,
     cost_per_unit: +document.getElementById('ai-cost').value || null,
-    par_level: document.getElementById('ai-par').value ? +document.getElementById('ai-par').value : null,
-    minimum_level: document.getElementById('ai-min').value ? +document.getElementById('ai-min').value : null,
-    is_emergency_supply: document.getElementById('ai-emergency').checked,
+    is_emergency_eligible: document.getElementById('ai-emergency').checked,
     notes: document.getElementById('ai-notes').value || null,
   };
 
-  var { data, error } = await sb.from('dietary_items').insert(payload).select().single();
+  var { data: catItem, error } = await sb.from('dietary_item_catalog').insert(catalogPayload).select().single();
   if (error) { alert('Error: ' + error.message); return; }
 
-  if (payload.current_quantity > 0) {
+  // Only create an inventory record (with QR code) if a starting quantity was entered
+  if (startQty > 0) {
+    var qrId = 'agrhodes-atl-diet-' + Date.now();
+    var invPayload = {
+      facility_id: FACILITY_ID, catalog_item_id: catItem.id, qr_identifier: qrId,
+      current_quantity: startQty,
+      lot_number: document.getElementById('ai-lot').value || null,
+      expiration_date: document.getElementById('ai-exp').value || null,
+      received_date: document.getElementById('ai-received').value || new Date().toISOString().split('T')[0],
+      storage_location_id: document.getElementById('ai-storage').value || null,
+      par_level: document.getElementById('ai-par').value ? +document.getElementById('ai-par').value : null,
+      minimum_level: document.getElementById('ai-min').value ? +document.getElementById('ai-min').value : null,
+      is_emergency_supply: document.getElementById('ai-emergency').checked,
+    };
+
+    var { data: invItem, error: invErr } = await sb.from('dietary_inventory').insert(invPayload).select().single();
+    if (invErr) { alert('Catalog item saved, but stock record failed: ' + invErr.message); closeAddItem(); loadInventoryTab(); return; }
+
     await sb.from('dietary_transactions').insert({
-      facility_id: FACILITY_ID, item_id: data.id, action: 'Receive', reason: 'Initial Stock',
-      quantity: payload.current_quantity, before_quantity: 0, after_quantity: payload.current_quantity,
+      facility_id: FACILITY_ID, inventory_id: invItem.id, action: 'Receive', reason: 'Initial Stock',
+      quantity: startQty, before_quantity: 0, after_quantity: startQty,
       performed_by: getStaffName(), device: 'web',
     });
   }
 
   closeAddItem();
   loadInventoryTab();
+  if (typeof loadItemCatalogTab === 'function') loadItemCatalogTab();
 }
 
 async function openItemDetail(itemId) {
@@ -1579,7 +1655,7 @@ async function submitAction(action) {
   var staff = getStaffName();
   var before = currentItem.current_quantity;
   var after = before;
-  var payload = { facility_id: FACILITY_ID, item_id: currentItem.id, action: action, performed_by: staff, device: 'web' };
+  var payload = { facility_id: FACILITY_ID, inventory_id: currentItem.id, action: action, performed_by: staff, device: 'web' };
 
   if (action === 'Receive') {
     after = before + qtyInput;
@@ -1622,11 +1698,10 @@ async function submitAction(action) {
     if (payload.lot_number) itemUpdate.lot_number = payload.lot_number;
     if (payload.expiration_date) itemUpdate.expiration_date = payload.expiration_date;
     if (payload.storage_location_id) itemUpdate.storage_location_id = payload.storage_location_id;
-    if (payload.vendor_id) itemUpdate.vendor_id = payload.vendor_id;
     itemUpdate.received_date = new Date().toISOString().split('T')[0];
   }
 
-  var { error: updErr } = await sb.from('dietary_items').update(itemUpdate).eq('id', currentItem.id);
+  var { error: updErr } = await sb.from('dietary_inventory').update(itemUpdate).eq('id', currentItem.id);
   if (updErr) { alert('Error: ' + updErr.message); return; }
 
   document.getElementById('actionFormWrap').innerHTML = '<div style="text-align:center;padding:16px;color:var(--green);font-weight:700;font-size:13px;">✓ '+action+' recorded</div>';
@@ -1640,7 +1715,7 @@ async function showItemHistory() {
   document.getElementById('actionFormWrap').innerHTML = '';
   var wrap = document.getElementById('historyWrap');
   wrap.innerHTML = '<div style="padding:12px;color:var(--gray);font-size:12px;">Loading…</div>';
-  var { data: txns } = await sb.from('dietary_transactions').select('*').eq('item_id', currentItem.id).order('created_at',{ascending:false}).limit(30);
+  var { data: txns } = await sb.from('dietary_transactions').select('*').eq('inventory_id', currentItem.id).order('created_at',{ascending:false}).limit(30);
   if (!txns || !txns.length) { wrap.innerHTML = '<div style="padding:16px;text-align:center;color:var(--gray);font-size:12px;">No transaction history yet</div>'; return; }
   wrap.innerHTML = '<div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(0,0,0,.06);"><div style="font-size:13px;font-weight:700;margin-bottom:10px;">Transaction History</div>' +
     txns.map(function(t) {
@@ -1802,7 +1877,7 @@ async function loadNotifications() {
   var content = document.getElementById('notifContent');
   content.innerHTML = '<div style="padding:16px;text-align:center;color:var(--gray);font-size:11.5px;">Loading…</div>';
 
-  var { data: items } = await sb.from('dietary_items').select('*').eq('facility_id', FACILITY_ID).eq('status','Active');
+  var items = await loadInventoryJoined('Active');
   var { data: emergency } = await sb.from('dietary_emergency_inventory').select('*').eq('facility_id', FACILITY_ID);
   var { data: pos } = await sb.from('dietary_purchase_orders').select('*').eq('facility_id', FACILITY_ID).eq('status','Submitted');
   items = items || []; emergency = emergency || []; pos = pos || [];
@@ -2352,45 +2427,70 @@ async function confirmBulkImport() {
     if (vd) vendMap[key3] = vd.id;
   }
 
-  // Step 2: build item payloads with QR identifiers
+  // Step 2: build CATALOG payloads (every valid row becomes a catalog entry — no quantity here)
   var staff = getStaffName();
-  var payloads = validRows.map(function(r, i) {
+  var catalogPayloads = validRows.map(function(r) {
     return {
       facility_id: FACILITY_ID,
-      qr_identifier: 'agrhodes-atl-diet-' + Date.now() + '-' + i,
       item_name: r.item_name,
       category_id: r.category ? catMap[r.category.toLowerCase()] || null : null,
-      storage_location_id: r.storage_location ? storMap[r.storage_location.toLowerCase()] || null : null,
       vendor_id: r.vendor ? vendMap[r.vendor.toLowerCase()] || null : null,
-      unit_type: r.unit_type || null, current_quantity: r.quantity || 0,
-      cost_per_unit: r.cost_per_unit, par_level: r.par_level, minimum_level: r.minimum_level,
-      sku: r.sku, lot_number: r.lot_number, expiration_date: r.expiration_date || null,
-      received_date: new Date().toISOString().split('T')[0],
+      unit_type: r.unit_type || null,
+      cost_per_unit: r.cost_per_unit,
+      sku: r.sku,
     };
   });
 
-  // Step 3: batch insert (chunks of 100 to stay safe)
-  var inserted = [];
-  for (var i = 0; i < payloads.length; i += 100) {
-    var chunk = payloads.slice(i, i+100);
-    var { data: rows, error } = await sb.from('dietary_items').insert(chunk).select();
+  // Step 3: batch insert into catalog (chunks of 100)
+  var insertedCatalog = [];
+  for (var i = 0; i < catalogPayloads.length; i += 100) {
+    var chunk = catalogPayloads.slice(i, i+100);
+    var { data: rows, error } = await sb.from('dietary_item_catalog').insert(chunk).select();
     if (error) { alert('Import error on batch ' + (i/100+1) + ': ' + error.message); btn.disabled = false; btn.textContent = 'Retry Import'; return; }
-    inserted = inserted.concat(rows || []);
+    insertedCatalog = insertedCatalog.concat(rows || []);
   }
 
-  // Step 4: log initial Receive transactions for items with quantity > 0
-  var txnPayloads = inserted.filter(function(it){ return it.current_quantity > 0; }).map(function(it) {
-    return { facility_id: FACILITY_ID, item_id: it.id, action: 'Receive', reason: 'Bulk Import',
-      quantity: it.current_quantity, before_quantity: 0, after_quantity: it.current_quantity,
+  // Step 4: for rows with quantity > 0, ALSO create an inventory record + QR + Receive transaction
+  var invPayloads = [];
+  validRows.forEach(function(r, i) {
+    if ((r.quantity || 0) > 0 && insertedCatalog[i]) {
+      invPayloads.push({
+        facility_id: FACILITY_ID,
+        catalog_item_id: insertedCatalog[i].id,
+        qr_identifier: 'agrhodes-atl-diet-' + Date.now() + '-' + i,
+        current_quantity: r.quantity,
+        storage_location_id: r.storage_location ? storMap[r.storage_location.toLowerCase()] || null : null,
+        par_level: r.par_level, minimum_level: r.minimum_level,
+        lot_number: r.lot_number, expiration_date: r.expiration_date || null,
+        received_date: new Date().toISOString().split('T')[0],
+      });
+    }
+  });
+
+  var insertedInventory = [];
+  for (var j = 0; j < invPayloads.length; j += 100) {
+    var chunk2 = invPayloads.slice(j, j+100);
+    var { data: invRows, error: invErr } = await sb.from('dietary_inventory').insert(chunk2).select();
+    if (invErr) { alert('Inventory creation error: ' + invErr.message); }
+    insertedInventory = insertedInventory.concat(invRows || []);
+  }
+
+  // Step 5: log initial Receive transactions for the inventory records just created
+  var txnPayloads = insertedInventory.map(function(inv) {
+    return { facility_id: FACILITY_ID, inventory_id: inv.id, action: 'Receive', reason: 'Bulk Import',
+      quantity: inv.current_quantity, before_quantity: 0, after_quantity: inv.current_quantity,
       performed_by: staff, device: 'web' };
   });
-  for (var j = 0; j < txnPayloads.length; j += 100) {
-    await sb.from('dietary_transactions').insert(txnPayloads.slice(j, j+100));
+  for (var k = 0; k < txnPayloads.length; k += 100) {
+    await sb.from('dietary_transactions').insert(txnPayloads.slice(k, k+100));
   }
 
   closeBulkImport();
-  showToastMsg('✓ Imported ' + inserted.length + ' items');
+  var msg = '✓ Added ' + insertedCatalog.length + ' items to catalog';
+  if (insertedInventory.length) msg += ' — ' + insertedInventory.length + ' with stock received';
+  showToastMsg(msg);
   loadInventoryTab();
+  if (typeof loadItemCatalogTab === 'function') loadItemCatalogTab();
 }
 
 function showToastMsg(msg) {
@@ -2399,6 +2499,105 @@ function showToastMsg(msg) {
   t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1A1A1A;color:white;padding:12px 22px;border-radius:999px;font-size:13px;font-weight:700;z-index:300;box-shadow:0 8px 24px rgba(0,0,0,.2);';
   document.body.appendChild(t);
   setTimeout(function(){ t.remove(); }, 2500);
+}
+
+/* ════════════════════════════════════════════
+   ITEM CATALOG TAB — master product list, no quantity
+════════════════════════════════════════════ */
+var currentReceiveCatalogItem = null;
+
+async function loadItemCatalogTab() {
+  await loadRefData();
+  await loadCatalog();
+
+  var catFilter = document.getElementById('catCatFilter');
+  var keepFirst = catFilter.options[0] ? catFilter.options[0].outerHTML : '';
+  catFilter.innerHTML = keepFirst + cachedCategories.map(function(c){ return '<option value="'+c.id+'">'+c.name+'</option>'; }).join('');
+
+  renderCatalogList();
+}
+
+function renderCatalogList() {
+  var search = (document.getElementById('catSearch').value || '').toLowerCase();
+  var catF = document.getElementById('catCatFilter').value;
+  var catMap = {}; cachedCategories.forEach(function(c){ catMap[c.id]=c.name; });
+  var vendMap = {}; cachedVendors.forEach(function(v){ vendMap[v.id]=v.name; });
+
+  var filtered = cachedCatalog.filter(function(c) {
+    if (catF && c.category_id !== catF) return false;
+    if (search) {
+      var haystack = (c.item_name + ' ' + (c.sku||'') + ' ' + (vendMap[c.vendor_id]||'')).toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+    return true;
+  });
+
+  var tbody = document.getElementById('catalogTableBody');
+  if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gray);">No catalog items found</td></tr>'; return; }
+
+  tbody.innerHTML = filtered.map(function(c) {
+    return '<tr>' +
+      '<td><div class="inv-item-name">'+c.item_name+'</div></td>' +
+      '<td>'+(catMap[c.category_id]||'—')+'</td>' +
+      '<td>'+(vendMap[c.vendor_id]||'—')+'</td>' +
+      '<td>'+(c.sku||'—')+'</td>' +
+      '<td>'+(c.cost_per_unit!=null?fmtMoney(c.cost_per_unit):'—')+'</td>' +
+      '<td><button class="neu-btn small" data-perm="receive" onclick="openReceiveStock(\''+c.id+'\')">📥 Receive Stock</button></td>' +
+      '</tr>';
+  }).join('');
+  applyRolePermissions();
+}
+
+function openReceiveStock(catalogItemId) {
+  var c = cachedCatalog.find(function(x){ return x.id===catalogItemId; });
+  if (!c) return;
+  currentReceiveCatalogItem = c;
+
+  document.getElementById('rsItemName').textContent = c.item_name;
+  document.getElementById('rs-qty').value = '';
+  document.getElementById('rs-lot').value = '';
+  document.getElementById('rs-exp').value = '';
+  document.getElementById('rs-par').value = '';
+  document.getElementById('rs-min').value = '';
+
+  var storSel = document.getElementById('rs-storage');
+  storSel.innerHTML = '<option value="">Select…</option>' + cachedStorage.map(function(s){ return '<option value="'+s.id+'">'+s.name+'</option>'; }).join('');
+
+  document.getElementById('receiveStockModal').classList.add('open');
+}
+function closeReceiveStock() { document.getElementById('receiveStockModal').classList.remove('open'); currentReceiveCatalogItem = null; }
+
+async function submitReceiveStock() {
+  if (!currentReceiveCatalogItem) return;
+  var qty = +document.getElementById('rs-qty').value;
+  if (!qty || qty <= 0) { alert('Enter a quantity greater than 0'); return; }
+
+  var staff = getStaffName();
+  var qrId = 'agrhodes-atl-diet-' + Date.now();
+
+  var payload = {
+    facility_id: FACILITY_ID, catalog_item_id: currentReceiveCatalogItem.id, qr_identifier: qrId,
+    current_quantity: qty,
+    storage_location_id: document.getElementById('rs-storage').value || null,
+    lot_number: document.getElementById('rs-lot').value || null,
+    expiration_date: document.getElementById('rs-exp').value || null,
+    received_date: new Date().toISOString().split('T')[0],
+    par_level: document.getElementById('rs-par').value ? +document.getElementById('rs-par').value : null,
+    minimum_level: document.getElementById('rs-min').value ? +document.getElementById('rs-min').value : null,
+  };
+
+  var { data: invItem, error } = await sb.from('dietary_inventory').insert(payload).select().single();
+  if (error) { alert('Error: ' + error.message); return; }
+
+  await sb.from('dietary_transactions').insert({
+    facility_id: FACILITY_ID, inventory_id: invItem.id, action: 'Receive', reason: 'Receiving',
+    quantity: qty, before_quantity: 0, after_quantity: qty,
+    performed_by: staff, device: 'web',
+  });
+
+  closeReceiveStock();
+  showToastMsg('✓ Stock received — QR code generated');
+  if (currentPanel === 'inventory') loadInventoryTab();
 }
 
 
