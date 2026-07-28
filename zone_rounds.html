@@ -1190,6 +1190,18 @@ const FACILITY_ID   = '30f74349-3ab8-483b-a587-f372c0fbd413';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const BASE_URL = window.location.origin + '/round.html#round=';
 
+// Shared label mapping for room cleaning purpose — used in both the round detail
+// modal badge and the Reports type label. plainText=true omits the emoji (for table text).
+function cleaningPurposeLabel(purpose, plainText) {
+  var map = {
+    admission_prep: { emoji:'🛎', text:'Admissions Prep' },
+    strip_wax: { emoji:'🪣', text:'Stripping & Waxing' },
+    routine: { emoji:'🧹', text:'Routine' }
+  };
+  var entry = map[purpose] || map.routine;
+  return plainText ? entry.text : (entry.emoji + ' ' + entry.text);
+}
+
 var currentPanel = 'dashboard';
 var lastDashLocations = [], lastDashRoundsToday = [], lastDashOpenIssues = [];
 var currentHeatmapFilter = 'all';
@@ -1988,13 +2000,14 @@ function openRoundModal(loc, round, issues) {
   var ROOM_LABELS = {
     resident_contacted:'Resident Contacted', satisfaction:'Satisfied With Care', no_concerns:'No Concerns',
     call_light:'Call Light', bed_low_locked:'Bed Low/Locked', room_clutter:'Room Free of Clutter',
+    no_chemicals:'No Signs of Chemicals', cords_safe:'Power Cords Safely Placed',
     floor_clean:'Floor Clean', bathroom_clean:'Bathroom Clean', trash_removed:'Trash Removed',
     curtains_clean:'Curtains Clean', odor_free:'No Odors', lighting:'Lighting',
     furniture_intact:'Furniture Intact', equipment_functioning:'Equipment OK', no_maintenance:'No Maintenance Issues',
   };
   var SECTIONS = {
     'Resident Status':['resident_contacted','satisfaction','no_concerns'],
-    'Safety':['call_light','bed_low_locked','room_clutter'],
+    'Safety':['call_light','bed_low_locked','room_clutter','no_chemicals','cords_safe'],
     'Cleanliness':['floor_clean','bathroom_clean','trash_removed'],
     'Environment':['curtains_clean','odor_free','lighting'],
     'Equipment':['furniture_intact','equipment_functioning','no_maintenance'],
@@ -2026,7 +2039,7 @@ function openRoundModal(loc, round, issues) {
 
   // Cleaning purpose badge + admission-ready photo, if this was a room cleaning task
   if (parsedScores && parsedScores.cleaning_purpose) {
-    var purposeLabel = parsedScores.cleaning_purpose === 'admission_prep' ? '🛎 Admissions Prep' : '🧹 Routine';
+    var purposeLabel = cleaningPurposeLabel(parsedScores.cleaning_purpose);
     body.innerHTML += '<div class="modal-section" style="margin-bottom:12px;">' +
       '<span class="issue-badge" style="background:var(--accent-dim);color:#5B5A0E;padding:6px 14px;font-size:12px;border-radius:999px;">'+purposeLabel+'</span>' +
     '</div>';
@@ -3422,7 +3435,7 @@ function openSurveyPrepDetail(idx) {
 /* ── Reports ── */
 var ROOM_CHECK_KEYS = [
   'resident_contacted','satisfaction','no_concerns','call_light','bed_low_locked','room_clutter',
-  'floor_clean','bathroom_clean','trash_removed','curtains_clean','odor_free','lighting',
+  'no_chemicals','cords_safe','floor_clean','bathroom_clean','trash_removed','curtains_clean','odor_free','lighting',
   'furniture_intact','equipment_functioning','no_maintenance'
 ];
 var REPORT_TYPE_LABELS = { room:'Resident Room', eoc_area:'EOC Area', office:'Office', bathroom:'Bathroom' };
@@ -3500,7 +3513,7 @@ async function generateReport() {
     var typeLabel = REPORT_TYPE_LABELS[type] || type;
     if (type === 'room') {
       if (r.round_type === 'room_cleaning') {
-        typeLabel = 'Resident Room (Cleaning — ' + (cleaningPurposeVal === 'admission_prep' ? 'Admissions Prep' : 'Routine') + ')';
+        typeLabel = 'Resident Room (Cleaning — ' + cleaningPurposeLabel(cleaningPurposeVal, true) + ')';
       } else {
         typeLabel = 'Resident Room (Zone Round)';
       }
