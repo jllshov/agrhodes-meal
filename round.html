@@ -356,7 +356,9 @@ var ROOM_SECTIONS = [
   { title:'Safety', dept:'Safety', type:'passfail', items:[
     { key:'call_light', label:'Call Light Working & Within Reach' },
     { key:'bed_low_locked', label:'Bed Low & Locked' },
-    { key:'room_clutter', label:'Room Free of Clutter' }
+    { key:'room_clutter', label:'Room Free of Clutter' },
+    { key:'no_chemicals', label:'No Signs of Chemicals Present' },
+    { key:'cords_safe', label:'Power Cords Not Daisy-Chained or Improperly Placed' }
   ]},
   { title:'Cleanliness', dept:'Housekeeping', type:'passfail', items:[
     { key:'floor_clean', label:'Floor Clean' },
@@ -557,6 +559,12 @@ function renderCleaningPurposeChoice() {
       '<div><div class="choice-title">Admissions Prep</div>' +
         '<div class="choice-sub">Room being prepared for a new admission</div></div>' +
       '<div class="choice-arrow">›</div>' +
+    '</div>' +
+    '<div class="choice-card" onclick="selectCleaningPurpose(\'strip_wax\')">' +
+      '<div class="choice-icon">🪣</div>' +
+      '<div><div class="choice-title">Stripping & Waxing</div>' +
+        '<div class="choice-sub">Floor stripped and refinished</div></div>' +
+      '<div class="choice-arrow">›</div>' +
     '</div>';
 }
 
@@ -566,9 +574,24 @@ function selectCleaningPurpose(purpose) {
   renderChecklist();
 }
 
+// Extra checklist section only added when Stripping & Waxing is picked as the purpose
+var STRIP_WAX_SECTIONS = [
+  { title:'Stripping & Waxing', dept:'Housekeeping', type:'passfail', items:[
+    { key:'floor_stripped', label:'Old Wax/Finish Fully Stripped' },
+    { key:'floor_neutralized', label:'Floor Neutralized & Rinsed' },
+    { key:'wax_applied', label:'New Wax/Finish Applied (Multiple Coats)' },
+    { key:'floor_dried', label:'Floor Fully Dried Before Resuming Use' },
+    { key:'furniture_protected', label:'Furniture & Baseboards Protected During Process' },
+    { key:'wet_floor_signs', label:'Wet Floor Warning Signs Posted' }
+  ]}
+];
+
 function getSections() {
   var t = currentLoc.location_type;
-  if (t === 'room') return currentChecklistMode === 'cleaning' ? ROOM_CLEANING_SECTIONS : ROOM_SECTIONS;
+  if (t === 'room') {
+    if (currentChecklistMode !== 'cleaning') return ROOM_SECTIONS;
+    return cleaningPurpose === 'strip_wax' ? ROOM_CLEANING_SECTIONS.concat(STRIP_WAX_SECTIONS) : ROOM_CLEANING_SECTIONS;
+  }
   if (t === 'office') return OFFICE_SECTIONS;
   if (t === 'bathroom') return BATHROOM_SECTIONS;
   return EOC_SECTIONS;
