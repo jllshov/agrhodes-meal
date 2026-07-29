@@ -357,8 +357,8 @@ var ROOM_SECTIONS = [
     { key:'call_light', label:'Call Light Working & Within Reach' },
     { key:'bed_low_locked', label:'Bed Low & Locked' },
     { key:'room_clutter', label:'Room Free of Clutter' },
-    { key:'no_chemicals', label:'No Signs of Chemicals Present' },
-    { key:'cords_safe', label:'Power Cords Not Daisy-Chained or Improperly Placed' }
+    { key:'no_chemicals', label:'No Signs of Chemicals Present', dept:'Infection Control' },
+    { key:'cords_safe', label:'Power Cords Not Daisy-Chained or Improperly Placed', dept:'Maintenance' }
   ]},
   { title:'Cleanliness', dept:'Housekeeping', type:'passfail', items:[
     { key:'floor_clean', label:'Floor Clean' },
@@ -618,6 +618,7 @@ function renderChecklist() {
     html += '<div class="card"><div class="section-title"><span>' + section.title + '</span></div>';
     section.items.forEach(function(item) {
       var val = roundValues[item.key];
+      var itemDept = item.dept || section.dept;
       var posLabel = section.type === 'yesno' ? 'Yes' : 'Pass';
       var negLabel = section.type === 'yesno' ? 'No' : 'Fail';
       var posVal = section.type === 'yesno' ? 'yes' : 'pass';
@@ -626,9 +627,9 @@ function renderChecklist() {
         '<div class="check-row">' +
           '<div class="check-label">' + item.label + '</div>' +
           '<div class="check-btns">' +
-            '<button class="check-btn' + (val===posVal?' sel-pass':'') + '" onclick="setCheckValue(\''+item.key+'\',\''+posVal+'\',\''+section.dept+'\',\''+item.label.replace(/'/g,"\\'")+'\')">✓ ' + posLabel + '</button>' +
-            '<button class="check-btn' + (val===negVal?' sel-fail':'') + '" onclick="setCheckValue(\''+item.key+'\',\''+negVal+'\',\''+section.dept+'\',\''+item.label.replace(/'/g,"\\'")+'\')">✕ ' + negLabel + '</button>' +
-            '<button class="check-btn' + (val==='n/a'?' sel-na':'') + '" onclick="setCheckValue(\''+item.key+'\',\'n/a\',\''+section.dept+'\',\''+item.label.replace(/'/g,"\\'")+'\')">N/A</button>' +
+            '<button class="check-btn' + (val===posVal?' sel-pass':'') + '" onclick="setCheckValue(\''+item.key+'\',\''+posVal+'\',\''+itemDept+'\',\''+item.label.replace(/'/g,"\\'")+'\')">✓ ' + posLabel + '</button>' +
+            '<button class="check-btn' + (val===negVal?' sel-fail':'') + '" onclick="setCheckValue(\''+item.key+'\',\''+negVal+'\',\''+itemDept+'\',\''+item.label.replace(/'/g,"\\'")+'\')">✕ ' + negLabel + '</button>' +
+            '<button class="check-btn' + (val==='n/a'?' sel-na':'') + '" onclick="setCheckValue(\''+item.key+'\',\'n/a\',\''+itemDept+'\',\''+item.label.replace(/'/g,"\\'")+'\')">N/A</button>' +
           '</div>' +
           '<div id="issue-slot-' + item.key + '"></div>' +
         '</div>';
