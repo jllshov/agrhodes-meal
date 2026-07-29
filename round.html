@@ -509,7 +509,12 @@ function renderLanding() {
     '</div>' +
     '<div style="text-align:center;margin-top:6px;">' +
       '<button class="neu-btn ghost" onclick="viewAssets()">View Assets on File →</button>' +
+      (isCleaningCapableLocation(loc) ? '<br><button class="neu-btn ghost" onclick="viewMyCleanings()">📋 My Completed Cleanings Today →</button>' : '') +
     '</div>';
+}
+
+function isCleaningCapableLocation(loc) {
+  return loc.location_type === 'room' || loc.location_type === 'office' || loc.location_type === 'bathroom';
 }
 
 // Room cleaning purpose (Routine vs Admissions Prep) and optional admission photo
@@ -1016,6 +1021,75 @@ async function viewAssets() {
       '<span class="asset-condition" style="background:' + condColor + '">' + a.condition + '</span>' +
     '</div>';
   }).join('');
+}
+
+/* ── My Completed Cleanings Today (housekeeping self-check) ── */
+function viewMyCleanings() {
+  var savedId = localStorage.getItem('agrhodes_employee_id') || '';
+  app.innerHTML =
+    '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
+    '<div class="rr-header" style="padding:16px 18px;">' +
+      '<div class="rr-name" style="font-size:16px;">📋 My Completed Cleanings</div>' +
+      '<div class="rr-meta">Today · ' + new Date().toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'}) + '</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<div class="field"><label>Employee ID</label><input type="text" id="mc-employee-id" placeholder="Enter your employee ID" value="' + savedId.replace(/"/g,'&quot;') + '"></div>' +
+      '<button class="neu-btn primary block" onclick="loadMyCleanings()">🔍 Show My Completed Rooms</button>' +
+    '</div>' +
+    '<div id="myCleaningsResults"></div>';
+
+  if (savedId) loadMyCleanings();
+}
+
+async function loadMyCleanings() {
+  var employeeId = document.getElementById('mc-employee-id').value.trim();
+  var resultsEl = document.getElementById('myCleaningsResults');
+  if (!employeeId) { showToast('Enter your employee ID.', 'error'); return; }
+  localStorage.setItem('agrhodes_employee_id', employeeId);
+
+  resultsEl.innerHTML = '<div class="card"><div style="text-align:center;color:var(--gray);padding:10px;">Loading…</div></div>';
+
+  var todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  var { data: rounds, error } = await sb.from('zone_rounds').select('*')
+    .eq('facility_id', FACILITY_ID)
+    .eq('rounded_by', employeeId)
+    .in('round_type', ['room_cleaning','office','bathroom'])
+    .gte('rounded_at', todayStart.toISOString())
+    .order('rounded_at', {ascending:false});
+
+  if (error) { resultsEl.innerHTML = '<div class="card"><div style="color:var(--red);font-size:12.5px;">Error: '+error.message+'</div></div>'; return; }
+  if (!rounds || !rounds.length) {
+    resultsEl.innerHTML = '<div class="card"><div style="color:var(--gray-light);font-size:12.5px;text-align:center;padding:14px;">No completed cleanings logged yet today for this employee ID.</div></div>';
+    return;
+  }
+
+  var qrIds = rounds.map(function(r){ return r.qr_identifier; });
+  var { data: locs } = await sb.from('room_qr_codes').select('qr_identifier,display_name,unit,eoc_department').in('qr_identifier', qrIds);
+  var locByQr = {};
+  (locs||[]).forEach(function(l){ locByQr[l.qr_identifier] = l; });
+
+  var html = '<div class="card"><div class="section-title">' + rounds.length + ' Completed Today</div>';
+  html += rounds.map(function(r){
+    var loc = locByQr[r.qr_identifier];
+    var name = loc ? loc.display_name : r.qr_identifier;
+    var area = loc ? (loc.unit || loc.eoc_department || '') : '';
+    var time = new Date(r.rounded_at).toLocaleTimeString('en-US',{hour:'2-digit', minute:'2-digit'});
+    var purposeTag = '';
+    if (r.round_type === 'room_cleaning' && r.eoc_scores) {
+      var scores = typeof r.eoc_scores === 'string' ? JSON.parse(r.eoc_scores) : r.eoc_scores;
+      if (scores.cleaning_purpose === 'admission_prep') purposeTag = '🛎 Admissions Prep';
+      else if (scores.cleaning_purpose === 'strip_wax') purposeTag = '🪣 Stripping & Waxing';
+      else purposeTag = '🧹 Routine';
+    }
+    return '<div class="asset-item">' +
+      '<div class="asset-icon">✅</div>' +
+      '<div class="asset-info"><div class="asset-name">' + name + '</div>' +
+      '<div class="asset-meta">' + (area?area+' · ':'') + time + (purposeTag?' · '+purposeTag:'') + '</div></div>' +
+    '</div>';
+  }).join('');
+  html += '</div>';
+
+  resultsEl.innerHTML = html;
 }
 
 init();
