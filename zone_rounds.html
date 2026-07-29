@@ -768,6 +768,13 @@ table.policy-table tr:last-child td { border-bottom: none; }
           </div>
         </div>
 
+        <div class="card" id="maintAttentionCard">
+          <div class="card-title">🔧 Maintenance Attention Needed</div>
+          <div class="card-sub">Open items assigned to Maintenance — from failed zone round checks</div>
+          <div id="maintAttentionList"><div class="no-round-msg" style="padding:16px">Loading…</div></div>
+          <button class="neu-btn block" style="margin-top:10px;" onclick="switchTab_direct('issues')" id="maintAttentionViewAll">View All in Issues →</button>
+        </div>
+
         <div class="card" id="recentIssuesCard">
           <div class="card-title">Recent Issues</div>
           <div class="card-sub">Open items needing attention</div>
@@ -1377,6 +1384,27 @@ async function loadDashboard() {
   lastDashRoundsToday = roundsToday || [];
   lastDashOpenIssues = openIssues || [];
   renderHeatmap(currentHeatmapFilter);
+
+  // Maintenance attention widget — the specific items a maintenance director needs to act on
+  var maintList = document.getElementById('maintAttentionList');
+  var maintItems = (openIssues||[]).filter(function(i){ return i.issue_type === 'Maintenance'; });
+  if (!maintItems.length) {
+    maintList.innerHTML = '<div class="no-round-msg" style="padding:16px;font-size:12px;color:var(--green)">✓ Nothing needs maintenance right now</div>';
+    document.getElementById('maintAttentionViewAll').style.display = 'none';
+  } else {
+    document.getElementById('maintAttentionViewAll').style.display = 'block';
+    maintList.innerHTML = maintItems.slice(0,5).map(function(i){
+      var location = i.room_number ? 'Room ' + i.room_number : (i.eoc_section||'').replace(/_/g,' ');
+      return '<div class="issue-item">' +
+        '<div class="issue-dot '+i.priority+'"></div>' +
+        '<div class="issue-info">' +
+          '<div class="issue-type-label">' + (location || 'Facility') + '</div>' +
+          '<div class="issue-desc-label">'+(i.issue_description||'—')+'</div>' +
+        '</div>' +
+        '<button class="neu-btn primary" style="font-size:10.5px;padding:6px 10px;flex-shrink:0;" onclick="event.stopPropagation();resolveIssue(\''+i.id+'\');setTimeout(loadDashboard,400);">✓ Fixed</button>' +
+        '</div>';
+    }).join('');
+  }
 
   // Recent issues sidebar
   var issueList = document.getElementById('recentIssuesList');
