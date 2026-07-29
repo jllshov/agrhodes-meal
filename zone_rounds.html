@@ -80,6 +80,24 @@ h1,h2,.page-title,.stat-num,.rr-name,.room-hero-name { font-family: 'Outfit', 'I
 }
 .nav-icon { font-size: 15px; }
 
+/* ── Grouped nav dropdowns ── */
+.nav-group { position: relative; }
+.nav-caret { font-size: 10px; margin-left: 2px; opacity: .6; }
+.nav-item.group-active { background: var(--surface); color: var(--black); box-shadow: var(--shadow-card); font-weight: 700; }
+.nav-dropdown {
+  display: none; position: absolute; top: calc(100% + 6px); left: 0; z-index: 60;
+  background: var(--surface); border-radius: 16px; box-shadow: 0 16px 40px rgba(0,0,0,.18);
+  padding: 8px; min-width: 210px; flex-direction: column; gap: 2px;
+}
+.nav-dropdown.open { display: flex; }
+.nav-dropdown button {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: none; background: none;
+  border-radius: 10px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600;
+  color: var(--black); text-align: left; width: 100%;
+}
+.nav-dropdown button:hover { background: var(--bg); }
+.nav-dropdown button.current { background: var(--accent-dim); }
+
 .user-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--black);
   display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--accent); flex-shrink: 0; }
 
@@ -631,33 +649,52 @@ table.policy-table tr:last-child td { border-bottom: none; }
   <button class="nav-item active" id="drawer-dashboard" onclick="drawerNav('dashboard')">
     <span class="nav-icon">📊</span> Dashboard
   </button>
-  <button class="nav-item" id="drawer-rooms" onclick="drawerNav('rooms')">
-    <span class="nav-icon">🚪</span> Resident Rooms
-  </button>
-  <button class="nav-item" id="drawer-eoc" onclick="drawerNav('eoc')">
-    <span class="nav-icon">📋</span> EOC Areas
-  </button>
-  <button class="nav-item" id="drawer-facilities" onclick="drawerNav('facilities')">
-    <span class="nav-icon">🧹</span> Offices & Bathrooms
-  </button>
-  <button class="nav-item" id="drawer-issues" onclick="drawerNav('issues')">
-    <span class="nav-icon">⚠</span> Open Issues
-  </button>
-  <button class="nav-item" id="drawer-compliance" onclick="drawerNav('compliance')">
-    <span class="nav-icon">🔥</span> Life Safety
-  </button>
-  <button class="nav-item" id="drawer-reports" onclick="drawerNav('reports')">
-    <span class="nav-icon">📄</span> Reports
-  </button>
-  <button class="nav-item" id="drawer-policies" onclick="drawerNav('policies')">
-    <span class="nav-icon">📚</span> Policies & Procedures
-  </button>
-  <button class="nav-item" id="drawer-inventory" onclick="drawerNav('inventory')">
-    <span class="nav-icon">🧳</span> Patient Inventory
-  </button>
-  <button class="nav-item" id="drawer-surveyprep" onclick="drawerNav('surveyprep')">
-    <span class="nav-icon">🔍</span> Survey Prep
-  </button>
+
+  <div class="hall-section open" id="drawer-group-housekeeping">
+    <div class="hall-header" onclick="toggleDrawerGroup('housekeeping')" style="padding:11px 8px;">
+      <div class="hall-icon" style="width:34px;height:34px;font-size:15px;">🧹</div>
+      <div class="hall-title-wrap"><div class="hall-title" style="font-size:13px;">Housekeeping</div></div>
+      <div class="hall-chevron">▼</div>
+    </div>
+    <div class="hall-body">
+      <div class="hall-body-inner" style="padding:6px 0 6px 12px;">
+        <button class="nav-item" id="drawer-rooms" onclick="drawerNav('rooms')"><span class="nav-icon">🚪</span> Resident Rooms</button>
+        <button class="nav-item" id="drawer-eoc" onclick="drawerNav('eoc')"><span class="nav-icon">📋</span> EOC Areas</button>
+        <button class="nav-item" id="drawer-facilities" onclick="drawerNav('facilities')"><span class="nav-icon">🧹</span> Offices & Bathrooms</button>
+        <button class="nav-item" id="drawer-inventory" onclick="drawerNav('inventory')"><span class="nav-icon">🧳</span> Patient Inventory</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="hall-section open" id="drawer-group-maintenance">
+    <div class="hall-header" onclick="toggleDrawerGroup('maintenance')" style="padding:11px 8px;">
+      <div class="hall-icon" style="width:34px;height:34px;font-size:15px;">🔧</div>
+      <div class="hall-title-wrap"><div class="hall-title" style="font-size:13px;">Maintenance</div></div>
+      <div class="hall-chevron">▼</div>
+    </div>
+    <div class="hall-body">
+      <div class="hall-body-inner" style="padding:6px 0 6px 12px;">
+        <button class="nav-item" id="drawer-compliance" onclick="drawerNav('compliance')"><span class="nav-icon">🔥</span> Life Safety</button>
+        <button class="nav-item" id="drawer-issues" onclick="drawerNav('issues')"><span class="nav-icon">⚠</span> Open Issues</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="hall-section open" id="drawer-group-reports">
+    <div class="hall-header" onclick="toggleDrawerGroup('reports')" style="padding:11px 8px;">
+      <div class="hall-icon" style="width:34px;height:34px;font-size:15px;">📄</div>
+      <div class="hall-title-wrap"><div class="hall-title" style="font-size:13px;">Reports</div></div>
+      <div class="hall-chevron">▼</div>
+    </div>
+    <div class="hall-body">
+      <div class="hall-body-inner" style="padding:6px 0 6px 12px;">
+        <button class="nav-item" id="drawer-reports" onclick="drawerNav('reports')"><span class="nav-icon">📄</span> Reports</button>
+        <button class="nav-item" id="drawer-policies" onclick="drawerNav('policies')"><span class="nav-icon">📚</span> Policies & Procedures</button>
+        <button class="nav-item" id="drawer-surveyprep" onclick="drawerNav('surveyprep')"><span class="nav-icon">🔍</span> Survey Prep</button>
+      </div>
+    </div>
+  </div>
+
   <button class="nav-item" onclick="window.print();closeDrawer();">
     <span class="nav-icon">🖨</span> Print QR Codes
   </button>
@@ -675,37 +712,43 @@ table.policy-table tr:last-child td { border-bottom: none; }
     </div>
   </div>
 
-  <div class="pill-nav">
-    <button class="nav-item active" onclick="switchTab('dashboard')">
+  <div class="pill-nav" id="pillNav">
+    <button class="nav-item active" id="navtop-dashboard" onclick="switchTab_direct('dashboard');closeAllNavDropdowns();">
       <span class="nav-icon">📊</span> Dashboard
     </button>
-    <button class="nav-item" onclick="switchTab('rooms')">
-      <span class="nav-icon">🚪</span> Rooms
-    </button>
-    <button class="nav-item" onclick="switchTab('eoc')">
-      <span class="nav-icon">📋</span> EOC
-    </button>
-    <button class="nav-item" onclick="switchTab('facilities')">
-      <span class="nav-icon">🧹</span> Offices & Bathrooms
-    </button>
-    <button class="nav-item" onclick="switchTab('issues')">
-      <span class="nav-icon">⚠</span> Issues
-    </button>
-    <button class="nav-item" onclick="switchTab('compliance')">
-      <span class="nav-icon">🔥</span> Life Safety
-    </button>
-    <button class="nav-item" onclick="switchTab('reports')">
-      <span class="nav-icon">📄</span> Reports
-    </button>
-    <button class="nav-item" onclick="switchTab('policies')">
-      <span class="nav-icon">📚</span> Policies
-    </button>
-    <button class="nav-item" onclick="switchTab('inventory')">
-      <span class="nav-icon">🧳</span> Patient Inventory
-    </button>
-    <button class="nav-item" onclick="switchTab('surveyprep')">
-      <span class="nav-icon">🔍</span> Survey Prep
-    </button>
+
+    <div class="nav-group">
+      <button class="nav-item" id="navtop-housekeeping" onclick="toggleNavDropdown('housekeeping')">
+        <span class="nav-icon">🧹</span> Housekeeping <span class="nav-caret">▾</span>
+      </button>
+      <div class="nav-dropdown" id="navdrop-housekeeping">
+        <button onclick="navigateToSubtab('rooms')"><span class="nav-icon">🚪</span> Resident Rooms</button>
+        <button onclick="navigateToSubtab('eoc')"><span class="nav-icon">📋</span> EOC Areas</button>
+        <button onclick="navigateToSubtab('facilities')"><span class="nav-icon">🧹</span> Offices & Bathrooms</button>
+        <button onclick="navigateToSubtab('inventory')"><span class="nav-icon">🧳</span> Patient Inventory</button>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <button class="nav-item" id="navtop-maintenance" onclick="toggleNavDropdown('maintenance')">
+        <span class="nav-icon">🔧</span> Maintenance <span class="nav-caret">▾</span>
+      </button>
+      <div class="nav-dropdown" id="navdrop-maintenance">
+        <button onclick="navigateToSubtab('compliance')"><span class="nav-icon">🔥</span> Life Safety</button>
+        <button onclick="navigateToSubtab('issues')"><span class="nav-icon">⚠</span> Open Issues</button>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <button class="nav-item" id="navtop-reports" onclick="toggleNavDropdown('reports')">
+        <span class="nav-icon">📄</span> Reports <span class="nav-caret">▾</span>
+      </button>
+      <div class="nav-dropdown" id="navdrop-reports">
+        <button onclick="navigateToSubtab('reports')"><span class="nav-icon">📄</span> Reports</button>
+        <button onclick="navigateToSubtab('policies')"><span class="nav-icon">📚</span> Policies & Procedures</button>
+        <button onclick="navigateToSubtab('surveyprep')"><span class="nav-icon">🔍</span> Survey Prep</button>
+      </div>
+    </div>
   </div>
 
   <div class="topbar-right">
@@ -2196,24 +2239,34 @@ function closeDrawer() {
   document.getElementById('drawerOverlay').classList.remove('open');
 }
 function drawerNav(tab) {
-  // Update drawer nav active state
   document.querySelectorAll('.mobile-drawer .nav-item').forEach(function(b){ b.classList.remove('active'); });
   var btn = document.getElementById('drawer-' + tab);
   if (btn) btn.classList.add('active');
-  // Also update sidebar nav
-  document.querySelectorAll('.pill-nav .nav-item').forEach(function(b){ b.classList.remove('active'); });
-  // Trigger the panel switch
   switchTab_direct(tab);
   closeDrawer();
 }
 
+function toggleDrawerGroup(group) {
+  var section = document.getElementById('drawer-group-' + group);
+  if (!section) return;
+  section.classList.toggle('open');
+}
+
 // Renamed internal version that doesn't rely on event.currentTarget
+// Maps each panel/tab to the top-level nav group it lives under
+var NAV_GROUP_MAP = {
+  dashboard: 'dashboard',
+  rooms: 'housekeeping', eoc: 'housekeeping', facilities: 'housekeeping', inventory: 'housekeeping',
+  compliance: 'maintenance', issues: 'maintenance',
+  reports: 'reports', policies: 'reports', surveyprep: 'reports'
+};
+
 function switchTab_direct(tab) {
-  document.querySelectorAll('.pill-nav .nav-item').forEach(function(b){ b.classList.remove('active'); });
   ['dashboard','rooms','eoc','facilities','issues','compliance','reports','policies','inventory','surveyprep'].forEach(function(p){
     document.getElementById('panel-'+p).style.display = p===tab ? 'block' : 'none';
   });
   currentPanel = tab;
+  updateNavActiveState(tab);
   if (tab==='dashboard') loadDashboard();
   if (tab==='rooms') loadRooms();
   if (tab==='eoc') loadEOC();
@@ -2224,6 +2277,48 @@ function switchTab_direct(tab) {
   if (tab==='inventory') initInventoryPanel();
   if (tab==='surveyprep') initSurveyPrepPanel();
 }
+
+function updateNavActiveState(tab) {
+  var group = NAV_GROUP_MAP[tab] || 'dashboard';
+  ['dashboard','housekeeping','maintenance','reports'].forEach(function(g){
+    var btn = document.getElementById('navtop-' + g);
+    if (!btn) return;
+    if (g === 'dashboard') btn.classList.toggle('active', group === 'dashboard');
+    else btn.classList.toggle('group-active', group === g);
+  });
+  // Highlight the specific sub-item within its dropdown too
+  document.querySelectorAll('.nav-dropdown button').forEach(function(b){ b.classList.remove('current'); });
+  if (group !== 'dashboard') {
+    var dropdown = document.getElementById('navdrop-' + group);
+    if (dropdown) {
+      var btns = dropdown.querySelectorAll('button');
+      btns.forEach(function(b){
+        if (b.getAttribute('onclick') === "navigateToSubtab('"+tab+"')") b.classList.add('current');
+      });
+    }
+  }
+}
+
+function toggleNavDropdown(group) {
+  var dropdown = document.getElementById('navdrop-' + group);
+  var isOpen = dropdown.classList.contains('open');
+  closeAllNavDropdowns();
+  if (!isOpen) dropdown.classList.add('open');
+}
+
+function closeAllNavDropdowns() {
+  document.querySelectorAll('.nav-dropdown').forEach(function(d){ d.classList.remove('open'); });
+}
+
+function navigateToSubtab(tab) {
+  switchTab_direct(tab);
+  closeAllNavDropdowns();
+}
+
+document.addEventListener('click', function(e){
+  if (!e.target.closest('.nav-group')) closeAllNavDropdowns();
+});
+
 
 
 /* ── Room Detail (QR + Assets) ── */
