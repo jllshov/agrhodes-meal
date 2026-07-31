@@ -186,6 +186,24 @@ body { min-height: 100vh; padding-bottom: 100px; }
 .tips-table { width: 100%; font-size: 11px; border-collapse: collapse; margin-top: 6px; }
 .tips-table td { padding: 9px 4px; border-bottom: 1px solid rgba(0,0,0,.07); vertical-align: top; line-height: 1.4; }
 .tips-table td:first-child { font-weight: 700; }
+
+/* ── Barcode/QR scanner ── */
+.scanner-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 600;
+  align-items: center; justify-content: center; padding: 16px;
+}
+.scanner-overlay.show { display: flex; }
+.scanner-box { background: var(--surface); border-radius: 24px; width: 100%; max-width: 420px; padding: 18px; }
+.scanner-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.scanner-title { font-size: 15px; font-weight: 800; }
+#scannerReader { border-radius: 16px; overflow: hidden; background: #000; }
+#scannerReader video { border-radius: 16px; }
+.scanner-hint { text-align: center; font-size: 11.5px; color: var(--gray); margin-top: 10px; }
+.scan-btn {
+  background: var(--bg); border: none; border-radius: 10px; width: 38px; height: 38px;
+  cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-out); flex-shrink: 0;
+}
 </style>
 </head>
 <body>
@@ -246,7 +264,19 @@ body { min-height: 100vh; padding-bottom: 100px; }
   </div>
 </div>
 
+<div class="scanner-overlay" id="scannerOverlay">
+  <div class="scanner-box">
+    <div class="scanner-header">
+      <div class="scanner-title" id="scannerTitle">Scan a Barcode</div>
+      <button class="tips-close" onclick="closeBarcodeScanner()">✕</button>
+    </div>
+    <div id="scannerReader"></div>
+    <div class="scanner-hint" id="scannerHint">Point the camera at a QR code or barcode</div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL  = 'https://gtbiatetqyuxwuehwilr.supabase.co';
@@ -430,6 +460,45 @@ function showTipsModal() {
 }
 function closeTipsModal() {
   document.getElementById('tipsOverlay').classList.remove('show');
+}
+
+/* ── Camera-based barcode/QR scanner ──
+   Works for our own generated QR codes AND manufacturer barcodes on equipment
+   (Code128, EAN, UPC, etc — html5-qrcode decodes both QR and 1D barcodes).
+   Physical Bluetooth/USB barcode scanners need no code at all here — they act
+   as a keyboard, so scanning while any text input is focused just types the
+   code in and hits Enter on their own. */
+var _scannerInstance = null;
+var _scannerResultCallback = null;
+
+function openBarcodeScanner(onResult, hintText) {
+  _scannerResultCallback = onResult;
+  document.getElementById('scannerHint').textContent = hintText || 'Point the camera at a QR code or barcode';
+  document.getElementById('scannerOverlay').classList.add('show');
+
+  _scannerInstance = new Html5Qrcode('scannerReader');
+  _scannerInstance.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: { width: 240, height: 160 } },
+    function(decodedText) {
+      closeBarcodeScanner();
+      if (_scannerResultCallback) _scannerResultCallback(decodedText);
+    },
+    function(){ /* ignore per-frame no-match noise */ }
+  ).catch(function(err){
+    showToast('Camera unavailable: ' + err, 'error');
+    closeBarcodeScanner();
+  });
+}
+
+function closeBarcodeScanner() {
+  document.getElementById('scannerOverlay').classList.remove('show');
+  if (_scannerInstance) {
+    _scannerInstance.stop().then(function(){
+      _scannerInstance.clear();
+      _scannerInstance = null;
+    }).catch(function(){ _scannerInstance = null; });
+  }
 }
 
 function getIdentifierValue() {
@@ -1011,6 +1080,7 @@ async function viewAssets() {
   app.innerHTML = '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
     '<div class="rr-header" style="padding:16px 18px;"><div class="rr-name" style="font-size:16px;">' + loc.display_name + '</div>' +
     '<div class="rr-meta">' + locSubtitle(loc) + '</div></div>' +
+    '<button class="neu-btn block" style="margin-bottom:14px;" onclick="scanToFindAsset()">📷 Scan to Find an Asset</button>' +
     '<div class="card"><div class="section-title">Assets on File</div><div id="assetsListView">Loading…</div></div>' +
     '<div class="card" id="addAssetCard">' +
       '<div class="section-title">+ Add an Asset</div>' +
@@ -1018,13 +1088,55 @@ async function viewAssets() {
         Object.keys(ASSET_ICONS).map(function(t){ return '<option>'+t+'</option>'; }).join('') +
       '</select></div>' +
       '<div class="field"><label>Asset Name</label><input type="text" id="na-name" placeholder="e.g. Samsung 32in TV"></div>' +
-      '<div class="field"><label>Serial # (optional)</label><input type="text" id="na-serial"></div>' +
+      '<div class="field"><label>Serial # (optional)</label>' +
+        '<div style="display:flex;gap:8px;">' +
+          '<input type="text" id="na-serial" style="flex:1;" placeholder="Type or scan">' +
+          '<button type="button" class="scan-btn" onclick="scanToFillSerial()" title="Scan barcode">📷</button>' +
+        '</div>' +
+      '</div>' +
       '<div class="field"><label>Condition</label><select id="na-condition"><option>New</option><option selected>Good</option><option>Fair</option><option>Needs Repair</option><option>Out of Service</option></select></div>' +
       '<button class="neu-btn primary block" onclick="saveNewAsset()">✓ Add Asset & Generate QR</button>' +
     '</div>' +
     '<div id="newAssetQrCard"></div>';
 
   loadAssetsList();
+}
+
+function scanToFillSerial() {
+  openBarcodeScanner(function(code){
+    document.getElementById('na-serial').value = code;
+    showToast('Serial number scanned.', 'success');
+  }, 'Scan the manufacturer barcode or serial tag');
+}
+
+async function scanToFindAsset() {
+  openBarcodeScanner(async function(code){
+    // Our own generated QR codes decode to a full round.html URL — route directly if so
+    if (code.indexOf('round.html#asset=') > -1) {
+      var assetId = code.split('#asset=')[1];
+      window.location.hash = 'asset=' + assetId;
+      init();
+      return;
+    }
+    if (code.indexOf('round.html#round=') > -1) {
+      var qrId = code.split('#round=')[1];
+      window.location.hash = 'round=' + qrId;
+      init();
+      return;
+    }
+    // Otherwise treat it as a manufacturer barcode/serial number and look it up
+    var { data: found, error } = await sb.from('room_assets').select('*')
+      .eq('facility_id', FACILITY_ID).eq('serial_number', code).eq('is_active', true).maybeSingle();
+    if (error) { showToast('Lookup error: ' + error.message, 'error'); return; }
+    if (found) {
+      window.location.hash = 'asset=' + found.id;
+      init();
+    } else {
+      showToast('No asset found with serial "' + code + '" — you can add it below.', 'error');
+      var serialInput = document.getElementById('na-serial');
+      if (serialInput) serialInput.value = code;
+    }
+  }, 'Scan an asset\'s QR code or barcode');
 }
 
 async function loadAssetsList() {
