@@ -246,6 +246,7 @@ body { min-height: 100vh; padding-bottom: 100px; }
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL  = 'https://gtbiatetqyuxwuehwilr.supabase.co';
@@ -253,6 +254,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const FACILITY_ID   = '30f74349-3ab8-483b-a587-f372c0fbd413';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const app = document.getElementById('app');
+const ASSET_URL_BASE = window.location.origin + '/round.html#asset=';
 
 var currentLoc = null;
 var roundValues = {};   // key -> 'pass'|'fail'|'yes'|'no'|'n/a'
@@ -451,7 +453,16 @@ function getQrIdentifier() {
   return params.get('round');
 }
 
+function getAssetId() {
+  var hash = window.location.hash.slice(1); // "asset=uuid"
+  var params = new URLSearchParams(hash);
+  return params.get('asset');
+}
+
 async function init() {
+  var assetId = getAssetId();
+  if (assetId) { renderAssetDetail(assetId); return; }
+
   var qrId = getQrIdentifier();
   if (!qrId) {
     app.innerHTML = '<div class="center-msg">⚠ No location code found in this link.<br>Please scan the QR code again.</div>';
@@ -1000,12 +1011,28 @@ async function viewAssets() {
   app.innerHTML = '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
     '<div class="rr-header" style="padding:16px 18px;"><div class="rr-name" style="font-size:16px;">' + loc.display_name + '</div>' +
     '<div class="rr-meta">' + locSubtitle(loc) + '</div></div>' +
-    '<div class="card"><div class="section-title">Assets on File</div><div id="assetsListView">Loading…</div></div>';
+    '<div class="card"><div class="section-title">Assets on File</div><div id="assetsListView">Loading…</div></div>' +
+    '<div class="card" id="addAssetCard">' +
+      '<div class="section-title">+ Add an Asset</div>' +
+      '<div class="field"><label>Type</label><select id="na-type">' +
+        Object.keys(ASSET_ICONS).map(function(t){ return '<option>'+t+'</option>'; }).join('') +
+      '</select></div>' +
+      '<div class="field"><label>Asset Name</label><input type="text" id="na-name" placeholder="e.g. Samsung 32in TV"></div>' +
+      '<div class="field"><label>Serial # (optional)</label><input type="text" id="na-serial"></div>' +
+      '<div class="field"><label>Condition</label><select id="na-condition"><option>New</option><option selected>Good</option><option>Fair</option><option>Needs Repair</option><option>Out of Service</option></select></div>' +
+      '<button class="neu-btn primary block" onclick="saveNewAsset()">✓ Add Asset & Generate QR</button>' +
+    '</div>' +
+    '<div id="newAssetQrCard"></div>';
 
+  loadAssetsList();
+}
+
+async function loadAssetsList() {
+  var loc = currentLoc;
+  var listEl = document.getElementById('assetsListView');
   var { data: assets, error } = await sb.from('room_assets').select('*')
     .eq('qr_identifier', loc.qr_identifier).eq('is_active', true).order('created_at', {ascending:true});
 
-  var listEl = document.getElementById('assetsListView');
   if (error) { listEl.innerHTML = '<div style="color:var(--red);font-size:12.5px;">Error: ' + error.message + '</div>'; return; }
   if (!assets || !assets.length) { listEl.innerHTML = '<div style="color:var(--gray-light);font-size:12.5px;text-align:center;padding:12px;">No assets on file for this ' + (loc.location_type==='room'?'room':'area') + '.</div>'; return; }
 
@@ -1014,13 +1041,84 @@ async function viewAssets() {
                     a.condition==='Fair' ? 'rgba(245,158,11,.12);color:#B45309' :
                     a.condition==='Needs Repair' ? 'rgba(239,68,68,.12);color:#DC2626' :
                     'rgba(107,114,128,.15);color:#6B7280';
-    return '<div class="asset-item">' +
+    return '<div class="asset-item" style="cursor:pointer;" onclick="showAssetQrModal(\''+a.id+'\',\''+a.asset_name.replace(/'/g,"\\'")+'\')">' +
       '<div class="asset-icon">' + (ASSET_ICONS[a.asset_type]||'📦') + '</div>' +
       '<div class="asset-info"><div class="asset-name">' + a.asset_name + '</div>' +
       '<div class="asset-meta">' + (a.asset_type||'') + (a.serial_number?' · SN: '+a.serial_number:'') + '</div></div>' +
       '<span class="asset-condition" style="background:' + condColor + '">' + a.condition + '</span>' +
     '</div>';
   }).join('');
+}
+
+async function saveNewAsset() {
+  var loc = currentLoc;
+  var type = document.getElementById('na-type').value;
+  var name = document.getElementById('na-name').value.trim();
+  var serial = document.getElementById('na-serial').value.trim();
+  var condition = document.getElementById('na-condition').value;
+  if (!name) { showToast('Enter an asset name.', 'error'); return; }
+
+  var { data: inserted, error } = await sb.from('room_assets').insert({
+    facility_id: FACILITY_ID,
+    qr_id: loc.id || null,
+    qr_identifier: loc.qr_identifier,
+    asset_name: name, asset_type: type, serial_number: serial || null, condition: condition
+  }).select().single();
+
+  if (error) { showToast('Error adding asset: ' + error.message, 'error'); return; }
+
+  document.getElementById('na-name').value = '';
+  document.getElementById('na-serial').value = '';
+  loadAssetsList();
+  showToast('✓ ' + name + ' added.', 'success');
+  showAssetQrCard(inserted.id, inserted.asset_name);
+}
+
+function showAssetQrCard(assetId, assetName) {
+  var link = ASSET_URL_BASE + assetId;
+  var card = document.getElementById('newAssetQrCard');
+  card.innerHTML =
+    '<div class="card" style="text-align:center;">' +
+      '<div class="section-title">QR Code for ' + assetName + '</div>' +
+      '<div style="background:white;border-radius:16px;padding:14px;width:150px;margin:0 auto 12px;box-shadow:var(--shadow-out);" id="newAssetQrHolder"></div>' +
+      '<div style="font-size:11px;color:var(--gray);margin-bottom:10px;">Print and attach this to the item — scanning it later shows what it is and which room it belongs to.</div>' +
+    '</div>';
+  var holder = document.getElementById('newAssetQrHolder');
+  new QRCode(holder, { text: link, width: 122, height: 122, colorDark:'#1A1A1A', colorLight:'#FFFFFF' });
+}
+
+function showAssetQrModal(assetId, assetName) {
+  document.getElementById('newAssetQrCard').scrollIntoView({behavior:'smooth', block:'start'});
+  showAssetQrCard(assetId, assetName);
+}
+
+/* ── Asset detail (scanning a printed asset QR) ── */
+async function renderAssetDetail(assetId) {
+  app.innerHTML = '<div class="center-msg">Loading…</div>';
+  var { data: asset, error } = await sb.from('room_assets').select('*').eq('id', assetId).maybeSingle();
+  if (error) { app.innerHTML = '<div class="center-msg">⚠ Error loading asset.<br>'+error.message+'</div>'; return; }
+  if (!asset || !asset.is_active) { app.innerHTML = '<div class="center-msg">⚠ This asset wasn\'t found or has been removed.</div>'; return; }
+
+  var { data: loc } = await sb.from('room_qr_codes').select('*').eq('qr_identifier', asset.qr_identifier).maybeSingle();
+  var condColor = asset.condition==='Good' ? '#16A34A' : asset.condition==='Fair' ? '#B45309' :
+                  asset.condition==='Needs Repair' ? '#DC2626' : '#6B7280';
+
+  app.innerHTML =
+    '<div class="rr-header">' +
+      '<div class="rr-icon">' + (ASSET_ICONS[asset.asset_type]||'📦') + '</div>' +
+      '<div class="rr-name">' + asset.asset_name + '</div>' +
+      '<div class="rr-meta">' + (asset.asset_type||'') + (asset.serial_number ? ' · SN: '+asset.serial_number : '') + '</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<div class="section-title">Details</div>' +
+      '<div class="asset-item"><div class="asset-icon">📍</div><div class="asset-info"><div class="asset-name">Location</div>' +
+        '<div class="asset-meta">' + (loc ? loc.display_name + (loc.unit?' · '+loc.unit:'') : asset.qr_identifier) + '</div></div></div>' +
+      '<div class="asset-item"><div class="asset-icon" style="background:none;">⚙️</div><div class="asset-info"><div class="asset-name">Condition</div>' +
+        '<div class="asset-meta" style="color:'+condColor+';font-weight:700;">' + asset.condition + '</div></div></div>' +
+      '<div class="asset-item"><div class="asset-icon">🗓</div><div class="asset-info"><div class="asset-name">Added</div>' +
+        '<div class="asset-meta">' + new Date(asset.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) + '</div></div></div>' +
+    '</div>' +
+    (loc ? '<div style="text-align:center;"><button class="neu-btn" onclick="window.location.hash=\'round='+loc.qr_identifier+'\';init();">← Go to ' + loc.display_name + '</button></div>' : '');
 }
 
 /* ── My Completed Cleanings Today (housekeeping self-check) ── */
