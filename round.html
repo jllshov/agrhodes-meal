@@ -590,6 +590,7 @@ function renderLanding() {
     '<div style="text-align:center;margin-top:6px;">' +
       '<button class="neu-btn ghost" onclick="viewAssets()">View Assets on File →</button>' +
       (isCleaningCapableLocation(loc) ? '<br><button class="neu-btn ghost" onclick="viewMyCleanings()">📋 My Completed Cleanings Today →</button>' : '') +
+      (isResidentRoom ? '<br><button class="neu-btn ghost" onclick="viewMyAssignedRooms()">🗂 My Assigned Rooms →</button>' : '') +
     '</div>';
 }
 
@@ -1295,6 +1296,73 @@ async function loadMyCleanings() {
       '<div class="asset-icon">✅</div>' +
       '<div class="asset-info"><div class="asset-name">' + name + '</div>' +
       '<div class="asset-meta">' + (area?area+' · ':'') + time + (purposeTag?' · '+purposeTag:'') + '</div></div>' +
+    '</div>';
+  }).join('');
+  html += '</div>';
+
+  resultsEl.innerHTML = html;
+}
+
+/* ── My Assigned Rooms (manager self-check for zone rounds) ── */
+function viewMyAssignedRooms() {
+  var savedName = localStorage.getItem('agrhodes_manager_name') || '';
+  app.innerHTML =
+    '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
+    '<div class="rr-header" style="padding:16px 18px;">' +
+      '<div class="rr-name" style="font-size:16px;">🗂 My Assigned Rooms</div>' +
+      '<div class="rr-meta">Today · ' + new Date().toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'}) + '</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<div class="field"><label>Manager Name</label><input type="text" id="ar-manager-name" placeholder="Enter your name as assigned" value="' + savedName.replace(/"/g,'&quot;') + '"></div>' +
+      '<button class="neu-btn primary block" onclick="loadMyAssignedRooms()">🔍 Show My Rooms</button>' +
+    '</div>' +
+    '<div id="myAssignedResults"></div>';
+
+  if (savedName) loadMyAssignedRooms();
+}
+
+async function loadMyAssignedRooms() {
+  var managerName = document.getElementById('ar-manager-name').value.trim();
+  var resultsEl = document.getElementById('myAssignedResults');
+  if (!managerName) { showToast('Enter your name.', 'error'); return; }
+  localStorage.setItem('agrhodes_manager_name', managerName);
+
+  resultsEl.innerHTML = '<div class="card"><div style="text-align:center;color:var(--gray);padding:10px;">Loading…</div></div>';
+
+  var { data: assignments, error } = await sb.from('room_assignments').select('*')
+    .eq('facility_id', FACILITY_ID).ilike('manager_name', managerName);
+
+  if (error) { resultsEl.innerHTML = '<div class="card"><div style="color:var(--red);font-size:12.5px;">Error: '+error.message+'</div></div>'; return; }
+  if (!assignments || !assignments.length) {
+    resultsEl.innerHTML = '<div class="card"><div style="color:var(--gray-light);font-size:12.5px;text-align:center;padding:14px;">No rooms assigned to this name yet — check with your administrator.</div></div>';
+    return;
+  }
+
+  var qrIds = assignments.map(function(a){ return a.qr_identifier; });
+  var { data: locs } = await sb.from('room_qr_codes').select('*').in('qr_identifier', qrIds);
+  var locByQr = {};
+  (locs||[]).forEach(function(l){ locByQr[l.qr_identifier] = l; });
+
+  var todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  var { data: roundsToday } = await sb.from('zone_rounds').select('qr_identifier')
+    .eq('facility_id', FACILITY_ID).eq('round_type','room')
+    .in('qr_identifier', qrIds).gte('rounded_at', todayStart.toISOString());
+  var doneQrs = new Set((roundsToday||[]).map(function(r){ return r.qr_identifier; }));
+
+  var rooms = qrIds.map(function(qr){ return locByQr[qr]; }).filter(Boolean)
+    .sort(function(a,b){ return (+a.room_number||0) - (+b.room_number||0); });
+
+  var doneCount = rooms.filter(function(r){ return doneQrs.has(r.qr_identifier); }).length;
+
+  var html = '<div class="card">' +
+    '<div class="section-title">' + doneCount + ' / ' + rooms.length + ' Checked Today</div>';
+  html += rooms.map(function(r){
+    var isDone = doneQrs.has(r.qr_identifier);
+    return '<div class="asset-item" style="cursor:pointer;" onclick="window.location.hash=\'round='+r.qr_identifier+'\';init();">' +
+      '<div class="asset-icon">' + (isDone ? '✅' : '⭕') + '</div>' +
+      '<div class="asset-info"><div class="asset-name">' + r.display_name + '</div>' +
+      '<div class="asset-meta">' + (r.unit||'') + '</div></div>' +
+      '<span style="font-size:11px;font-weight:700;color:' + (isDone?'var(--green)':'var(--gray-light)') + ';flex-shrink:0;">' + (isDone?'Done':'Pending') + '</span>' +
     '</div>';
   }).join('');
   html += '</div>';
