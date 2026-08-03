@@ -866,6 +866,24 @@ table.policy-table tr:last-child td { border-bottom: none; }
         <button class="neu-btn primary" onclick="generateBulkRooms()">Generate</button>
       </div>
     </div>
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title">🧑‍💼 Zone Round Assignments</div>
+      <div class="card-sub">Assign each manager a set of resident rooms to check</div>
+
+      <div class="bulk-form" style="grid-template-columns:1fr auto;margin-bottom:14px;">
+        <div class="field"><label>Manager Name</label>
+          <input type="text" id="assign-manager-name" list="assign-manager-list" placeholder="e.g. Lesly Gervil">
+          <datalist id="assign-manager-list"></datalist>
+        </div>
+        <button class="neu-btn primary" onclick="saveRoomAssignments()">✓ Save Assignments</button>
+      </div>
+      <div class="card-sub" style="margin-bottom:8px;">Check every room this manager is responsible for — this replaces their previous assignment list</div>
+      <div class="inv-check-grid" id="assignRoomGrid" style="grid-template-columns:repeat(4,1fr);max-height:260px;overflow-y:auto;padding-right:4px;"></div>
+
+      <div class="card-sub" style="margin:18px 0 8px;font-weight:700;color:var(--black);">Today's Assignment Status</div>
+      <div id="assignmentOverview"></div>
+    </div>
+
     <div id="roomsGrid"></div>
   </div>
 
@@ -1579,6 +1597,8 @@ async function loadRooms() {
   var { data: rooms } = await sb.from('room_qr_codes').select('*')
     .eq('facility_id', FACILITY_ID).eq('location_type','room').eq('is_active', true);
 
+  loadRoomAssignmentsPanel(rooms || []);
+
   var byUnit = {};
   (rooms||[]).forEach(function(r){ (byUnit[r.unit]=byUnit[r.unit]||[]).push(r); });
 
@@ -1660,6 +1680,120 @@ async function generateBulkRooms() {
   alert('✓ Generated '+rows.length+' QR codes for '+unit);
   loadRooms();
 }
+
+/* ── Zone Round Assignments (manager → rooms) ── */
+var lastAssignableRooms = [];
+var lastRoomAssignments = [];
+
+async function loadRoomAssignmentsPanel(rooms) {
+  lastAssignableRooms = rooms;
+  var { data: assignments } = await sb.from('room_assignments').select('*').eq('facility_id', FACILITY_ID);
+  lastRoomAssignments = assignments || [];
+
+  // Populate the manager name autocomplete with everyone who already has assignments
+  var managers = Array.from(new Set(lastRoomAssignments.map(function(a){ return a.manager_name; }))).sort();
+  document.getElementById('assign-manager-list').innerHTML = managers.map(function(m){ return '<option value="'+m+'">'; }).join('');
+
+  renderAssignRoomGrid();
+  loadAssignmentOverview();
+}
+
+function renderAssignRoomGrid() {
+  var grid = document.getElementById('assignRoomGrid');
+  var typedName = document.getElementById('assign-manager-name').value.trim().toLowerCase();
+  var assignedQrsForManager = lastRoomAssignments
+    .filter(function(a){ return a.manager_name.trim().toLowerCase() === typedName; })
+    .map(function(a){ return a.qr_identifier; });
+
+  var sorted = lastAssignableRooms.slice().sort(function(a,b){
+    if (a.unit !== b.unit) return (a.unit||'').localeCompare(b.unit||'');
+    return (+a.room_number||0) - (+b.room_number||0);
+  });
+
+  grid.innerHTML = sorted.map(function(r){
+    var checked = assignedQrsForManager.indexOf(r.qr_identifier) > -1;
+    var existingOwner = lastRoomAssignments.find(function(a){ return a.qr_identifier === r.qr_identifier; });
+    var ownerNote = (existingOwner && existingOwner.manager_name.trim().toLowerCase() !== typedName && typedName)
+      ? '<span style="color:var(--red);font-size:9.5px;">→ ' + existingOwner.manager_name + '</span>' : '';
+    return '<label class="inv-check-item' + (checked?' checked':'') + '" style="flex-direction:column;align-items:flex-start;gap:2px;" data-qr="' + r.qr_identifier + '">' +
+      '<span style="display:flex;align-items:center;gap:8px;width:100%;"><input type="checkbox" ' + (checked?'checked':'') + '><span>' + r.display_name + '</span></span>' +
+      '<span style="font-size:9.5px;color:var(--gray);padding-left:24px;">' + (r.unit||'') + (existingOwner && !checked ? ' · ' + ownerNote : '') + '</span>' +
+    '</label>';
+  }).join('');
+}
+
+// Re-render the grid whenever the manager name changes, so checkboxes reflect that specific person
+document.addEventListener('input', function(e){
+  if (e.target && e.target.id === 'assign-manager-name') renderAssignRoomGrid();
+});
+
+async function saveRoomAssignments() {
+  var managerName = document.getElementById('assign-manager-name').value.trim();
+  if (!managerName) { alert('Enter a manager name'); return; }
+
+  var checkedQrs = Array.prototype.map.call(
+    document.querySelectorAll('#assignRoomGrid .inv-check-item input:checked'),
+    function(input){ return input.closest('.inv-check-item').getAttribute('data-qr'); }
+  );
+
+  // Anything previously assigned to this manager but now unchecked gets unassigned
+  var previouslyTheirs = lastRoomAssignments
+    .filter(function(a){ return a.manager_name.trim().toLowerCase() === managerName.toLowerCase(); })
+    .map(function(a){ return a.qr_identifier; });
+  var toUnassign = previouslyTheirs.filter(function(qr){ return checkedQrs.indexOf(qr) === -1; });
+
+  if (toUnassign.length) {
+    await sb.from('room_assignments').delete().eq('facility_id', FACILITY_ID).in('qr_identifier', toUnassign);
+  }
+  if (checkedQrs.length) {
+    var rows = checkedQrs.map(function(qr){ return { facility_id: FACILITY_ID, qr_identifier: qr, manager_name: managerName }; });
+    var { error } = await sb.from('room_assignments').upsert(rows, {onConflict:'qr_identifier'});
+    if (error) { alert('Error saving assignments: ' + error.message); return; }
+  }
+
+  alert('✓ Saved ' + checkedQrs.length + ' room(s) for ' + managerName);
+  loadRoomAssignmentsPanel(lastAssignableRooms);
+}
+
+async function loadAssignmentOverview() {
+  var el = document.getElementById('assignmentOverview');
+  if (!lastRoomAssignments.length) {
+    el.innerHTML = '<div style="color:var(--gray-light);font-size:12px;text-align:center;padding:10px;">No rooms assigned yet.</div>';
+    return;
+  }
+
+  var todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  var { data: roundsToday } = await sb.from('zone_rounds').select('qr_identifier,rounded_at')
+    .eq('facility_id', FACILITY_ID).eq('round_type','room').gte('rounded_at', todayStart.toISOString());
+  var roundedQrsToday = new Set((roundsToday||[]).map(function(r){ return r.qr_identifier; }));
+
+  var byManager = {};
+  lastRoomAssignments.forEach(function(a){
+    (byManager[a.manager_name] = byManager[a.manager_name] || []).push(a.qr_identifier);
+  });
+
+  var roomsByQr = {};
+  lastAssignableRooms.forEach(function(r){ roomsByQr[r.qr_identifier] = r; });
+
+  el.innerHTML = Object.keys(byManager).sort().map(function(manager){
+    var qrs = byManager[manager];
+    var doneCount = qrs.filter(function(qr){ return roundedQrsToday.has(qr); }).length;
+    var pending = qrs.filter(function(qr){ return !roundedQrsToday.has(qr); })
+      .map(function(qr){ return roomsByQr[qr] ? roomsByQr[qr].display_name : qr; });
+    var pct = qrs.length ? Math.round((doneCount/qrs.length)*100) : 0;
+    var color = pct === 100 ? 'var(--green)' : pct === 0 ? 'var(--red)' : 'var(--amber)';
+    return '<div class="inv-saved-row" style="cursor:default;">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-weight:700;font-size:13px;">' + manager + '</div>' +
+        '<div style="font-size:11.5px;color:var(--gray);margin-top:2px;">' +
+          (pending.length ? 'Not yet: ' + pending.slice(0,4).join(', ') + (pending.length>4?' +'+(pending.length-4)+' more':'') : '✓ All rooms checked today') +
+        '</div>' +
+      '</div>' +
+      '<span style="font-weight:800;color:'+color+';font-size:13px;flex-shrink:0;">' + doneCount + '/' + qrs.length + '</span>' +
+    '</div>';
+  }).join('');
+}
+
 
 /* ── EOC ── */
 var eocOpenState = JSON.parse(localStorage.getItem('agrhodes_eoc_open') || '{}');
