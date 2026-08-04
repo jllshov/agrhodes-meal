@@ -631,6 +631,7 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
     <div class="page-header">
       <div><div class="page-title">Inventory</div><div class="page-sub">All dietary stock items</div></div>
       <div style="display:flex;gap:10px;">
+        <button class="neu-btn" onclick="printAllQR()">🖨 Print QR Sheet</button>
         <button class="neu-btn" data-perm="addItem" onclick="showBulkImport()">⬆ Bulk Import</button>
         <button class="neu-btn primary" data-perm="addItem" onclick="showAddItem()">+ Add Item</button>
       </div>
@@ -738,6 +739,7 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
     </div>
     <div class="modal-body">
       <div class="qr-holder" id="imQrHolder"></div>
+      <button class="neu-btn small" style="width:100%;margin-bottom:14px;" onclick="printSingleQR()">🖨 Print This QR Code</button>
       <div class="detail-row"><span class="detail-label">Current Quantity</span><span class="detail-val" id="imQty">—</span></div>
       <div class="detail-row"><span class="detail-label">Expiration Date</span><span class="detail-val" id="imExp">—</span></div>
       <div class="detail-row"><span class="detail-label">Storage Location</span><span class="detail-val" id="imStorage">—</span></div>
@@ -1507,6 +1509,7 @@ function renderInventoryTable() {
 }
 
 function showAddItem() {
+  currentEditCatalogItem = null;
   document.getElementById('addItemModal').classList.add('open');
   ['ai-name','ai-manufacturer','ai-sku','ai-lot','ai-exp','ai-received','ai-cost','ai-par','ai-min','ai-notes'].forEach(function(id){
     var el = document.getElementById(id); if (el) el.value = '';
@@ -1515,16 +1518,14 @@ function showAddItem() {
   document.getElementById('ai-unit').value = '';
   document.getElementById('ai-emergency').checked = false;
 }
-function closeAddItem() { document.getElementById('addItemModal').classList.remove('open'); }
+function closeAddItem() { document.getElementById('addItemModal').classList.remove('open'); currentEditCatalogItem = null; }
 
 async function saveNewItem() {
   var name = document.getElementById('ai-name').value.trim();
   if (!name) { alert('Item name is required'); return; }
 
-  var startQty = +document.getElementById('ai-qty').value || 0;
-
   var catalogPayload = {
-    facility_id: FACILITY_ID, item_name: name,
+    item_name: name,
     category_id: document.getElementById('ai-category').value || null,
     vendor_id: document.getElementById('ai-vendor').value || null,
     manufacturer: document.getElementById('ai-manufacturer').value || null,
@@ -1534,6 +1535,23 @@ async function saveNewItem() {
     is_emergency_eligible: document.getElementById('ai-emergency').checked,
     notes: document.getElementById('ai-notes').value || null,
   };
+
+  // ── EDIT MODE: update the existing catalog entry, no new inventory record ──
+  if (currentEditCatalogItem) {
+    catalogPayload.updated_at = new Date().toISOString();
+    var { error: editErr } = await sb.from('dietary_item_catalog').update(catalogPayload).eq('id', currentEditCatalogItem.id);
+    if (editErr) { alert('Error: ' + editErr.message); return; }
+    currentEditCatalogItem = null;
+    closeAddItem();
+    loadItemCatalogTab();
+    if (currentPanel === 'inventory') loadInventoryTab();
+    showToastMsg('✓ Catalog item updated');
+    return;
+  }
+
+  // ── CREATE MODE: new catalog entry, optionally with starting stock ──
+  catalogPayload.facility_id = FACILITY_ID;
+  var startQty = +document.getElementById('ai-qty').value || 0;
 
   var { data: catItem, error } = await sb.from('dietary_item_catalog').insert(catalogPayload).select().single();
   if (error) { alert('Error: ' + error.message); return; }
@@ -2541,11 +2559,120 @@ function renderCatalogList() {
       '<td>'+(catMap[c.category_id]||'—')+'</td>' +
       '<td>'+(vendMap[c.vendor_id]||'—')+'</td>' +
       '<td>'+(c.sku||'—')+'</td>' +
-      '<td>'+(c.cost_per_unit!=null?fmtMoney(c.cost_per_unit):'—')+'</td>' +
-      '<td><button class="neu-btn small" data-perm="receive" onclick="openReceiveStock(\''+c.id+'\')">📥 Receive Stock</button></td>' +
+      '<td>' +
+        '<input type="number" step="0.01" value="'+(c.cost_per_unit!=null?c.cost_per_unit:'')+'" ' +
+          'style="width:80px;padding:5px 8px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:11.5px;" ' +
+          'data-perm="addItem" onblur="updateCatalogPrice(\''+c.id+'\', this.value)" ' +
+          'onkeydown="if(event.key===\'Enter\'){this.blur();}">' +
+      '</td>' +
+      '<td style="white-space:nowrap;">' +
+        '<button class="neu-btn small" data-perm="addItem" onclick="editCatalogItem(\''+c.id+'\')" style="margin-right:6px;">✎ Edit</button>' +
+        '<button class="neu-btn small" data-perm="receive" onclick="openReceiveStock(\''+c.id+'\')">📥 Receive</button>' +
+      '</td>' +
       '</tr>';
   }).join('');
   applyRolePermissions();
+}
+
+async function updateCatalogPrice(catalogId, newValue) {
+  var num = newValue === '' ? null : +newValue;
+  var c = cachedCatalog.find(function(x){ return x.id===catalogId; });
+  if (c && c.cost_per_unit === num) return;
+
+  var { error } = await sb.from('dietary_item_catalog').update({ cost_per_unit: num, updated_at: new Date().toISOString() }).eq('id', catalogId);
+  if (error) { alert('Error updating price: ' + error.message); return; }
+  if (c) c.cost_per_unit = num;
+  showToastMsg('✓ Price updated');
+}
+
+var currentEditCatalogItem = null;
+
+function editCatalogItem(catalogId) {
+  var c = cachedCatalog.find(function(x){ return x.id===catalogId; });
+  if (!c) return;
+  currentEditCatalogItem = c;
+
+  document.getElementById('ai-name').value = c.item_name || '';
+  document.getElementById('ai-category').value = c.category_id || '';
+  document.getElementById('ai-vendor').value = c.vendor_id || '';
+  document.getElementById('ai-manufacturer').value = c.manufacturer || '';
+  document.getElementById('ai-sku').value = c.sku || '';
+  document.getElementById('ai-unit').value = c.unit_type || '';
+  document.getElementById('ai-cost').value = c.cost_per_unit != null ? c.cost_per_unit : '';
+  document.getElementById('ai-notes').value = c.notes || '';
+  document.getElementById('ai-emergency').checked = !!c.is_emergency_eligible;
+  document.getElementById('ai-qty').value = 0;
+  document.getElementById('ai-lot').value = '';
+  document.getElementById('ai-exp').value = '';
+  document.getElementById('ai-received').value = '';
+  document.getElementById('ai-storage').value = '';
+  document.getElementById('ai-par').value = '';
+  document.getElementById('ai-min').value = '';
+
+  document.getElementById('addItemModal').classList.add('open');
+}
+
+/* ════════════════════════════════════════════
+   QR PRINTING — single item and bulk sheet
+════════════════════════════════════════════ */
+function generateQRDataURL(text, size) {
+  var tempDiv = document.createElement('div');
+  tempDiv.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
+  document.body.appendChild(tempDiv);
+  new QRCode(tempDiv, { text: text, width: size||150, height: size||150, colorDark:'#000000', colorLight:'#FFFFFF' });
+  var canvas = tempDiv.querySelector('canvas');
+  var img = tempDiv.querySelector('img');
+  var dataUrl = canvas ? canvas.toDataURL('image/png') : (img ? img.src : '');
+  document.body.removeChild(tempDiv);
+  return dataUrl;
+}
+
+function printSingleQR() {
+  if (!currentItem) return;
+  var dataUrl = generateQRDataURL(SCAN_BASE_URL + currentItem.qr_identifier, 240);
+  var w = window.open('', '_blank');
+  if (!w) { alert('Please allow pop-ups to print QR codes'); return; }
+  w.document.write(
+    '<html><head><title>QR — ' + currentItem.item_name + '</title><style>' +
+    'body{font-family:sans-serif;text-align:center;padding:50px;}' +
+    'img{width:240px;height:240px;}' +
+    'h2{margin-top:20px;font-size:16px;}' +
+    'p{color:#666;font-size:11px;font-family:monospace;}' +
+    '</style></head><body>' +
+    '<img src="' + dataUrl + '">' +
+    '<h2>' + currentItem.item_name + '</h2>' +
+    '<p>' + currentItem.qr_identifier + '</p>' +
+    '</body></html>'
+  );
+  w.document.close();
+  setTimeout(function(){ w.print(); }, 350);
+}
+
+function printAllQR() {
+  if (!cachedItems || !cachedItems.length) { alert('No inventory items to print — load the Inventory tab first'); return; }
+  var w = window.open('', '_blank');
+  if (!w) { alert('Please allow pop-ups to print QR codes'); return; }
+
+  var tilesHtml = cachedItems.map(function(it) {
+    var dataUrl = generateQRDataURL(SCAN_BASE_URL + it.qr_identifier, 130);
+    return '<div class="tile"><img src="' + dataUrl + '">' +
+      '<div class="name">' + it.item_name + '</div>' +
+      '<div class="id">' + it.qr_identifier + '</div></div>';
+  }).join('');
+
+  w.document.write(
+    '<html><head><title>Inventory QR Code Sheet</title><style>' +
+    'body{font-family:sans-serif;margin:24px;}' +
+    '.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;}' +
+    '.tile{text-align:center;border:1px solid #ddd;border-radius:10px;padding:12px;page-break-inside:avoid;}' +
+    '.tile img{width:130px;height:130px;}' +
+    '.name{font-size:11px;font-weight:700;margin-top:8px;line-height:1.3;}' +
+    '.id{font-size:9px;color:#888;font-family:monospace;margin-top:2px;}' +
+    '@media print { .tile{break-inside:avoid;} }' +
+    '</style></head><body><div class="grid">' + tilesHtml + '</div></body></html>'
+  );
+  w.document.close();
+  setTimeout(function(){ w.print(); }, 500);
 }
 
 function openReceiveStock(catalogItemId) {
