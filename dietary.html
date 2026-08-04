@@ -630,8 +630,9 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   <div id="panel-inventory" style="display:none;">
     <div class="page-header">
       <div><div class="page-title">Inventory</div><div class="page-sub">All dietary stock items</div></div>
-      <div style="display:flex;gap:10px;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button class="neu-btn" onclick="printAllQR()">🖨 Print QR Sheet</button>
+        <button class="neu-btn" data-perm="receive" onclick="showManifestModal()">📋 Submit Manifest</button>
         <button class="neu-btn" data-perm="addItem" onclick="showBulkImport()">⬆ Bulk Import</button>
         <button class="neu-btn primary" data-perm="addItem" onclick="showAddItem()">+ Add Item</button>
       </div>
@@ -1026,6 +1027,51 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
         <div style="display:flex;gap:10px;margin-top:16px;">
           <button class="neu-btn" style="flex:1;" onclick="backToBulkStep1()">← Back</button>
           <button class="neu-btn primary" style="flex:2;" id="biConfirmBtn" onclick="confirmBulkImport()">Import All</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="manifestModal">
+  <div class="modal-box" style="max-width:800px;">
+    <div class="modal-header">
+      <div><div class="modal-title">Submit Manifest</div><div class="modal-meta">Matches against your catalog — updates existing items, offers to add new ones</div></div>
+      <button class="modal-close" onclick="closeManifestModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="mfStep1">
+        <div class="card" style="background:var(--bg);box-shadow:none;padding:16px;margin-bottom:14px;">
+          <div style="font-size:12.5px;font-weight:700;margin-bottom:8px;">Expected columns (header row required):</div>
+          <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gray);line-height:1.8;">
+            item_name, sku, quantity, cost_per_unit, lot_number, expiration_date
+          </div>
+          <div style="font-size:11px;color:var(--gray-light);margin-top:8px;">Matching tries <b>sku</b> first, then falls back to an exact <b>item_name</b> match. Items found in your catalog get their quantity updated. Items not found can be added on the next screen.</div>
+        </div>
+
+        <div class="field" style="margin-bottom:12px;">
+          <label>Upload CSV File</label>
+          <input type="file" id="mf-file-input" accept=".csv" onchange="handleManifestFile(this)" style="width:100%;padding:10px 12px;border:none;border-radius:12px;background:var(--bg);box-shadow:var(--shadow-in);font-family:inherit;font-size:12.5px;">
+        </div>
+        <div style="text-align:center;font-size:11px;color:var(--gray-light);margin:10px 0;">— or —</div>
+        <div class="field" style="margin-bottom:12px;">
+          <label>Paste CSV Text</label>
+          <textarea id="mf-paste" rows="8" placeholder="item_name,sku,quantity&#10;Whole Milk 1gal,7228460,12" style="font-family:'DM Mono',monospace;font-size:11.5px;"></textarea>
+        </div>
+        <button class="neu-btn primary" style="width:100%;" onclick="parseManifest()">Preview Manifest</button>
+      </div>
+
+      <div id="mfStep2" style="display:none;">
+        <div id="mfPreviewSummary" style="margin-bottom:14px;"></div>
+        <div style="max-height:400px;overflow-y:auto;border-radius:14px;border:1px solid var(--border);">
+          <table class="inv-table" style="font-size:11.5px;">
+            <thead><tr><th>Item</th><th>Qty</th><th>Match</th><th>Action</th></tr></thead>
+            <tbody id="mfPreviewBody"></tbody>
+          </table>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button class="neu-btn" style="flex:1;" onclick="backToManifestStep1()">← Back</button>
+          <button class="neu-btn primary" style="flex:2;" id="mfConfirmBtn" onclick="confirmManifest()">Submit Manifest</button>
         </div>
       </div>
     </div>
@@ -2674,6 +2720,189 @@ function printAllQR() {
   w.document.close();
   setTimeout(function(){ w.print(); }, 500);
 }
+
+/* ════════════════════════════════════════════
+   SUBMIT MANIFEST — match delivery list against
+   catalog, update quantities for matches, offer
+   to add unmatched items.
+════════════════════════════════════════════ */
+var manifestRows = [];
+
+function showManifestModal() {
+  document.getElementById('mf-file-input').value = '';
+  document.getElementById('mf-paste').value = '';
+  document.getElementById('mfStep1').style.display = 'block';
+  document.getElementById('mfStep2').style.display = 'none';
+  document.getElementById('manifestModal').classList.add('open');
+}
+function closeManifestModal() { document.getElementById('manifestModal').classList.remove('open'); }
+function backToManifestStep1() {
+  document.getElementById('mfStep1').style.display = 'block';
+  document.getElementById('mfStep2').style.display = 'none';
+}
+
+function handleManifestFile(input) {
+  if (!input.files || !input.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e) { document.getElementById('mf-paste').value = e.target.result; };
+  reader.readAsText(input.files[0]);
+}
+
+async function parseManifest() {
+  var text = document.getElementById('mf-paste').value.trim();
+  if (!text) { alert('Upload a CSV file or paste manifest text first'); return; }
+
+  var rows = parseCSV(text);
+  if (!rows.length) { alert('No rows found'); return; }
+
+  await loadCatalog();
+  await loadRefData();
+  var freshInventory = await loadInventoryJoined('Active');
+
+  var bySku = {}, byName = {};
+  cachedCatalog.forEach(function(c) {
+    if (c.sku) bySku[c.sku.trim().toLowerCase()] = c;
+    byName[c.item_name.trim().toLowerCase()] = c;
+  });
+  var invByCatalogId = {};
+  freshInventory.forEach(function(inv) { invByCatalogId[inv.catalog_item_id] = inv; });
+
+  manifestRows = rows.map(function(r, idx) {
+    var name = r.item_name || r.name || '';
+    var sku = (r.sku || '').trim();
+    var qty = +(r.quantity || r.qty || 0) || 0;
+
+    var matched = null;
+    if (sku && bySku[sku.toLowerCase()]) matched = bySku[sku.toLowerCase()];
+    else if (name && byName[name.trim().toLowerCase()]) matched = byName[name.trim().toLowerCase()];
+
+    var existingInv = matched ? invByCatalogId[matched.id] : null;
+
+    return {
+      row_num: idx+2, item_name: name, sku: sku, quantity: qty,
+      cost_per_unit: r.cost_per_unit ? +r.cost_per_unit : null,
+      lot_number: r.lot_number || null, expiration_date: r.expiration_date || null,
+      matched_catalog: matched, existing_inventory: existingInv,
+      valid: !!name && qty > 0, add_to_catalog: !matched,
+    };
+  });
+
+  renderManifestPreview();
+  document.getElementById('mfStep1').style.display = 'none';
+  document.getElementById('mfStep2').style.display = 'block';
+}
+
+function renderManifestPreview() {
+  var matchedCount = manifestRows.filter(function(r){ return r.matched_catalog; }).length;
+  var unmatchedCount = manifestRows.length - matchedCount;
+  var invalidCount = manifestRows.filter(function(r){ return !r.valid; }).length;
+
+  document.getElementById('mfPreviewSummary').innerHTML =
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+    '<span class="qty-badge qty-ok">'+matchedCount+' matched — will update quantity</span>' +
+    (unmatchedCount ? '<span class="qty-badge" style="background:rgba(245,158,11,.12);color:var(--amber);">'+unmatchedCount+' not found</span>' : '') +
+    (invalidCount ? '<span class="qty-badge qty-out">'+invalidCount+' missing name/quantity</span>' : '') +
+    '</div>';
+
+  document.getElementById('mfPreviewBody').innerHTML = manifestRows.map(function(r, i) {
+    var matchBadge = r.matched_catalog
+      ? '<span class="qty-badge qty-ok">✓ ' + r.matched_catalog.item_name + '</span>'
+      : '<span class="qty-badge" style="background:rgba(245,158,11,.12);color:var(--amber);">Not in catalog</span>';
+
+    var actionCell;
+    if (!r.valid) {
+      actionCell = '<span style="color:var(--red);font-size:11px;">Skipped — missing data</span>';
+    } else if (r.matched_catalog) {
+      actionCell = '<span style="font-size:11px;color:var(--green);">Will ' + (r.existing_inventory ? 'add to existing stock' : 'create new stock record') + '</span>';
+    } else {
+      actionCell = '<label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;">' +
+        '<input type="checkbox" checked onchange="manifestRows['+i+'].add_to_catalog=this.checked;renderManifestPreview();" style="width:auto;"> Add to catalog</label>';
+    }
+
+    return '<tr><td>'+r.item_name+'</td><td>'+r.quantity+'</td><td>'+matchBadge+'</td><td>'+actionCell+'</td></tr>';
+  }).join('');
+}
+
+async function confirmManifest() {
+  var btn = document.getElementById('mfConfirmBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="border-color:rgba(0,0,0,.2);border-top-color:#1A1A1A;"></span> Processing…';
+
+  var staff = getStaffName();
+  var updatedCount = 0, createdStockCount = 0, addedCatalogCount = 0, skippedCount = 0;
+
+  for (var i = 0; i < manifestRows.length; i++) {
+    var r = manifestRows[i];
+    if (!r.valid) { skippedCount++; continue; }
+
+    if (r.matched_catalog) {
+      if (r.existing_inventory) {
+        // Update existing stock — add manifest quantity to current
+        var before = r.existing_inventory.current_quantity;
+        var after = before + r.quantity;
+        var invUpdate = { current_quantity: after, updated_at: new Date().toISOString() };
+        if (r.lot_number) invUpdate.lot_number = r.lot_number;
+        if (r.expiration_date) invUpdate.expiration_date = r.expiration_date;
+
+        await sb.from('dietary_inventory').update(invUpdate).eq('id', r.existing_inventory.id);
+        await sb.from('dietary_transactions').insert({
+          facility_id: FACILITY_ID, inventory_id: r.existing_inventory.id, action: 'Receive', reason: 'Manifest',
+          quantity: r.quantity, before_quantity: before, after_quantity: after,
+          performed_by: staff, device: 'web',
+        });
+        updatedCount++;
+      } else {
+        // Catalog item exists but has no stock record yet — create one
+        var qrId = 'agrhodes-atl-diet-' + Date.now() + '-' + i;
+        var { data: newInv } = await sb.from('dietary_inventory').insert({
+          facility_id: FACILITY_ID, catalog_item_id: r.matched_catalog.id, qr_identifier: qrId,
+          current_quantity: r.quantity, lot_number: r.lot_number, expiration_date: r.expiration_date,
+          received_date: new Date().toISOString().split('T')[0],
+        }).select().single();
+        if (newInv) {
+          await sb.from('dietary_transactions').insert({
+            facility_id: FACILITY_ID, inventory_id: newInv.id, action: 'Receive', reason: 'Manifest',
+            quantity: r.quantity, before_quantity: 0, after_quantity: r.quantity,
+            performed_by: staff, device: 'web',
+          });
+          createdStockCount++;
+        }
+      }
+    } else if (r.add_to_catalog) {
+      var { data: newCat } = await sb.from('dietary_item_catalog').insert({
+        facility_id: FACILITY_ID, item_name: r.item_name, sku: r.sku || null, cost_per_unit: r.cost_per_unit,
+      }).select().single();
+      if (newCat) {
+        var qrId2 = 'agrhodes-atl-diet-' + Date.now() + '-new-' + i;
+        var { data: newInv2 } = await sb.from('dietary_inventory').insert({
+          facility_id: FACILITY_ID, catalog_item_id: newCat.id, qr_identifier: qrId2,
+          current_quantity: r.quantity, lot_number: r.lot_number, expiration_date: r.expiration_date,
+          received_date: new Date().toISOString().split('T')[0],
+        }).select().single();
+        if (newInv2) {
+          await sb.from('dietary_transactions').insert({
+            facility_id: FACILITY_ID, inventory_id: newInv2.id, action: 'Receive', reason: 'Manifest — New Item',
+            quantity: r.quantity, before_quantity: 0, after_quantity: r.quantity,
+            performed_by: staff, device: 'web',
+          });
+        }
+        addedCatalogCount++;
+      }
+    } else {
+      skippedCount++;
+    }
+  }
+
+  closeManifestModal();
+  var msg = '✓ Manifest processed — ' + updatedCount + ' updated';
+  if (createdStockCount) msg += ', ' + createdStockCount + ' new stock records';
+  if (addedCatalogCount) msg += ', ' + addedCatalogCount + ' new catalog items';
+  showToastMsg(msg);
+  loadInventoryTab();
+  if (typeof loadItemCatalogTab === 'function') loadItemCatalogTab();
+  if (currentPanel === 'dashboard') loadDashboard();
+}
+
 
 function openReceiveStock(catalogItemId) {
   var c = cachedCatalog.find(function(x){ return x.id===catalogItemId; });
