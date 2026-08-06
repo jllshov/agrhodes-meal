@@ -781,6 +781,7 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
         <div class="field"><label>Received Date</label><input type="date" id="ai-received"></div>
         <div class="field"><label>Storage Location</label><select id="ai-storage"></select></div>
         <div class="field"><label>Unit Type</label><input id="ai-unit" placeholder="case, each, lb, gal"></div>
+        <div class="field"><label>Units Per Case</label><input type="number" id="ai-units-per-case" placeholder="e.g. 48"></div>
         <div class="field"><label>Current Quantity</label><input type="number" id="ai-qty" value="0"></div>
         <div class="field"><label>Cost Per Unit ($)</label><input type="number" step="0.01" id="ai-cost"></div>
         <div class="field"><label>Par Level</label><input type="number" id="ai-par"></div>
@@ -1085,14 +1086,17 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
       <button class="modal-close" onclick="closeReceiveStock()">✕</button>
     </div>
     <div class="modal-body">
+      <div id="rsQtyHelper" style="display:none;font-size:11px;color:var(--gray);margin-bottom:8px;"></div>
       <div class="field-grid">
-        <div class="field"><label>Quantity *</label><input type="number" id="rs-qty"></div>
+        <div class="field"><label id="rsQtyLabel">Quantity (cases) *</label><input type="number" step="0.01" id="rs-qty" oninput="updateReceiveTotal()"></div>
+        <div class="field" id="rsUnitsField" style="display:none;"><label>+ Individual Units</label><input type="number" id="rs-units" oninput="updateReceiveTotal()"></div>
         <div class="field"><label>Storage Location</label><select id="rs-storage"></select></div>
         <div class="field"><label>Lot Number</label><input id="rs-lot"></div>
         <div class="field"><label>Expiration Date</label><input type="date" id="rs-exp"></div>
         <div class="field"><label>Par Level</label><input type="number" id="rs-par"></div>
         <div class="field"><label>Minimum Level</label><input type="number" id="rs-min"></div>
       </div>
+      <div id="rsTotalPreview" style="display:none;font-size:12px;font-weight:700;color:var(--orange);margin-top:6px;"></div>
       <button class="neu-btn primary" style="width:100%;margin-top:10px;" onclick="submitReceiveStock()">Receive Stock &amp; Generate QR</button>
     </div>
   </div>
@@ -1129,6 +1133,7 @@ async function loadInventoryJoined(statusFilter) {
       sku: cat.sku || null, unit_type: cat.unit_type || row.unit_type || null,
       cost_per_unit: cat.cost_per_unit != null ? cat.cost_per_unit : null,
       manufacturer: cat.manufacturer || null, catalog_item_id: row.catalog_item_id,
+      units_per_case: cat.units_per_case != null ? cat.units_per_case : null,
     });
   });
 }
@@ -1173,6 +1178,20 @@ function statCardAccent(num, label, sub) {
     '<span style="font-size:10px;color:rgba(255,255,255,.7);margin-top:2px">'+sub+'</span></div>';
 }
 function fmtMoney(n) { return '$' + (Number(n)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtQty(qty, unitsPerCase, unitType) {
+  var q = Number(qty) || 0;
+  var unitLabel = unitType || 'case';
+  if (!unitsPerCase || unitsPerCase <= 0) {
+    return (q % 1 === 0 ? q : q.toFixed(2)) + ' ' + unitLabel + (q !== 1 ? 's' : '');
+  }
+  var wholeCases = Math.floor(q);
+  var looseUnits = Math.round((q - wholeCases) * unitsPerCase);
+  if (looseUnits >= unitsPerCase) { wholeCases += 1; looseUnits -= unitsPerCase; }
+  var parts = [];
+  if (wholeCases > 0) parts.push(wholeCases + ' case' + (wholeCases!==1?'s':''));
+  if (looseUnits > 0) parts.push(looseUnits + ' unit' + (looseUnits!==1?'s':''));
+  return parts.length ? parts.join(' + ') : '0 cases';
+}
 function daysUntil(dateStr) {
   if (!dateStr) return null;
   var d = new Date(dateStr+'T12:00:00');
@@ -1548,7 +1567,7 @@ function renderInventoryTable() {
       '<td><div class="inv-item-name">'+i.item_name+'</div><div class="inv-item-meta">'+(i.sku||'No SKU')+'</div></td>' +
       '<td>'+(catMap[i.category_id]||'—')+'</td>' +
       '<td>'+(storMap[i.storage_location_id]||'—')+'</td>' +
-      '<td><span class="qty-badge '+qtyCls+'">'+i.current_quantity+' '+(i.unit_type||'')+'</span></td>' +
+      '<td><span class="qty-badge '+qtyCls+'">'+fmtQty(i.current_quantity, i.units_per_case, i.unit_type)+'</span></td>' +
       '<td><span class="exp-badge '+expCls+'">'+expLabel+'</span></td>' +
       '<td>'+fmtMoney(i.cost_per_unit)+'</td></tr>';
   }).join('');
@@ -1562,6 +1581,7 @@ function showAddItem() {
   });
   document.getElementById('ai-qty').value = 0;
   document.getElementById('ai-unit').value = '';
+  document.getElementById('ai-units-per-case').value = '';
   document.getElementById('ai-emergency').checked = false;
 }
 function closeAddItem() { document.getElementById('addItemModal').classList.remove('open'); currentEditCatalogItem = null; }
@@ -1577,6 +1597,7 @@ async function saveNewItem() {
     manufacturer: document.getElementById('ai-manufacturer').value || null,
     sku: document.getElementById('ai-sku').value || null,
     unit_type: document.getElementById('ai-unit').value || null,
+    units_per_case: document.getElementById('ai-units-per-case').value ? +document.getElementById('ai-units-per-case').value : null,
     cost_per_unit: +document.getElementById('ai-cost').value || null,
     is_emergency_eligible: document.getElementById('ai-emergency').checked,
     notes: document.getElementById('ai-notes').value || null,
@@ -1645,7 +1666,7 @@ async function openItemDetail(itemId) {
 
   document.getElementById('imTitle').textContent = item.item_name;
   document.getElementById('imMeta').textContent = (catMap[item.category_id]||'') + ' · ' + item.qr_identifier;
-  document.getElementById('imQty').textContent = item.current_quantity + ' ' + (item.unit_type||'');
+  document.getElementById('imQty').textContent = fmtQty(item.current_quantity, item.units_per_case, item.unit_type);
   var d = daysUntil(item.expiration_date);
   document.getElementById('imExp').innerHTML = item.expiration_date ? item.expiration_date +
     (d<0 ? ' <span style="color:var(--red)">(Expired)</span>' : d<=7 ? ' <span style="color:var(--amber)">(Soon)</span>' : '') : '—';
@@ -1677,14 +1698,17 @@ function openActionForm(action) {
     '<div style="font-size:13px;font-weight:700;margin-bottom:10px;">'+action+' Inventory</div>';
 
   if (action === 'Receive') {
+    var hasUPC = currentItem && currentItem.units_per_case;
     html += '<div class="field-grid">' +
-      '<div class="field"><label>Quantity Received</label><input type="number" id="af-qty"></div>' +
+      '<div class="field"><label>'+(hasUPC?'Whole Cases':'Quantity Received')+'</label><input type="number" step="0.01" id="af-qty" oninput="updateActionReceiveTotal()"></div>' +
+      (hasUPC ? '<div class="field"><label>+ Individual Units</label><input type="number" id="af-units" oninput="updateActionReceiveTotal()"></div>' : '') +
       '<div class="field"><label>Vendor</label><select id="af-vendor">' + '<option value="">Select…</option>' + cachedVendors.map(function(v){return '<option value="'+v.id+'">'+v.name+'</option>';}).join('') + '</select></div>' +
       '<div class="field"><label>Invoice #</label><input id="af-invoice"></div>' +
       '<div class="field"><label>Lot Number</label><input id="af-lot"></div>' +
       '<div class="field"><label>Expiration Date</label><input type="date" id="af-exp"></div>' +
       '<div class="field"><label>Storage Location</label><select id="af-storage">' + cachedStorage.map(function(s){return '<option value="'+s.id+'">'+s.name+'</option>';}).join('') + '</select></div>' +
-      '</div>';
+      '</div>' +
+      (hasUPC ? '<div style="font-size:11px;color:var(--gray);margin-bottom:6px;">1 case = '+currentItem.units_per_case+' '+(currentItem.unit_type&&currentItem.unit_type!=='case'?currentItem.unit_type:'units')+'</div><div id="afTotalPreview" style="display:none;font-size:12px;font-weight:700;color:var(--orange);margin-bottom:8px;"></div>' : '');
   } else if (action === 'Remove') {
     html += '<div class="field-grid">' +
       '<div class="field"><label>Quantity</label><input type="number" id="af-qty"></div>' +
@@ -1714,16 +1738,20 @@ function openActionForm(action) {
 
 async function submitAction(action) {
   if (!currentItem) return;
-  var qtyInput = +document.getElementById('af-qty').value;
-  if (!qtyInput && action !== 'Adjust') { alert('Enter a quantity'); return; }
+  var hasUPC = currentItem.units_per_case && currentItem.units_per_case > 0;
+  var qtyInput = +document.getElementById('af-qty').value || 0;
+  var unitsInput = (action === 'Receive' && hasUPC) ? (+document.getElementById('af-units').value || 0) : 0;
+  var effectiveQty = (action === 'Receive' && hasUPC) ? (qtyInput + unitsInput / currentItem.units_per_case) : qtyInput;
+
+  if (!effectiveQty && action !== 'Adjust') { alert('Enter a quantity'); return; }
   var staff = getStaffName();
   var before = currentItem.current_quantity;
   var after = before;
   var payload = { facility_id: FACILITY_ID, inventory_id: currentItem.id, action: action, performed_by: staff, device: 'web' };
 
   if (action === 'Receive') {
-    after = before + qtyInput;
-    payload.quantity = qtyInput;
+    after = before + effectiveQty;
+    payload.quantity = effectiveQty;
     payload.reason = 'Receiving';
     payload.vendor_id = document.getElementById('af-vendor').value || null;
     payload.invoice_number = document.getElementById('af-invoice').value || null;
@@ -2644,6 +2672,7 @@ function editCatalogItem(catalogId) {
   document.getElementById('ai-manufacturer').value = c.manufacturer || '';
   document.getElementById('ai-sku').value = c.sku || '';
   document.getElementById('ai-unit').value = c.unit_type || '';
+  document.getElementById('ai-units-per-case').value = c.units_per_case != null ? c.units_per_case : '';
   document.getElementById('ai-cost').value = c.cost_per_unit != null ? c.cost_per_unit : '';
   document.getElementById('ai-notes').value = c.notes || '';
   document.getElementById('ai-emergency').checked = !!c.is_emergency_eligible;
@@ -2911,10 +2940,23 @@ function openReceiveStock(catalogItemId) {
 
   document.getElementById('rsItemName').textContent = c.item_name;
   document.getElementById('rs-qty').value = '';
+  document.getElementById('rs-units').value = '';
   document.getElementById('rs-lot').value = '';
   document.getElementById('rs-exp').value = '';
   document.getElementById('rs-par').value = '';
   document.getElementById('rs-min').value = '';
+  document.getElementById('rsTotalPreview').style.display = 'none';
+
+  var hasUnits = c.units_per_case != null && c.units_per_case > 0;
+  document.getElementById('rsUnitsField').style.display = hasUnits ? 'block' : 'none';
+  document.getElementById('rsQtyLabel').textContent = hasUnits ? 'Whole Cases *' : 'Quantity *';
+  var helper = document.getElementById('rsQtyHelper');
+  if (hasUnits) {
+    helper.style.display = 'block';
+    helper.textContent = '1 case = ' + c.units_per_case + ' ' + (c.unit_type && c.unit_type !== 'case' ? c.unit_type : 'units') + '. Enter whole cases plus any loose individual units.';
+  } else {
+    helper.style.display = 'none';
+  }
 
   var storSel = document.getElementById('rs-storage');
   storSel.innerHTML = '<option value="">Select…</option>' + cachedStorage.map(function(s){ return '<option value="'+s.id+'">'+s.name+'</option>'; }).join('');
@@ -2923,9 +2965,44 @@ function openReceiveStock(catalogItemId) {
 }
 function closeReceiveStock() { document.getElementById('receiveStockModal').classList.remove('open'); currentReceiveCatalogItem = null; }
 
+function updateReceiveTotal() {
+  if (!currentReceiveCatalogItem || !currentReceiveCatalogItem.units_per_case) return;
+  var cases = +document.getElementById('rs-qty').value || 0;
+  var units = +document.getElementById('rs-units').value || 0;
+  var total = cases + (units / currentReceiveCatalogItem.units_per_case);
+  var preview = document.getElementById('rsTotalPreview');
+  if (cases || units) {
+    preview.style.display = 'block';
+    preview.textContent = '= ' + total.toFixed(2) + ' case-equivalents total';
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+function updateActionReceiveTotal() {
+  if (!currentItem || !currentItem.units_per_case) return;
+  var casesEl = document.getElementById('af-qty');
+  var unitsEl = document.getElementById('af-units');
+  var previewEl = document.getElementById('afTotalPreview');
+  if (!casesEl || !unitsEl || !previewEl) return;
+  var cases = +casesEl.value || 0;
+  var units = +unitsEl.value || 0;
+  var total = cases + (units / currentItem.units_per_case);
+  if (cases || units) {
+    previewEl.style.display = 'block';
+    previewEl.textContent = '= ' + total.toFixed(2) + ' case-equivalents total';
+  } else {
+    previewEl.style.display = 'none';
+  }
+}
+
 async function submitReceiveStock() {
   if (!currentReceiveCatalogItem) return;
-  var qty = +document.getElementById('rs-qty').value;
+  var casesInput = +document.getElementById('rs-qty').value || 0;
+  var unitsInput = +document.getElementById('rs-units').value || 0;
+  var upc = currentReceiveCatalogItem.units_per_case;
+
+  var qty = (upc && upc > 0) ? casesInput + (unitsInput / upc) : casesInput;
   if (!qty || qty <= 0) { alert('Enter a quantity greater than 0'); return; }
 
   var staff = getStaffName();
