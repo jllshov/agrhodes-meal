@@ -986,7 +986,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
     </div>
 
     <div class="card no-print" style="margin-bottom:20px;">
-      <div class="bulk-form" style="grid-template-columns:1fr 1fr 1fr auto;">
+      <div class="bulk-form" style="grid-template-columns:1fr 1fr 1fr auto auto;">
         <div class="field"><label>From</label><input type="date" id="rep-start"></div>
         <div class="field"><label>To</label><input type="date" id="rep-end"></div>
         <div class="field"><label>Location Type</label>
@@ -998,6 +998,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
             <option value="bathroom">Bathrooms</option>
           </select>
         </div>
+        <button class="neu-btn" onclick="showAllTimeReport()">📚 All Time</button>
         <button class="neu-btn primary" onclick="generateReport()">Generate</button>
       </div>
       <div style="display:flex;gap:10px;margin-top:14px;">
@@ -3707,6 +3708,13 @@ function initReportsPanel() {
     endEl.value = today.toISOString().split('T')[0];
     startEl.value = weekAgo.toISOString().split('T')[0];
   }
+}
+
+function showAllTimeReport() {
+  document.getElementById('rep-start').value = '2020-01-01';
+  document.getElementById('rep-end').value = new Date().toISOString().split('T')[0];
+  document.getElementById('rep-type').value = 'all';
+  generateReport();
 }
 
 async function generateReport() {
