@@ -3488,13 +3488,14 @@ function initSurveyPrepPanel() {
   loadSavedSurveyPreps();
 }
 
-function startSurveyPrepAssessment(deptKey) {
+function startSurveyPrepAssessment(deptKey, skipHashUpdate) {
   spCurrentDept = SURVEY_DEPARTMENTS.find(function(d){ return d.key === deptKey; });
   if (!spCurrentDept) return;
   spItemStates = {};
   spCurrentDept.items.forEach(function(_, idx){ spItemStates[idx] = { correct:'', comments:'' }; });
   renderSurveyPrepForm();
   document.getElementById('spAssessmentForm').scrollIntoView({behavior:'smooth', block:'start'});
+  if (!skipHashUpdate) window.location.hash = 'surveyprep=' + deptKey;
 }
 
 function renderSurveyPrepForm() {
@@ -3585,6 +3586,9 @@ function cancelSurveyPrepAssessment() {
   spCurrentDept = null;
   spItemStates = {};
   document.getElementById('spAssessmentForm').innerHTML = '';
+  if (window.location.hash.indexOf('surveyprep=') > -1) {
+    history.replaceState(null, '', window.location.pathname + window.location.search + '#surveyprep');
+  }
 }
 
 async function saveSurveyPrepAssessment() {
@@ -3897,8 +3901,25 @@ function exportReportCSV() {
   URL.revokeObjectURL(url);
 }
 
+// ── Deep-link routing for Survey Prep departments ──
+// A URL like yoursite.com/zone_rounds.html#surveyprep=food_service jumps
+// straight to that department's assessment — shareable/bookmarkable per department.
+function handleHashRoute() {
+  var hash = window.location.hash.slice(1); // e.g. "surveyprep=food_service"
+  if (hash.indexOf('surveyprep=') === 0) {
+    var deptKey = hash.split('=')[1];
+    navigateToSubtab('surveyprep');
+    // Wait a tick for the panel/data to initialize before opening the specific department
+    setTimeout(function(){ startSurveyPrepAssessment(deptKey, true); }, 150);
+  } else if (hash === 'surveyprep') {
+    navigateToSubtab('surveyprep');
+  }
+}
+window.addEventListener('hashchange', handleHashRoute);
+
 // Boot
 loadDashboard();
+if (window.location.hash) handleHashRoute();
 </script>
 </body>
 </html>
