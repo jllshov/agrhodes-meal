@@ -600,8 +600,10 @@ table.policy-table tr:last-child td { border-bottom: none; }
 .sp-dept-card {
   background: var(--bg); border-radius: 14px; padding: 14px 12px; text-align: center;
   cursor: pointer; box-shadow: var(--shadow-out); font-size: 12px; font-weight: 700; transition: all .15s;
+  display: block; text-decoration: none; color: var(--black);
 }
 .sp-dept-card:hover { box-shadow: var(--shadow-card); transform: translateY(-2px); }
+.sp-dept-card:visited { color: var(--black); }
 .sp-item-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,.06); }
 .sp-item-num { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--gray-light); flex-shrink: 0; width: 22px; padding-top: 2px; }
 .sp-item-text { flex: 1; font-size: 12.5px; font-weight: 600; line-height: 1.4; }
@@ -3480,9 +3482,9 @@ var lastSurveyPrepRows = [];
 function initSurveyPrepPanel() {
   var grid = document.getElementById('spDeptGrid');
   grid.innerHTML = SURVEY_DEPARTMENTS.map(function(d){
-    return '<div class="sp-dept-card" onclick="startSurveyPrepAssessment(\''+d.key+'\')">' +
+    return '<a href="#surveyprep=' + d.key + '" class="sp-dept-card">' +
       '<div style="font-size:22px;margin-bottom:6px;">' + d.icon + '</div>' + d.label +
-    '</div>';
+    '</a>';
   }).join('');
   document.getElementById('spAssessmentForm').innerHTML = '';
   loadSavedSurveyPreps();
