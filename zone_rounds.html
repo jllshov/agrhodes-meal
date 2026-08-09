@@ -194,11 +194,31 @@ h1,h2,.page-title,.stat-num,.rr-name,.room-hero-name { font-family: 'Outfit', 'I
 /* ── Heat map ── */
 #heatmapGrid {
   display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 100%;
-  max-height: 560px; overflow-y: auto; padding-right: 6px;
+  max-height: 320px; overflow-y: auto; padding-right: 6px;
 }
 #heatmapGrid::-webkit-scrollbar { width: 6px; }
 #heatmapGrid::-webkit-scrollbar-thumb { background: var(--gray-light); border-radius: 3px; }
-.heatmap-card { max-width: 1450px; max-height: 700px; overflow: hidden; }
+.heatmap-card { max-width: 1450px; max-height: 460px; overflow: hidden; }
+
+/* ── Lead-style compact cards (reference shape) ── */
+.lead-card { padding: 16px 16px 15px; min-height: 148px; }
+.lead-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+.lead-card-avatar {
+  width: 40px; height: 40px; border-radius: 50%; background: var(--accent);
+  display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0;
+}
+.lead-card-action {
+  width: 26px; height: 26px; border-radius: 50%; background: var(--bg); border: none;
+  display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--gray);
+  cursor: pointer; flex-shrink: 0;
+}
+.lead-card-name { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 14px; line-height: 1.3; }
+.lead-card-sub { font-size: 11px; color: var(--gray); margin-top: 2px; }
+.lead-card-tags { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+.lead-card-tag { font-size: 9.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--bg); color: var(--gray); }
+.lead-card-dots { display: flex; gap: 4px; margin-top: 10px; align-items: center; }
+.lead-card-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.lead-card-empty { color: var(--gray-light); font-size: 12px; text-align: center; padding: 30px 8px; }
 
 /* ── Bottom activity scrubber ── */
 .activity-scrubber {
@@ -778,10 +798,17 @@ table.policy-table tr:last-child td { border-bottom: none; }
     </div>
 
     <div class="content-grid">
-      <div class="card heatmap-card">
-        <div class="card-title">Rounding Heat Map</div>
-        <div class="card-sub">Click any tile to view round details</div>
-        <div id="heatmapGrid"></div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card heatmap-card" style="max-height:460px;">
+          <div class="card-title">Rounding Heat Map</div>
+          <div class="card-sub">Click any tile to view round details</div>
+          <div id="heatmapGrid"></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="card lead-card" id="leadCardAttention"></div>
+          <div class="card lead-card" id="leadCardLatest"></div>
+        </div>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:16px;">
@@ -1277,6 +1304,72 @@ function setHeatmapFilter(type, btn) {
 
 var heatmapGroupOpenState = JSON.parse(localStorage.getItem('agrhodes_heatmap_open') || '{}');
 
+// Two compact "lead-style" cards under the heat map: highest-priority open issue,
+// and the most recently completed round — same visual shape as the reference (avatar,
+// bold title, subtitle, tag row, status dots).
+function renderLeadCards(locations, roundsToday, openIssues) {
+  var locByQr = {};
+  locations.forEach(function(l){ locByQr[l.qr_identifier] = l; });
+
+  // Card 1 — highest priority open issue right now
+  var attnEl = document.getElementById('leadCardAttention');
+  var sortedIssues = openIssues.slice().sort(function(a,b){
+    var rank = { High:0, Medium:1, Low:2 };
+    return (rank[a.priority] ?? 3) - (rank[b.priority] ?? 3);
+  });
+  var topIssue = sortedIssues[0];
+  if (!topIssue) {
+    attnEl.innerHTML =
+      '<div class="lead-card-header"><div class="lead-card-avatar">✓</div></div>' +
+      '<div class="lead-card-empty">✓ No open issues right now</div>';
+  } else {
+    var loc2 = topIssue.room_number ? 'Room ' + topIssue.room_number : (topIssue.eoc_section||'').replace(/_/g,' ') || 'Facility';
+    var prColor = topIssue.priority==='High' ? 'var(--red)' : topIssue.priority==='Medium' ? 'var(--amber)' : 'var(--green)';
+    attnEl.innerHTML =
+      '<div class="lead-card-header">' +
+        '<div class="lead-card-avatar">⚠</div>' +
+        '<button class="lead-card-action" onclick="navigateToSubtab(\'issues\')" title="View in Issues">↗</button>' +
+      '</div>' +
+      '<div class="lead-card-name">' + loc2 + '</div>' +
+      '<div class="lead-card-sub">' + (topIssue.issue_description || 'No description').slice(0,44) + '</div>' +
+      '<div class="lead-card-tags">' +
+        '<span class="lead-card-tag">' + topIssue.issue_type + '</span>' +
+      '</div>' +
+      '<div class="lead-card-dots">' +
+        '<span class="lead-card-dot" style="background:' + prColor + '"></span>' +
+        '<span style="font-size:10px;color:var(--gray);font-weight:700;">' + topIssue.priority + ' priority · ' + openIssues.length + ' open total</span>' +
+      '</div>';
+  }
+
+  // Card 2 — most recently completed round today
+  var latestEl = document.getElementById('leadCardLatest');
+  var sortedRounds = roundsToday.slice().sort(function(a,b){ return new Date(b.rounded_at) - new Date(a.rounded_at); });
+  var latest = sortedRounds[0];
+  if (!latest) {
+    latestEl.innerHTML =
+      '<div class="lead-card-header"><div class="lead-card-avatar">🕐</div></div>' +
+      '<div class="lead-card-empty">No rounds completed yet today</div>';
+  } else {
+    var loc3 = locByQr[latest.qr_identifier];
+    var time = new Date(latest.rounded_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    var typeLabels2 = { room:'Zone Round', room_cleaning:'Cleaning', eoc:'EOC Round', office:'Office Clean', bathroom:'Bathroom Clean' };
+    latestEl.innerHTML =
+      '<div class="lead-card-header">' +
+        '<div class="lead-card-avatar" style="background:var(--accent-dim);">✅</div>' +
+        '<button class="lead-card-action" onclick="navigateToSubtab(\'reports\')" title="View in Reports">↗</button>' +
+      '</div>' +
+      '<div class="lead-card-name">' + (loc3 ? loc3.display_name : latest.qr_identifier) + '</div>' +
+      '<div class="lead-card-sub">' + (latest.rounded_by || 'Staff') + ' · ' + time + '</div>' +
+      '<div class="lead-card-tags">' +
+        '<span class="lead-card-tag">' + (typeLabels2[latest.round_type] || latest.round_type) + '</span>' +
+      '</div>' +
+      '<div class="lead-card-dots">' +
+        '<span class="lead-card-dot" style="background:var(--green)"></span>' +
+        '<span style="font-size:10px;color:var(--gray);font-weight:700;">' + roundsToday.length + ' rounded today</span>' +
+      '</div>';
+  }
+}
+
 function renderHeatmap(filterType) {
   var hmGrid = document.getElementById('heatmapGrid');
   if (!hmGrid) return;
@@ -1439,6 +1532,7 @@ async function loadDashboard() {
   lastDashRoundsToday = roundsToday || [];
   lastDashOpenIssues = openIssues || [];
   renderHeatmap(currentHeatmapFilter);
+  renderLeadCards(locations || [], roundsToday || [], openIssues || []);
 
   // Maintenance attention widget — the specific items a maintenance director needs to act on
   var maintList = document.getElementById('maintAttentionList');
