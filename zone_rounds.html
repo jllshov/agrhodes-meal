@@ -809,6 +809,11 @@ table.policy-table tr:last-child td { border-bottom: none; }
           <div class="card lead-card" id="leadCardAttention"></div>
           <div class="card lead-card" id="leadCardLatest"></div>
         </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="card lead-card" id="leadCardIntake"></div>
+          <div class="card lead-card" id="leadCardAssignments"></div>
+        </div>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:16px;">
@@ -1370,6 +1375,66 @@ function renderLeadCards(locations, roundsToday, openIssues) {
   }
 }
 
+// Second row — latest resident intake, and how managers are tracking against
+// their assigned rooms today. Neither is shown anywhere else on the Dashboard.
+async function loadLeadCardsRow2() {
+  // Card 3 — most recent Patient Inventory intake
+  var intakeEl = document.getElementById('leadCardIntake');
+  var { data: intakes } = await sb.from('patient_inventory').select('*')
+    .eq('facility_id', FACILITY_ID).order('created_at', {ascending:false}).limit(1);
+  var latestIntake = (intakes||[])[0];
+  if (!latestIntake) {
+    intakeEl.innerHTML =
+      '<div class="lead-card-header"><div class="lead-card-avatar">🧳</div></div>' +
+      '<div class="lead-card-empty">No intakes logged yet</div>';
+  } else {
+    var itemCount = (latestIntake.items||[]).length;
+    var dt = new Date(latestIntake.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    intakeEl.innerHTML =
+      '<div class="lead-card-header">' +
+        '<div class="lead-card-avatar">🧳</div>' +
+        '<button class="lead-card-action" onclick="navigateToSubtab(\'inventory\')" title="View in Patient Inventory">↗</button>' +
+      '</div>' +
+      '<div class="lead-card-name">' + latestIntake.resident_name + '</div>' +
+      '<div class="lead-card-sub">' + (latestIntake.room_number||'') + ' · ' + latestIntake.completed_by + '</div>' +
+      '<div class="lead-card-tags"><span class="lead-card-tag">Latest Intake</span></div>' +
+      '<div class="lead-card-dots">' +
+        '<span class="lead-card-dot" style="background:var(--accent)"></span>' +
+        '<span style="font-size:10px;color:var(--gray);font-weight:700;">' + itemCount + ' items · ' + dt + '</span>' +
+      '</div>';
+  }
+
+  // Card 4 — manager assignment coverage today
+  var assignEl = document.getElementById('leadCardAssignments');
+  var { data: assignments } = await sb.from('room_assignments').select('*').eq('facility_id', FACILITY_ID);
+  if (!assignments || !assignments.length) {
+    assignEl.innerHTML =
+      '<div class="lead-card-header"><div class="lead-card-avatar">🗂</div></div>' +
+      '<div class="lead-card-empty">No rooms assigned yet</div>';
+  } else {
+    var todayStart = new Date(); todayStart.setHours(0,0,0,0);
+    var { data: roundsToday2 } = await sb.from('zone_rounds').select('qr_identifier')
+      .eq('facility_id', FACILITY_ID).eq('round_type','room').gte('rounded_at', todayStart.toISOString());
+    var doneQrs2 = new Set((roundsToday2||[]).map(function(r){ return r.qr_identifier; }));
+    var doneCount2 = assignments.filter(function(a){ return doneQrs2.has(a.qr_identifier); }).length;
+    var managerCount = new Set(assignments.map(function(a){ return a.manager_name; })).size;
+    var pct2 = Math.round((doneCount2/assignments.length)*100);
+    var color2 = pct2 === 100 ? 'var(--green)' : pct2 === 0 ? 'var(--red)' : 'var(--amber)';
+    assignEl.innerHTML =
+      '<div class="lead-card-header">' +
+        '<div class="lead-card-avatar" style="background:var(--accent-dim);">🗂</div>' +
+        '<button class="lead-card-action" onclick="navigateToSubtab(\'rooms\')" title="View Assignments">↗</button>' +
+      '</div>' +
+      '<div class="lead-card-name">' + doneCount2 + ' / ' + assignments.length + ' Checked</div>' +
+      '<div class="lead-card-sub">Across ' + managerCount + ' manager' + (managerCount!==1?'s':'') + '</div>' +
+      '<div class="lead-card-tags"><span class="lead-card-tag">Assignment Coverage</span></div>' +
+      '<div class="lead-card-dots">' +
+        '<span class="lead-card-dot" style="background:' + color2 + '"></span>' +
+        '<span style="font-size:10px;color:var(--gray);font-weight:700;">' + pct2 + '% complete today</span>' +
+      '</div>';
+  }
+}
+
 function renderHeatmap(filterType) {
   var hmGrid = document.getElementById('heatmapGrid');
   if (!hmGrid) return;
@@ -1533,6 +1598,7 @@ async function loadDashboard() {
   lastDashOpenIssues = openIssues || [];
   renderHeatmap(currentHeatmapFilter);
   renderLeadCards(locations || [], roundsToday || [], openIssues || []);
+  loadLeadCardsRow2();
 
   // Maintenance attention widget — the specific items a maintenance director needs to act on
   var maintList = document.getElementById('maintAttentionList');
