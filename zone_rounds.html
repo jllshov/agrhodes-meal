@@ -80,6 +80,24 @@ h1,h2,.page-title,.stat-num,.rr-name,.room-hero-name { font-family: 'Outfit', 'I
 }
 .nav-icon { font-size: 15px; }
 
+/* ── Grouped nav dropdowns ── */
+.nav-group { position: relative; }
+.nav-caret { font-size: 10px; margin-left: 2px; opacity: .6; }
+.nav-item.group-active { background: var(--surface); color: var(--black); box-shadow: var(--shadow-card); font-weight: 700; }
+.nav-dropdown {
+  display: none; position: absolute; top: calc(100% + 6px); left: 0; z-index: 60;
+  background: var(--surface); border-radius: 16px; box-shadow: 0 16px 40px rgba(0,0,0,.18);
+  padding: 8px; min-width: 210px; flex-direction: column; gap: 2px;
+}
+.nav-dropdown.open { display: flex; }
+.nav-dropdown button {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: none; background: none;
+  border-radius: 10px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600;
+  color: var(--black); text-align: left; width: 100%;
+}
+.nav-dropdown button:hover { background: var(--bg); }
+.nav-dropdown button.current { background: var(--accent-dim); }
+
 .user-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--black);
   display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--accent); flex-shrink: 0; }
 
@@ -200,33 +218,24 @@ h1,h2,.page-title,.stat-num,.rr-name,.room-hero-name { font-family: 'Outfit', 'I
   position: absolute; top: -6px; right: -2px; background: var(--accent); color: var(--black);
   font-size: 9px; font-weight: 800; border-radius: 999px; padding: 1px 5px; line-height: 1.4;
 }
-.heatmap-row-wrap { position: relative; width: 100%; max-width: 100%; overflow: hidden; }
+.heatmap-row-wrap { position: relative; width: 100%; max-width: 100%; }
 .heatmap-grid {
-  display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 12px; padding: 2px 2px 8px;
-  -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity;
+  display: flex; flex-wrap: wrap; gap: 7px;
   width: 100%; max-width: 100%;
 }
-.heatmap-grid .heat-tile { flex: 0 0 78px; scroll-snap-align: start; }
-.heatmap-grid::-webkit-scrollbar { height: 5px; }
-.heatmap-grid::-webkit-scrollbar-thumb { background: var(--orange); border-radius: 3px; opacity: .35; }
-.heatmap-row-wrap::after {
-  content: ''; position: absolute; top: 0; right: 0; bottom: 8px; width: 28px;
-  background: linear-gradient(to right, transparent, var(--surface));
-  pointer-events: none; border-radius: 0 14px 14px 0;
-}
 .heat-tile {
-  aspect-ratio: 1; border-radius: 16px; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; cursor: pointer;
-  font-size: 11px; font-weight: 700; padding: 6px; text-align: center;
-  transition: transform .15s, box-shadow .15s;
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 10px; font-weight: 700; text-align: center;
+  transition: transform .1s, box-shadow .1s;
+  flex: 0 0 auto; width: 40px; height: 40px;
 }
-.heat-tile:hover { transform: translateY(-2px) scale(1.04); }
+.heat-tile:hover { transform: translateY(-1px) scale(1.06); z-index: 2; }
 
 @media (max-width: 900px) {
-  .heatmap-grid .heat-tile { flex: 0 0 62px; }
+  .heat-tile { width: 34px; height: 34px; font-size: 9.5px; }
   #heatmapGrid { gap: 12px; }
 }
-.heat-tile:active { transform: scale(.95); }
+.heat-tile:active { transform: scale(.9); }
 .heat-green  { background: rgba(34,197,94,.15); color: #16A34A; box-shadow: 3px 3px 8px rgba(34,197,94,.2), -2px -2px 6px #FFFFFF; }
 .heat-yellow { background: rgba(245,158,11,.15); color: #B45309; box-shadow: 3px 3px 8px rgba(245,158,11,.2), -2px -2px 6px #FFFFFF; }
 .heat-orange { background: rgba(234,88,12,.15); color: #C2410C; box-shadow: 3px 3px 8px rgba(234,88,12,.2), -2px -2px 6px #FFFFFF; }
@@ -587,6 +596,22 @@ table.policy-table tr:last-child td { border-bottom: none; }
 }
 .inv-saved-row:hover { box-shadow: var(--shadow-card); }
 
+/* ── Survey Prep ── */
+.sp-dept-card {
+  background: var(--bg); border-radius: 14px; padding: 14px 12px; text-align: center;
+  cursor: pointer; box-shadow: var(--shadow-out); font-size: 12px; font-weight: 700; transition: all .15s;
+  display: block; text-decoration: none; color: var(--black);
+}
+.sp-dept-card:hover { box-shadow: var(--shadow-card); transform: translateY(-2px); }
+.sp-dept-card:visited { color: var(--black); }
+.sp-item-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,.06); }
+.sp-item-num { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--gray-light); flex-shrink: 0; width: 22px; padding-top: 2px; }
+.sp-item-text { flex: 1; font-size: 12.5px; font-weight: 600; line-height: 1.4; }
+.sp-item-controls { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; width: 200px; }
+.sp-item-yn { display: flex; gap: 6px; }
+.sp-item-comment { width: 100%; padding: 7px 9px; border: none; border-radius: 8px; background: var(--surface); box-shadow: var(--shadow-in); font-family: inherit; font-size: 11.5px; }
+.sp-corrective-row { background: var(--bg); border-radius: 14px; padding: 12px 14px; box-shadow: var(--shadow-out); margin-bottom: 8px; }
+
 </style>
 </head>
 <body>
@@ -617,30 +642,52 @@ table.policy-table tr:last-child td { border-bottom: none; }
   <button class="nav-item active" id="drawer-dashboard" onclick="drawerNav('dashboard')">
     <span class="nav-icon">📊</span> Dashboard
   </button>
-  <button class="nav-item" id="drawer-rooms" onclick="drawerNav('rooms')">
-    <span class="nav-icon">🚪</span> Resident Rooms
-  </button>
-  <button class="nav-item" id="drawer-eoc" onclick="drawerNav('eoc')">
-    <span class="nav-icon">📋</span> EOC Areas
-  </button>
-  <button class="nav-item" id="drawer-facilities" onclick="drawerNav('facilities')">
-    <span class="nav-icon">🧹</span> Offices & Bathrooms
-  </button>
-  <button class="nav-item" id="drawer-issues" onclick="drawerNav('issues')">
-    <span class="nav-icon">⚠</span> Open Issues
-  </button>
-  <button class="nav-item" id="drawer-compliance" onclick="drawerNav('compliance')">
-    <span class="nav-icon">🔥</span> Life Safety
-  </button>
-  <button class="nav-item" id="drawer-reports" onclick="drawerNav('reports')">
-    <span class="nav-icon">📄</span> Reports
-  </button>
-  <button class="nav-item" id="drawer-policies" onclick="drawerNav('policies')">
-    <span class="nav-icon">📚</span> Policies & Procedures
-  </button>
-  <button class="nav-item" id="drawer-inventory" onclick="drawerNav('inventory')">
-    <span class="nav-icon">🧳</span> Patient Inventory
-  </button>
+
+  <div class="hall-section open" id="drawer-group-housekeeping">
+    <div class="hall-header" onclick="toggleDrawerGroup('housekeeping')" style="padding:11px 8px;">
+      <div class="hall-icon" style="width:34px;height:34px;font-size:15px;">🧹</div>
+      <div class="hall-title-wrap"><div class="hall-title" style="font-size:13px;">Housekeeping</div></div>
+      <div class="hall-chevron">▼</div>
+    </div>
+    <div class="hall-body">
+      <div class="hall-body-inner" style="padding:6px 0 6px 12px;">
+        <button class="nav-item" id="drawer-rooms" onclick="drawerNav('rooms')"><span class="nav-icon">🚪</span> Resident Rooms</button>
+        <button class="nav-item" id="drawer-eoc" onclick="drawerNav('eoc')"><span class="nav-icon">📋</span> EOC Areas</button>
+        <button class="nav-item" id="drawer-facilities" onclick="drawerNav('facilities')"><span class="nav-icon">🧹</span> Offices & Bathrooms</button>
+        <button class="nav-item" id="drawer-inventory" onclick="drawerNav('inventory')"><span class="nav-icon">🧳</span> Patient Inventory</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="hall-section open" id="drawer-group-maintenance">
+    <div class="hall-header" onclick="toggleDrawerGroup('maintenance')" style="padding:11px 8px;">
+      <div class="hall-icon" style="width:34px;height:34px;font-size:15px;">🔧</div>
+      <div class="hall-title-wrap"><div class="hall-title" style="font-size:13px;">Maintenance</div></div>
+      <div class="hall-chevron">▼</div>
+    </div>
+    <div class="hall-body">
+      <div class="hall-body-inner" style="padding:6px 0 6px 12px;">
+        <button class="nav-item" id="drawer-compliance" onclick="drawerNav('compliance')"><span class="nav-icon">🔥</span> Life Safety</button>
+        <button class="nav-item" id="drawer-issues" onclick="drawerNav('issues')"><span class="nav-icon">⚠</span> Open Issues</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="hall-section open" id="drawer-group-reports">
+    <div class="hall-header" onclick="toggleDrawerGroup('reports')" style="padding:11px 8px;">
+      <div class="hall-icon" style="width:34px;height:34px;font-size:15px;">📄</div>
+      <div class="hall-title-wrap"><div class="hall-title" style="font-size:13px;">Reports</div></div>
+      <div class="hall-chevron">▼</div>
+    </div>
+    <div class="hall-body">
+      <div class="hall-body-inner" style="padding:6px 0 6px 12px;">
+        <button class="nav-item" id="drawer-reports" onclick="drawerNav('reports')"><span class="nav-icon">📄</span> Reports</button>
+        <button class="nav-item" id="drawer-policies" onclick="drawerNav('policies')"><span class="nav-icon">📚</span> Policies & Procedures</button>
+        <button class="nav-item" id="drawer-surveyprep" onclick="drawerNav('surveyprep')"><span class="nav-icon">🔍</span> Survey Prep</button>
+      </div>
+    </div>
+  </div>
+
   <button class="nav-item" onclick="window.print();closeDrawer();">
     <span class="nav-icon">🖨</span> Print QR Codes
   </button>
@@ -658,34 +705,43 @@ table.policy-table tr:last-child td { border-bottom: none; }
     </div>
   </div>
 
-  <div class="pill-nav">
-    <button class="nav-item active" onclick="switchTab('dashboard')">
+  <div class="pill-nav" id="pillNav">
+    <button class="nav-item active" id="navtop-dashboard" onclick="switchTab_direct('dashboard');closeAllNavDropdowns();">
       <span class="nav-icon">📊</span> Dashboard
     </button>
-    <button class="nav-item" onclick="switchTab('rooms')">
-      <span class="nav-icon">🚪</span> Rooms
-    </button>
-    <button class="nav-item" onclick="switchTab('eoc')">
-      <span class="nav-icon">📋</span> EOC
-    </button>
-    <button class="nav-item" onclick="switchTab('facilities')">
-      <span class="nav-icon">🧹</span> Offices & Bathrooms
-    </button>
-    <button class="nav-item" onclick="switchTab('issues')">
-      <span class="nav-icon">⚠</span> Issues
-    </button>
-    <button class="nav-item" onclick="switchTab('compliance')">
-      <span class="nav-icon">🔥</span> Life Safety
-    </button>
-    <button class="nav-item" onclick="switchTab('reports')">
-      <span class="nav-icon">📄</span> Reports
-    </button>
-    <button class="nav-item" onclick="switchTab('policies')">
-      <span class="nav-icon">📚</span> Policies
-    </button>
-    <button class="nav-item" onclick="switchTab('inventory')">
-      <span class="nav-icon">🧳</span> Patient Inventory
-    </button>
+
+    <div class="nav-group">
+      <button class="nav-item" id="navtop-housekeeping" onclick="toggleNavDropdown('housekeeping')">
+        <span class="nav-icon">🧹</span> Housekeeping <span class="nav-caret">▾</span>
+      </button>
+      <div class="nav-dropdown" id="navdrop-housekeeping">
+        <button onclick="navigateToSubtab('rooms')"><span class="nav-icon">🚪</span> Resident Rooms</button>
+        <button onclick="navigateToSubtab('eoc')"><span class="nav-icon">📋</span> EOC Areas</button>
+        <button onclick="navigateToSubtab('facilities')"><span class="nav-icon">🧹</span> Offices & Bathrooms</button>
+        <button onclick="navigateToSubtab('inventory')"><span class="nav-icon">🧳</span> Patient Inventory</button>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <button class="nav-item" id="navtop-maintenance" onclick="toggleNavDropdown('maintenance')">
+        <span class="nav-icon">🔧</span> Maintenance <span class="nav-caret">▾</span>
+      </button>
+      <div class="nav-dropdown" id="navdrop-maintenance">
+        <button onclick="navigateToSubtab('compliance')"><span class="nav-icon">🔥</span> Life Safety</button>
+        <button onclick="navigateToSubtab('issues')"><span class="nav-icon">⚠</span> Open Issues</button>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <button class="nav-item" id="navtop-reports" onclick="toggleNavDropdown('reports')">
+        <span class="nav-icon">📄</span> Reports <span class="nav-caret">▾</span>
+      </button>
+      <div class="nav-dropdown" id="navdrop-reports">
+        <button onclick="navigateToSubtab('reports')"><span class="nav-icon">📄</span> Reports</button>
+        <button onclick="navigateToSubtab('policies')"><span class="nav-icon">📚</span> Policies & Procedures</button>
+        <button onclick="navigateToSubtab('surveyprep')"><span class="nav-icon">🔍</span> Survey Prep</button>
+      </div>
+    </div>
   </div>
 
   <div class="topbar-right">
@@ -748,6 +804,13 @@ table.policy-table tr:last-child td { border-bottom: none; }
           </div>
         </div>
 
+        <div class="card" id="maintAttentionCard">
+          <div class="card-title">🔧 Maintenance Attention Needed</div>
+          <div class="card-sub">Open items assigned to Maintenance — from failed zone round checks</div>
+          <div id="maintAttentionList"><div class="no-round-msg" style="padding:16px">Loading…</div></div>
+          <button class="neu-btn block" style="margin-top:10px;" onclick="switchTab_direct('issues')" id="maintAttentionViewAll">View All in Issues →</button>
+        </div>
+
         <div class="card" id="recentIssuesCard">
           <div class="card-title">Recent Issues</div>
           <div class="card-sub">Open items needing attention</div>
@@ -796,6 +859,24 @@ table.policy-table tr:last-child td { border-bottom: none; }
         <button class="neu-btn primary" onclick="generateBulkRooms()">Generate</button>
       </div>
     </div>
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title">🧑‍💼 Zone Round Assignments</div>
+      <div class="card-sub">Assign each manager a set of resident rooms to check</div>
+
+      <div class="bulk-form" style="grid-template-columns:1fr auto;margin-bottom:14px;">
+        <div class="field"><label>Manager Name</label>
+          <input type="text" id="assign-manager-name" list="assign-manager-list" placeholder="e.g. Lesly Gervil">
+          <datalist id="assign-manager-list"></datalist>
+        </div>
+        <button class="neu-btn primary" onclick="saveRoomAssignments()">✓ Save Assignments</button>
+      </div>
+      <div class="card-sub" style="margin-bottom:8px;">Check every room this manager is responsible for — this replaces their previous assignment list</div>
+      <div class="inv-check-grid" id="assignRoomGrid" style="grid-template-columns:repeat(4,1fr);max-height:260px;overflow-y:auto;padding-right:4px;"></div>
+
+      <div class="card-sub" style="margin:18px 0 8px;font-weight:700;color:var(--black);">Today's Assignment Status</div>
+      <div id="assignmentOverview"></div>
+    </div>
+
     <div id="roomsGrid"></div>
   </div>
 
@@ -898,7 +979,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
     </div>
 
     <div class="card no-print" style="margin-bottom:20px;">
-      <div class="bulk-form" style="grid-template-columns:1fr 1fr 1fr auto;">
+      <div class="bulk-form" style="grid-template-columns:1fr 1fr 1fr auto auto;">
         <div class="field"><label>From</label><input type="date" id="rep-start"></div>
         <div class="field"><label>To</label><input type="date" id="rep-end"></div>
         <div class="field"><label>Location Type</label>
@@ -910,6 +991,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
             <option value="bathroom">Bathrooms</option>
           </select>
         </div>
+        <button class="neu-btn" onclick="showAllTimeReport()">📚 All Time</button>
         <button class="neu-btn primary" onclick="generateReport()">Generate</button>
       </div>
       <div style="display:flex;gap:10px;margin-top:14px;">
@@ -1051,6 +1133,27 @@ table.policy-table tr:last-child td { border-bottom: none; }
     </div>
   </div>
 
+  <!-- ── Survey Prep ── -->
+  <div class="panel" id="panel-surveyprep" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Survey Preparedness</div><div class="page-sub">Department self-assessment checklists — mirrors your paper validation checklists</div></div>
+    </div>
+
+    <div class="card" id="spDeptPickerCard" style="margin-bottom:20px;">
+      <div class="card-title">Start a New Self-Assessment</div>
+      <div class="card-sub">Pick a department to begin</div>
+      <div class="inv-check-grid" id="spDeptGrid" style="grid-template-columns:repeat(3,1fr);"></div>
+    </div>
+
+    <div id="spAssessmentForm"></div>
+
+    <div class="card">
+      <div class="card-title">Saved Assessments</div>
+      <div class="card-sub">Click any entry to view full detail</div>
+      <div id="spSavedList"></div>
+    </div>
+  </div>
+
 </main>
 
 </div>
@@ -1148,6 +1251,18 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const FACILITY_ID   = '30f74349-3ab8-483b-a587-f372c0fbd413';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const BASE_URL = window.location.origin + '/round.html#round=';
+
+// Shared label mapping for room cleaning purpose — used in both the round detail
+// modal badge and the Reports type label. plainText=true omits the emoji (for table text).
+function cleaningPurposeLabel(purpose, plainText) {
+  var map = {
+    admission_prep: { emoji:'🛎', text:'Admissions Prep' },
+    strip_wax: { emoji:'🪣', text:'Stripping & Waxing' },
+    routine: { emoji:'🧹', text:'Routine' }
+  };
+  var entry = map[purpose] || map.routine;
+  return plainText ? entry.text : (entry.emoji + ' ' + entry.text);
+}
 
 var currentPanel = 'dashboard';
 var lastDashLocations = [], lastDashRoundsToday = [], lastDashOpenIssues = [];
@@ -1325,6 +1440,27 @@ async function loadDashboard() {
   lastDashOpenIssues = openIssues || [];
   renderHeatmap(currentHeatmapFilter);
 
+  // Maintenance attention widget — the specific items a maintenance director needs to act on
+  var maintList = document.getElementById('maintAttentionList');
+  var maintItems = (openIssues||[]).filter(function(i){ return i.issue_type === 'Maintenance'; });
+  if (!maintItems.length) {
+    maintList.innerHTML = '<div class="no-round-msg" style="padding:16px;font-size:12px;color:var(--green)">✓ Nothing needs maintenance right now</div>';
+    document.getElementById('maintAttentionViewAll').style.display = 'none';
+  } else {
+    document.getElementById('maintAttentionViewAll').style.display = 'block';
+    maintList.innerHTML = maintItems.slice(0,5).map(function(i){
+      var location = i.room_number ? 'Room ' + i.room_number : (i.eoc_section||'').replace(/_/g,' ');
+      return '<div class="issue-item">' +
+        '<div class="issue-dot '+i.priority+'"></div>' +
+        '<div class="issue-info">' +
+          '<div class="issue-type-label">' + (location || 'Facility') + '</div>' +
+          '<div class="issue-desc-label">'+(i.issue_description||'—')+'</div>' +
+        '</div>' +
+        '<button class="neu-btn primary" style="font-size:10.5px;padding:6px 10px;flex-shrink:0;" onclick="event.stopPropagation();resolveIssue(\''+i.id+'\');setTimeout(loadDashboard,400);">✓ Fixed</button>' +
+        '</div>';
+    }).join('');
+  }
+
   // Recent issues sidebar
   var issueList = document.getElementById('recentIssuesList');
   var recent = (openIssues||[]).slice(0,5);
@@ -1455,6 +1591,8 @@ async function loadRooms() {
   var { data: rooms } = await sb.from('room_qr_codes').select('*')
     .eq('facility_id', FACILITY_ID).eq('location_type','room').eq('is_active', true);
 
+  loadRoomAssignmentsPanel(rooms || []);
+
   var byUnit = {};
   (rooms||[]).forEach(function(r){ (byUnit[r.unit]=byUnit[r.unit]||[]).push(r); });
 
@@ -1536,6 +1674,120 @@ async function generateBulkRooms() {
   alert('✓ Generated '+rows.length+' QR codes for '+unit);
   loadRooms();
 }
+
+/* ── Zone Round Assignments (manager → rooms) ── */
+var lastAssignableRooms = [];
+var lastRoomAssignments = [];
+
+async function loadRoomAssignmentsPanel(rooms) {
+  lastAssignableRooms = rooms;
+  var { data: assignments } = await sb.from('room_assignments').select('*').eq('facility_id', FACILITY_ID);
+  lastRoomAssignments = assignments || [];
+
+  // Populate the manager name autocomplete with everyone who already has assignments
+  var managers = Array.from(new Set(lastRoomAssignments.map(function(a){ return a.manager_name; }))).sort();
+  document.getElementById('assign-manager-list').innerHTML = managers.map(function(m){ return '<option value="'+m+'">'; }).join('');
+
+  renderAssignRoomGrid();
+  loadAssignmentOverview();
+}
+
+function renderAssignRoomGrid() {
+  var grid = document.getElementById('assignRoomGrid');
+  var typedName = document.getElementById('assign-manager-name').value.trim().toLowerCase();
+  var assignedQrsForManager = lastRoomAssignments
+    .filter(function(a){ return a.manager_name.trim().toLowerCase() === typedName; })
+    .map(function(a){ return a.qr_identifier; });
+
+  var sorted = lastAssignableRooms.slice().sort(function(a,b){
+    if (a.unit !== b.unit) return (a.unit||'').localeCompare(b.unit||'');
+    return (+a.room_number||0) - (+b.room_number||0);
+  });
+
+  grid.innerHTML = sorted.map(function(r){
+    var checked = assignedQrsForManager.indexOf(r.qr_identifier) > -1;
+    var existingOwner = lastRoomAssignments.find(function(a){ return a.qr_identifier === r.qr_identifier; });
+    var ownerNote = (existingOwner && existingOwner.manager_name.trim().toLowerCase() !== typedName && typedName)
+      ? '<span style="color:var(--red);font-size:9.5px;">→ ' + existingOwner.manager_name + '</span>' : '';
+    return '<label class="inv-check-item' + (checked?' checked':'') + '" style="flex-direction:column;align-items:flex-start;gap:2px;" data-qr="' + r.qr_identifier + '">' +
+      '<span style="display:flex;align-items:center;gap:8px;width:100%;"><input type="checkbox" ' + (checked?'checked':'') + '><span>' + r.display_name + '</span></span>' +
+      '<span style="font-size:9.5px;color:var(--gray);padding-left:24px;">' + (r.unit||'') + (existingOwner && !checked ? ' · ' + ownerNote : '') + '</span>' +
+    '</label>';
+  }).join('');
+}
+
+// Re-render the grid whenever the manager name changes, so checkboxes reflect that specific person
+document.addEventListener('input', function(e){
+  if (e.target && e.target.id === 'assign-manager-name') renderAssignRoomGrid();
+});
+
+async function saveRoomAssignments() {
+  var managerName = document.getElementById('assign-manager-name').value.trim();
+  if (!managerName) { alert('Enter a manager name'); return; }
+
+  var checkedQrs = Array.prototype.map.call(
+    document.querySelectorAll('#assignRoomGrid .inv-check-item input:checked'),
+    function(input){ return input.closest('.inv-check-item').getAttribute('data-qr'); }
+  );
+
+  // Anything previously assigned to this manager but now unchecked gets unassigned
+  var previouslyTheirs = lastRoomAssignments
+    .filter(function(a){ return a.manager_name.trim().toLowerCase() === managerName.toLowerCase(); })
+    .map(function(a){ return a.qr_identifier; });
+  var toUnassign = previouslyTheirs.filter(function(qr){ return checkedQrs.indexOf(qr) === -1; });
+
+  if (toUnassign.length) {
+    await sb.from('room_assignments').delete().eq('facility_id', FACILITY_ID).in('qr_identifier', toUnassign);
+  }
+  if (checkedQrs.length) {
+    var rows = checkedQrs.map(function(qr){ return { facility_id: FACILITY_ID, qr_identifier: qr, manager_name: managerName }; });
+    var { error } = await sb.from('room_assignments').upsert(rows, {onConflict:'qr_identifier'});
+    if (error) { alert('Error saving assignments: ' + error.message); return; }
+  }
+
+  alert('✓ Saved ' + checkedQrs.length + ' room(s) for ' + managerName);
+  loadRoomAssignmentsPanel(lastAssignableRooms);
+}
+
+async function loadAssignmentOverview() {
+  var el = document.getElementById('assignmentOverview');
+  if (!lastRoomAssignments.length) {
+    el.innerHTML = '<div style="color:var(--gray-light);font-size:12px;text-align:center;padding:10px;">No rooms assigned yet.</div>';
+    return;
+  }
+
+  var todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  var { data: roundsToday } = await sb.from('zone_rounds').select('qr_identifier,rounded_at')
+    .eq('facility_id', FACILITY_ID).eq('round_type','room').gte('rounded_at', todayStart.toISOString());
+  var roundedQrsToday = new Set((roundsToday||[]).map(function(r){ return r.qr_identifier; }));
+
+  var byManager = {};
+  lastRoomAssignments.forEach(function(a){
+    (byManager[a.manager_name] = byManager[a.manager_name] || []).push(a.qr_identifier);
+  });
+
+  var roomsByQr = {};
+  lastAssignableRooms.forEach(function(r){ roomsByQr[r.qr_identifier] = r; });
+
+  el.innerHTML = Object.keys(byManager).sort().map(function(manager){
+    var qrs = byManager[manager];
+    var doneCount = qrs.filter(function(qr){ return roundedQrsToday.has(qr); }).length;
+    var pending = qrs.filter(function(qr){ return !roundedQrsToday.has(qr); })
+      .map(function(qr){ return roomsByQr[qr] ? roomsByQr[qr].display_name : qr; });
+    var pct = qrs.length ? Math.round((doneCount/qrs.length)*100) : 0;
+    var color = pct === 100 ? 'var(--green)' : pct === 0 ? 'var(--red)' : 'var(--amber)';
+    return '<div class="inv-saved-row" style="cursor:default;">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-weight:700;font-size:13px;">' + manager + '</div>' +
+        '<div style="font-size:11.5px;color:var(--gray);margin-top:2px;">' +
+          (pending.length ? 'Not yet: ' + pending.slice(0,4).join(', ') + (pending.length>4?' +'+(pending.length-4)+' more':'') : '✓ All rooms checked today') +
+        '</div>' +
+      '</div>' +
+      '<span style="font-weight:800;color:'+color+';font-size:13px;flex-shrink:0;">' + doneCount + '/' + qrs.length + '</span>' +
+    '</div>';
+  }).join('');
+}
+
 
 /* ── EOC ── */
 var eocOpenState = JSON.parse(localStorage.getItem('agrhodes_eoc_open') || '{}');
@@ -1947,13 +2199,14 @@ function openRoundModal(loc, round, issues) {
   var ROOM_LABELS = {
     resident_contacted:'Resident Contacted', satisfaction:'Satisfied With Care', no_concerns:'No Concerns',
     call_light:'Call Light', bed_low_locked:'Bed Low/Locked', room_clutter:'Room Free of Clutter',
+    no_chemicals:'No Signs of Chemicals', cords_safe:'Power Cords Safely Placed',
     floor_clean:'Floor Clean', bathroom_clean:'Bathroom Clean', trash_removed:'Trash Removed',
     curtains_clean:'Curtains Clean', odor_free:'No Odors', lighting:'Lighting',
     furniture_intact:'Furniture Intact', equipment_functioning:'Equipment OK', no_maintenance:'No Maintenance Issues',
   };
   var SECTIONS = {
     'Resident Status':['resident_contacted','satisfaction','no_concerns'],
-    'Safety':['call_light','bed_low_locked','room_clutter'],
+    'Safety':['call_light','bed_low_locked','room_clutter','no_chemicals','cords_safe'],
     'Cleanliness':['floor_clean','bathroom_clean','trash_removed'],
     'Environment':['curtains_clean','odor_free','lighting'],
     'Equipment':['furniture_intact','equipment_functioning','no_maintenance'],
@@ -1985,7 +2238,7 @@ function openRoundModal(loc, round, issues) {
 
   // Cleaning purpose badge + admission-ready photo, if this was a room cleaning task
   if (parsedScores && parsedScores.cleaning_purpose) {
-    var purposeLabel = parsedScores.cleaning_purpose === 'admission_prep' ? '🛎 Admissions Prep' : '🧹 Routine';
+    var purposeLabel = cleaningPurposeLabel(parsedScores.cleaning_purpose);
     body.innerHTML += '<div class="modal-section" style="margin-bottom:12px;">' +
       '<span class="issue-badge" style="background:var(--accent-dim);color:#5B5A0E;padding:6px 14px;font-size:12px;border-radius:999px;">'+purposeLabel+'</span>' +
     '</div>';
@@ -2114,24 +2367,34 @@ function closeDrawer() {
   document.getElementById('drawerOverlay').classList.remove('open');
 }
 function drawerNav(tab) {
-  // Update drawer nav active state
   document.querySelectorAll('.mobile-drawer .nav-item').forEach(function(b){ b.classList.remove('active'); });
   var btn = document.getElementById('drawer-' + tab);
   if (btn) btn.classList.add('active');
-  // Also update sidebar nav
-  document.querySelectorAll('.pill-nav .nav-item').forEach(function(b){ b.classList.remove('active'); });
-  // Trigger the panel switch
   switchTab_direct(tab);
   closeDrawer();
 }
 
+function toggleDrawerGroup(group) {
+  var section = document.getElementById('drawer-group-' + group);
+  if (!section) return;
+  section.classList.toggle('open');
+}
+
 // Renamed internal version that doesn't rely on event.currentTarget
+// Maps each panel/tab to the top-level nav group it lives under
+var NAV_GROUP_MAP = {
+  dashboard: 'dashboard',
+  rooms: 'housekeeping', eoc: 'housekeeping', facilities: 'housekeeping', inventory: 'housekeeping',
+  compliance: 'maintenance', issues: 'maintenance',
+  reports: 'reports', policies: 'reports', surveyprep: 'reports'
+};
+
 function switchTab_direct(tab) {
-  document.querySelectorAll('.pill-nav .nav-item').forEach(function(b){ b.classList.remove('active'); });
-  ['dashboard','rooms','eoc','facilities','issues','compliance','reports','policies','inventory'].forEach(function(p){
+  ['dashboard','rooms','eoc','facilities','issues','compliance','reports','policies','inventory','surveyprep'].forEach(function(p){
     document.getElementById('panel-'+p).style.display = p===tab ? 'block' : 'none';
   });
   currentPanel = tab;
+  updateNavActiveState(tab);
   if (tab==='dashboard') loadDashboard();
   if (tab==='rooms') loadRooms();
   if (tab==='eoc') loadEOC();
@@ -2140,7 +2403,50 @@ function switchTab_direct(tab) {
   if (tab==='compliance') loadCompliance();
   if (tab==='reports') initReportsPanel();
   if (tab==='inventory') initInventoryPanel();
+  if (tab==='surveyprep') initSurveyPrepPanel();
 }
+
+function updateNavActiveState(tab) {
+  var group = NAV_GROUP_MAP[tab] || 'dashboard';
+  ['dashboard','housekeeping','maintenance','reports'].forEach(function(g){
+    var btn = document.getElementById('navtop-' + g);
+    if (!btn) return;
+    if (g === 'dashboard') btn.classList.toggle('active', group === 'dashboard');
+    else btn.classList.toggle('group-active', group === g);
+  });
+  // Highlight the specific sub-item within its dropdown too
+  document.querySelectorAll('.nav-dropdown button').forEach(function(b){ b.classList.remove('current'); });
+  if (group !== 'dashboard') {
+    var dropdown = document.getElementById('navdrop-' + group);
+    if (dropdown) {
+      var btns = dropdown.querySelectorAll('button');
+      btns.forEach(function(b){
+        if (b.getAttribute('onclick') === "navigateToSubtab('"+tab+"')") b.classList.add('current');
+      });
+    }
+  }
+}
+
+function toggleNavDropdown(group) {
+  var dropdown = document.getElementById('navdrop-' + group);
+  var isOpen = dropdown.classList.contains('open');
+  closeAllNavDropdowns();
+  if (!isOpen) dropdown.classList.add('open');
+}
+
+function closeAllNavDropdowns() {
+  document.querySelectorAll('.nav-dropdown').forEach(function(d){ d.classList.remove('open'); });
+}
+
+function navigateToSubtab(tab) {
+  switchTab_direct(tab);
+  closeAllNavDropdowns();
+}
+
+document.addEventListener('click', function(e){
+  if (!e.target.closest('.nav-group')) closeAllNavDropdowns();
+});
+
 
 
 /* ── Room Detail (QR + Assets) ── */
@@ -2962,10 +3268,429 @@ function openInventoryDetail(idx) {
   body.innerHTML += '</div>';
 }
 
+/* ── Survey Prep ── */
+var SURVEY_DEPARTMENTS = [
+  { key:'business_office', label:'Business Office', icon:'💼', items:[
+    'Review policy on Resident Trust Fund',
+    'Balance the trust fund',
+    'Review balances close to limit',
+    'Review credits due',
+    'Ensure weekend trust fund access system is in compliance',
+    'Review refunds',
+    'Ensure a demand bill is on file for inspection',
+    'Review amount of the surety bond to ensure it covers the balance of the trust fund',
+    'Review Advanced Beneficiary Notice',
+    'Review surety bond',
+    'Review items that are charged to residents'
+  ]},
+  { key:'care_areas', label:'Care Areas', icon:'🩺', items:[
+    'Wounds – continue to track all current facility acquired wounds ensure documentation with weekly measurements',
+    'Wounds – observe for preventative devices and measures (wedges, turn clocks etc.)',
+    'Wounds – ensure resident, family and physician are aware of current stage and treatment with documentation in nurse charting and care plan',
+    'Wounds – ensure all ordered treatments are available',
+    'Foley catheter – observe for order, change order, care plan, diagnosis',
+    'Gastrostomy tube – observe for order, change order, flush order, enteral order with rate if indicted, care plan',
+    'Gastrostomy tube – observe medication administration via tube, observe insertion site for appropriate care',
+    'Gastrostomy tube – observe cleanliness of pump',
+    'Oxygen – observe for order, signage, care plan, dating requirements',
+    'Grooming and Hygiene – FOCUS on all areas facial hair, nails (finger and toes), oral care, ear hair, nose hair, clothing etc.',
+    'Meal Pass – observe meal pass to ensure appropriate environment, timely, fluid offering, meal alternatives offered',
+    'Restraints – ensure order of least restrictive device, assessment, care plan, release times',
+    'Falls – ensure documentation, care plan, notification of family and physician if fall occurs. Investigation of each fall',
+    'Weight loss – ensure documentation, care plan, notification of family and physician if weight loss occurs',
+    'Dialysis – review contracts, care plans, communication with clinic, fluid restrictions, meal programs, transportation, medication administration',
+    'Restorative – review orders, care plans, donning and doffing splint schedules, referrals to therapy, compliance with functional maintenance plan',
+    'Sample chart review to ensure notification of changes (change in condition, medication changes etc.)',
+    'MDS – review to ensure compliance with the RAI process',
+    'Review quality measures and address any percentiles not within the facility threshold',
+    'Review P and P/administration of Influenza and Pneumococcal Immunizations',
+    'Review progress notes to ensure timeliness of visits'
+  ]},
+  { key:'food_service', label:'Food Service', icon:'🍽', items:[
+    'Complete sanitation rounds',
+    'Ensure all cleaning schedules are accurate and being completed as assigned',
+    'Observe all bins, pots, pans, scoopers, tea urns, coffee urns for cleanliness',
+    'Observe labeling and dating of all opened food products in the cooler, freezer, and pantry',
+    'Check temperatures of all hot water sources and documentation',
+    'Observe for pests',
+    'Ensure 30 days of working menus are ready for inspection',
+    'Monitor all meals to ensure compliance with menu',
+    'Interview all food service staff to ensure they know all sanitation procedures',
+    'Observe location and quantity of food emergency supplies',
+    'Observe weekly meal service from tray preparation to serving the resident',
+    'Observe all temperature logs to ensure compliance',
+    'Monitor dress code and hair restraints',
+    'Monitor serving line temperatures',
+    '3 compartment sink – ensure appropriate use if using heat sanitation or chemical sanitation',
+    'Observe for wet nesting dishes',
+    'Observe for stock rotation',
+    'Monitor test trays at meal service',
+    'Observe for assistive devices during meal service',
+    'Observe for dumpster for proper disposal of garbage and refuse',
+    'Review contract and policy for available water supply',
+    'Calibrate Thermometer(s)'
+  ]},
+  { key:'general', label:'General', icon:'📋', items:[
+    'Complete chart review as indicated – thin all charts',
+    'Maintain a current list of admissions and discharges over the last 90 days',
+    'Ensure a complete copy of the admission agreement is available for inspection',
+    'Ensure mandatory education is complete i.e. fire safety, abuse training, blood borne pathogens etc.',
+    'Ensure all P&P manuals are reviewed and signed annually',
+    'Maintain a copy of the facility layout',
+    'Maintain a copy of key personnel in the facility',
+    'Review previous surveys to ensure compliance with past citations',
+    'Review and maintain all quality assurance meeting documentation',
+    'Complete investigative protocols for all identified concerns',
+    'Ensure previous survey is posted in appropriate location',
+    'Remind all staff about dignity – this is the resident\'s home',
+    'Round in all areas of the facility every week',
+    'Observe – call lights, preventative measures, snack delivery, hydration, turning and positioning, wheelchair cushions, all hygiene, thick liquids, privacy etc.',
+    'Prepare 672 and 802 early each week',
+    'Review abuse policy and procedure and ensure education is completed',
+    'Review all abuse allegations sent into the state agency',
+    'Review medical record to ensure compliance with pre-admission screening for mental illness',
+    'Review policy for incidents and accidents to ensure compliance',
+    'Ensure nurse staffing posting'
+  ]},
+  { key:'maintenance', label:'Maintenance/EVS', icon:'🔧', items:[
+    'Review all fire and disaster drill documentation to ensure completeness and timeliness',
+    'Interview all levels of staff to ensure compliance with fire safety',
+    'Review all requests for repairs to ensure compliance',
+    'Complete safety rounds',
+    'Observe all call lights. Handrails, side rails, dressers, headboards and footboards for repair needs',
+    'Complete Life Safety Code rounds',
+    'Complete an inspection all kitchen equipment',
+    'Review hazcom program for all SDS information',
+    'Monitor laundry staff for handling of soiled/contaminated linen',
+    'Observe the food service department floors and determine need for deep cleaning',
+    'Review facility cleaning schedule and observe for compliance',
+    'Observe and ensure high traffic areas cleaned frequently',
+    'Observe all shower rooms and ensure roto-scrubbing is completed',
+    'Observe all linen and remove stained or torn linen from circulation',
+    'Review equipment cleaning schedules and ensure compliance',
+    'Review the facility\'s pest control program to ensure compliance',
+    'Test Hot Water temperature on each unit (high limit 110 degrees)',
+    'Adequate outside ventilation',
+    'Observe all equipment for safety'
+  ]},
+  { key:'pharmacy_nursing', label:'Pharmacy/Nurse Supervisor', icon:'💊', items:[
+    'Review psychoactive medication (ensure appropriate drug reduction as indicated)',
+    'Reviewed residents on antipsychotics with diagnosis of dementia',
+    'Review AIMS testing on residents with antipsychotics',
+    'Review monthly pharmacy reports (drug regimen review) and ensure completion of report',
+    'Observe medication pass with all nurses (rights, technique, timeliness, documentation, storage, infection control etc.)',
+    'Complete and review medication room observations',
+    'Review drug destruction records',
+    'Review narcotic count sheets',
+    'Review behavioral flow sheets for nursing interventions and target behaviors',
+    'Review MAR and TAR for omissions',
+    'Perform medication to MAR match back weekly',
+    'Review physician orders to ensure appropriate diagnosis for all medications',
+    'Observe the medication refrigerator (temperatures and appropriate medications stored)',
+    'Inspect medication carts – cleanliness, in good repair, labeling and storage of medications',
+    'Inspect the stat box',
+    'Observe multi use vials for date of opening and initials',
+    'Review residents for pain management',
+    'Review all PRN medications for need and usage',
+    'Labs available on chart'
+  ]},
+  { key:'social_services', label:'Social Services', icon:'🤝', items:[
+    'Observe required postings to ensure compliance (ombudsman and licensing agency information)',
+    'Complete quality of life assessment: Resident interview, Group interview, Interview with family member or friend of non-interviewable resident',
+    'Monitor labeling of clothing',
+    'Review grievances and work toward resolution',
+    'Review activity participation',
+    'Monitor activities for quality and compliance',
+    'Review resident council meetings minutes to ensure follow through',
+    'Behavior management program – review all resident who is in the program',
+    'Review social services documentation for quality and timeliness',
+    'Observe each room for room personalization',
+    'Calendar of activities ensure it is posted for every resident',
+    'Review abuse policy and procedure with resident council',
+    'Monitor for an environment that enhances dignity',
+    'Transportation of residents',
+    'Monitor for privacy/availability of use of internet and/or computer access, phones access, sending and receiving mail',
+    'Review all residents that smoke',
+    'Review privacy for visitors',
+    'Review for advanced directives',
+    'Dental services',
+    'Resident rights'
+  ]},
+  { key:'infection_control', label:'Infection Control', icon:'🦠', items:[
+    'Cleaning of wheelchairs, walkers etc.',
+    'Cleaning of shower chairs',
+    'Cleaning of dining room tables',
+    'Cleaning of the ice machines or "ice carts"',
+    'Hand washing general and with medication pass',
+    'Isolation procedures',
+    'Carrying and delivery of linen',
+    'Delivery of snacks and meals',
+    'Use of gloves',
+    'Handling of soiled/contaminated linen (nursing and environmental staff)',
+    'Dressing changes',
+    'Catheter care and insertion',
+    'Incontinence care',
+    'Ice Pass',
+    'Filters on O2 concentrators',
+    'Review infection control policies and procedures',
+    'Review monthly reports, tracking records, and lab reports to ensure completeness and accuracy'
+  ]},
+  { key:'administration', label:'Administration', icon:'🏛', items:[
+    'Conduct and document a facility-wide assessment',
+    'Operate and provide services in compliance with applicable Federal, State and Local laws, regulation, and codes',
+    'Management of the facility',
+    'Reports to and is accountable to the governing body',
+    'Facility closure',
+    'QAPI/QAA',
+    'Transfer agreements',
+    'Disaster planning',
+    'Arbitration agreements',
+    'Hospice services',
+    'Resident identifiable information',
+    'Retention/maintain medical records',
+    'Facility licensing',
+    'Facility compliance with laws, codes and professional standards',
+    'Availability of survey results',
+    'Emergency preparedness',
+    'Elopements and prevention',
+    'Facility required postings',
+    'Reporting suspicious crime',
+    'Resident smoking',
+    'Transfer agreements',
+    'Nurse waiver'
+  ]},
+  { key:'human_resources', label:'Human Resources', icon:'👥', items:[
+    'Hiring of nurse aides, verification of registry',
+    'Hiring of professional staff – verification of license',
+    'Submission of staffing information based on payroll',
+    'Use of outside resources',
+    'OSHA reporting',
+    'Background investigations',
+    'Employee smoking',
+    'FMLA',
+    'Identification badges',
+    'Medical staff credentials',
+    'Social media',
+    'Resident photos'
+  ]}
+];
+
+var spCurrentDept = null;
+var spItemStates = {}; // index -> { correct: 'Y'|'N'|'', comments: '' }
+var lastSurveyPrepRows = [];
+
+function initSurveyPrepPanel() {
+  var grid = document.getElementById('spDeptGrid');
+  grid.innerHTML = SURVEY_DEPARTMENTS.map(function(d){
+    return '<a href="#surveyprep=' + d.key + '" class="sp-dept-card">' +
+      '<div style="font-size:22px;margin-bottom:6px;">' + d.icon + '</div>' + d.label +
+    '</a>';
+  }).join('');
+  document.getElementById('spAssessmentForm').innerHTML = '';
+  loadSavedSurveyPreps();
+}
+
+function startSurveyPrepAssessment(deptKey, skipHashUpdate) {
+  spCurrentDept = SURVEY_DEPARTMENTS.find(function(d){ return d.key === deptKey; });
+  if (!spCurrentDept) return;
+  spItemStates = {};
+  spCurrentDept.items.forEach(function(_, idx){ spItemStates[idx] = { correct:'', comments:'' }; });
+  renderSurveyPrepForm();
+  document.getElementById('spAssessmentForm').scrollIntoView({behavior:'smooth', block:'start'});
+  if (!skipHashUpdate) window.location.hash = 'surveyprep=' + deptKey;
+}
+
+function renderSurveyPrepForm() {
+  var dept = spCurrentDept;
+  var html = '<div class="card" style="margin-bottom:20px;">' +
+    '<div class="card-title">' + dept.icon + ' ' + dept.label + ' — Self-Assessment</div>' +
+    '<div class="card-sub">Purpose: determine if the facility is performing in accordance with the facility\'s standard of practice.</div>' +
+    '<div class="bulk-form" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:10px;">' +
+      '<div class="field"><label>Observed By</label><input type="text" id="sp-observed-by" placeholder="Your name" value="' + (localStorage.getItem('agrhodes_sp_observer')||'').replace(/"/g,'&quot;') + '"></div>' +
+      '<div class="field"><label>Title</label><input type="text" id="sp-title" placeholder="e.g. Administrator" value="' + (localStorage.getItem('agrhodes_sp_title')||'').replace(/"/g,'&quot;') + '"></div>' +
+      '<div class="field"><label>Date</label><input type="date" id="sp-date" value="' + new Date().toISOString().split('T')[0] + '"></div>' +
+    '</div>' +
+  '</div>';
+
+  html += '<div class="card" style="margin-bottom:20px;">' +
+    '<div class="card-title">Procedures Observed</div>' +
+    '<div class="card-sub">Mark Y (correct) or N (needs correction), with comments as needed</div>' +
+    '<div id="spItemsList">' +
+      dept.items.map(function(item, idx){ return renderSpItemRow(idx, item); }).join('') +
+    '</div>' +
+  '</div>';
+
+  html += '<div class="card" id="spCorrectiveCard" style="margin-bottom:20px;">' +
+    '<div class="card-title">Corrective Actions</div>' +
+    '<div class="card-sub">Auto-listed from anything marked "N" above — edit the recommended action for each</div>' +
+    '<div id="spCorrectiveList"></div>' +
+  '</div>';
+
+  html += '<button class="neu-btn primary block" onclick="saveSurveyPrepAssessment()">✓ Save Assessment</button>' +
+    '<button class="neu-btn block" style="margin-top:10px;" onclick="cancelSurveyPrepAssessment()">Cancel</button>' +
+    '<div style="height:10px;"></div>';
+
+  document.getElementById('spAssessmentForm').innerHTML = html;
+  renderSpCorrectiveList();
+}
+
+function renderSpItemRow(idx, itemText) {
+  var s = spItemStates[idx];
+  return '<div class="sp-item-row">' +
+    '<div class="sp-item-num">' + (idx+1) + '.</div>' +
+    '<div class="sp-item-text">' + itemText + '</div>' +
+    '<div class="sp-item-controls">' +
+      '<div class="sp-item-yn">' +
+        '<button class="inv-yn-btn'+(s.correct==='Y'?' sel-yes':'')+'" style="flex:1;" onclick="setSpItemValue('+idx+',\'Y\')">Y</button>' +
+        '<button class="inv-yn-btn'+(s.correct==='N'?' sel-no':'')+'" style="flex:1;" onclick="setSpItemValue('+idx+',\'N\')">N</button>' +
+      '</div>' +
+      '<input class="sp-item-comment" type="text" placeholder="Comments" value="'+(s.comments||'').replace(/"/g,'&quot;')+'" oninput="updateSpItemComment('+idx+',this.value)">' +
+    '</div>' +
+  '</div>';
+}
+
+function setSpItemValue(idx, val) {
+  spItemStates[idx].correct = spItemStates[idx].correct === val ? '' : val;
+  // Re-render just this row's controls to reflect the toggle
+  var list = document.getElementById('spItemsList');
+  var rows = list.querySelectorAll('.sp-item-row');
+  rows[idx].outerHTML = renderSpItemRow(idx, spCurrentDept.items[idx]);
+  renderSpCorrectiveList();
+}
+
+function updateSpItemComment(idx, val) {
+  spItemStates[idx].comments = val;
+}
+
+function renderSpCorrectiveList() {
+  var list = document.getElementById('spCorrectiveList');
+  if (!list) return;
+  var flagged = Object.keys(spItemStates).filter(function(idx){ return spItemStates[idx].correct === 'N'; });
+  if (!flagged.length) {
+    list.innerHTML = '<div style="color:var(--gray-light);font-size:12.5px;text-align:center;padding:10px;">Nothing flagged yet — mark an item "N" above to add it here.</div>';
+    return;
+  }
+  list.innerHTML = flagged.map(function(idx){
+    var s = spItemStates[idx];
+    if (s.correctiveAction === undefined) s.correctiveAction = '';
+    return '<div class="sp-corrective-row">' +
+      '<div style="font-weight:700;font-size:12.5px;margin-bottom:6px;">' + spCurrentDept.items[idx] + '</div>' +
+      '<textarea rows="2" placeholder="Corrective action taken/recommended" style="width:100%;padding:8px 10px;border:none;border-radius:8px;background:var(--surface);box-shadow:var(--shadow-in);font-family:inherit;font-size:12px;" oninput="updateSpCorrectiveAction('+idx+',this.value)">'+s.correctiveAction+'</textarea>' +
+    '</div>';
+  }).join('');
+}
+
+function updateSpCorrectiveAction(idx, val) {
+  spItemStates[idx].correctiveAction = val;
+}
+
+function cancelSurveyPrepAssessment() {
+  spCurrentDept = null;
+  spItemStates = {};
+  document.getElementById('spAssessmentForm').innerHTML = '';
+  if (window.location.hash.indexOf('surveyprep=') > -1) {
+    history.replaceState(null, '', window.location.pathname + window.location.search + '#surveyprep');
+  }
+}
+
+async function saveSurveyPrepAssessment() {
+  var observedBy = document.getElementById('sp-observed-by').value.trim();
+  var title = document.getElementById('sp-title').value.trim();
+  var date = document.getElementById('sp-date').value;
+  if (!observedBy) { alert('Enter who observed this assessment'); return; }
+  localStorage.setItem('agrhodes_sp_observer', observedBy);
+  localStorage.setItem('agrhodes_sp_title', title);
+
+  var items = spCurrentDept.items.map(function(item, idx){
+    var s = spItemStates[idx];
+    return { num: idx+1, procedure: item, correct: s.correct || '', comments: s.comments || '' };
+  });
+  var correctiveActions = Object.keys(spItemStates)
+    .filter(function(idx){ return spItemStates[idx].correct === 'N'; })
+    .map(function(idx){
+      return { procedure: spCurrentDept.items[idx], action: spItemStates[idx].correctiveAction || '' };
+    });
+
+  var { error } = await sb.from('survey_prep_assessments').insert({
+    facility_id: FACILITY_ID,
+    department: spCurrentDept.label,
+    observed_by: observedBy,
+    title: title || null,
+    assessment_date: date || new Date().toISOString().split('T')[0],
+    items: items,
+    corrective_actions: correctiveActions
+  });
+  if (error) { alert('Error saving assessment: ' + error.message); return; }
+
+  alert('✓ Assessment saved for ' + spCurrentDept.label);
+  cancelSurveyPrepAssessment();
+  loadSavedSurveyPreps();
+}
+
+async function loadSavedSurveyPreps() {
+  var list = document.getElementById('spSavedList');
+  list.innerHTML = '<div style="padding:16px;color:var(--gray)">Loading…</div>';
+  var { data, error } = await sb.from('survey_prep_assessments').select('*')
+    .eq('facility_id', FACILITY_ID).order('created_at', {ascending:false}).limit(50);
+  if (error) { list.innerHTML = '<div style="padding:16px;color:var(--red);">Error: '+error.message+'</div>'; return; }
+
+  lastSurveyPrepRows = data || [];
+  if (!lastSurveyPrepRows.length) {
+    list.innerHTML = '<div style="padding:20px;color:var(--gray-light);text-align:center;">No assessments logged yet.</div>';
+    return;
+  }
+
+  list.innerHTML = lastSurveyPrepRows.map(function(row, idx){
+    var flaggedCount = (row.corrective_actions||[]).length;
+    var dt = new Date(row.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    return '<div class="inv-saved-row" onclick="openSurveyPrepDetail('+idx+')">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-weight:700;font-size:13px;">' + row.department + '</div>' +
+        '<div style="font-size:11.5px;color:var(--gray);margin-top:2px;">' + row.observed_by + ' · ' + row.assessment_date + ' · ' +
+          (flaggedCount ? '<span style="color:var(--red);font-weight:700;">'+flaggedCount+' needs correction</span>' : '<span style="color:var(--green);font-weight:700;">All clear</span>') +
+          ' · ' + dt +
+        '</div>' +
+      '</div>' +
+      '<span style="color:var(--gray-light);">View →</span>' +
+    '</div>';
+  }).join('');
+}
+
+function openSurveyPrepDetail(idx) {
+  var row = lastSurveyPrepRows[idx];
+  if (!row) return;
+  document.getElementById('roundModal').classList.add('open');
+  document.getElementById('modalFooter').style.display = 'none';
+  document.getElementById('modalTitle').textContent = row.department;
+  document.getElementById('modalMeta').textContent = 'Observed by ' + row.observed_by + (row.title?' ('+row.title+')':'') + ' · ' + row.assessment_date;
+
+  var body = document.getElementById('modalBody');
+  var itemsHtml = (row.items||[]).map(function(it){
+    if (!it.correct && !it.comments) return ''; // skip untouched items
+    var cls2 = it.correct==='Y' ? 'val-pass' : it.correct==='N' ? 'val-fail' : 'val-other';
+    return '<div class="check-item"><span class="check-label">' + it.num + '. ' + it.procedure + '</span><span class="check-val '+cls2+'">' + (it.correct||'—') + '</span></div>';
+  }).join('');
+
+  body.innerHTML = '<div class="modal-section"><div class="modal-section-title">Procedures</div><div class="check-grid" style="grid-template-columns:1fr;">' + (itemsHtml || '<div style="color:var(--gray-light);font-size:12px;">No items marked.</div>') + '</div></div>';
+
+  body.innerHTML += '<div class="modal-section"><div class="modal-section-title">Corrective Actions (' + (row.corrective_actions||[]).length + ')</div>';
+  if ((row.corrective_actions||[]).length) {
+    (row.corrective_actions||[]).forEach(function(ca){
+      body.innerHTML += '<div class="modal-issue-row">' +
+        '<div class="modal-issue-header"><span class="modal-issue-type" style="color:var(--black);">' + ca.procedure + '</span></div>' +
+        '<div class="modal-issue-desc">' + (ca.action || 'No action recorded yet') + '</div>' +
+      '</div>';
+    });
+  } else {
+    body.innerHTML += '<div style="font-size:12.5px;color:var(--green);font-weight:600">✓ No corrective actions needed</div>';
+  }
+  body.innerHTML += '</div>';
+}
+
 /* ── Reports ── */
 var ROOM_CHECK_KEYS = [
   'resident_contacted','satisfaction','no_concerns','call_light','bed_low_locked','room_clutter',
-  'floor_clean','bathroom_clean','trash_removed','curtains_clean','odor_free','lighting',
+  'no_chemicals','cords_safe','floor_clean','bathroom_clean','trash_removed','curtains_clean','odor_free','lighting',
   'furniture_intact','equipment_functioning','no_maintenance'
 ];
 var REPORT_TYPE_LABELS = { room:'Resident Room', eoc_area:'EOC Area', office:'Office', bathroom:'Bathroom' };
@@ -2980,6 +3705,13 @@ function initReportsPanel() {
     endEl.value = today.toISOString().split('T')[0];
     startEl.value = weekAgo.toISOString().split('T')[0];
   }
+}
+
+function showAllTimeReport() {
+  document.getElementById('rep-start').value = '2020-01-01';
+  document.getElementById('rep-end').value = new Date().toISOString().split('T')[0];
+  document.getElementById('rep-type').value = 'all';
+  generateReport();
 }
 
 async function generateReport() {
@@ -3043,7 +3775,7 @@ async function generateReport() {
     var typeLabel = REPORT_TYPE_LABELS[type] || type;
     if (type === 'room') {
       if (r.round_type === 'room_cleaning') {
-        typeLabel = 'Resident Room (Cleaning — ' + (cleaningPurposeVal === 'admission_prep' ? 'Admissions Prep' : 'Routine') + ')';
+        typeLabel = 'Resident Room (Cleaning — ' + cleaningPurposeLabel(cleaningPurposeVal, true) + ')';
       } else {
         typeLabel = 'Resident Room (Zone Round)';
       }
@@ -3171,8 +3903,25 @@ function exportReportCSV() {
   URL.revokeObjectURL(url);
 }
 
+// ── Deep-link routing for Survey Prep departments ──
+// A URL like yoursite.com/zone_rounds.html#surveyprep=food_service jumps
+// straight to that department's assessment — shareable/bookmarkable per department.
+function handleHashRoute() {
+  var hash = window.location.hash.slice(1); // e.g. "surveyprep=food_service"
+  if (hash.indexOf('surveyprep=') === 0) {
+    var deptKey = hash.split('=')[1];
+    navigateToSubtab('surveyprep');
+    // Wait a tick for the panel/data to initialize before opening the specific department
+    setTimeout(function(){ startSurveyPrepAssessment(deptKey, true); }, 150);
+  } else if (hash === 'surveyprep') {
+    navigateToSubtab('surveyprep');
+  }
+}
+window.addEventListener('hashchange', handleHashRoute);
+
 // Boot
 loadDashboard();
+if (window.location.hash) handleHashRoute();
 </script>
 </body>
 </html>
