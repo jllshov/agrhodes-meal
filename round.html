@@ -186,6 +186,24 @@ body { min-height: 100vh; padding-bottom: 100px; }
 .tips-table { width: 100%; font-size: 11px; border-collapse: collapse; margin-top: 6px; }
 .tips-table td { padding: 9px 4px; border-bottom: 1px solid rgba(0,0,0,.07); vertical-align: top; line-height: 1.4; }
 .tips-table td:first-child { font-weight: 700; }
+
+/* ── Barcode/QR scanner ── */
+.scanner-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 600;
+  align-items: center; justify-content: center; padding: 16px;
+}
+.scanner-overlay.show { display: flex; }
+.scanner-box { background: var(--surface); border-radius: 24px; width: 100%; max-width: 420px; padding: 18px; }
+.scanner-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.scanner-title { font-size: 15px; font-weight: 800; }
+#scannerReader { border-radius: 16px; overflow: hidden; background: #000; }
+#scannerReader video { border-radius: 16px; }
+.scanner-hint { text-align: center; font-size: 11.5px; color: var(--gray); margin-top: 10px; }
+.scan-btn {
+  background: var(--bg); border: none; border-radius: 10px; width: 38px; height: 38px;
+  cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-out); flex-shrink: 0;
+}
 </style>
 </head>
 <body>
@@ -246,6 +264,19 @@ body { min-height: 100vh; padding-bottom: 100px; }
   </div>
 </div>
 
+<div class="scanner-overlay" id="scannerOverlay">
+  <div class="scanner-box">
+    <div class="scanner-header">
+      <div class="scanner-title" id="scannerTitle">Scan a Barcode</div>
+      <button class="tips-close" onclick="closeBarcodeScanner()">✕</button>
+    </div>
+    <div id="scannerReader"></div>
+    <div class="scanner-hint" id="scannerHint">Point the camera at a QR code or barcode</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL  = 'https://gtbiatetqyuxwuehwilr.supabase.co';
@@ -253,6 +284,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const FACILITY_ID   = '30f74349-3ab8-483b-a587-f372c0fbd413';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const app = document.getElementById('app');
+const ASSET_URL_BASE = window.location.origin + '/round.html#asset=';
 
 var currentLoc = null;
 var roundValues = {};   // key -> 'pass'|'fail'|'yes'|'no'|'n/a'
@@ -356,7 +388,9 @@ var ROOM_SECTIONS = [
   { title:'Safety', dept:'Safety', type:'passfail', items:[
     { key:'call_light', label:'Call Light Working & Within Reach' },
     { key:'bed_low_locked', label:'Bed Low & Locked' },
-    { key:'room_clutter', label:'Room Free of Clutter' }
+    { key:'room_clutter', label:'Room Free of Clutter' },
+    { key:'no_chemicals', label:'No Signs of Chemicals Present', dept:'Infection Control' },
+    { key:'cords_safe', label:'Power Cords Not Daisy-Chained or Improperly Placed', dept:'Maintenance' }
   ]},
   { title:'Cleanliness', dept:'Housekeeping', type:'passfail', items:[
     { key:'floor_clean', label:'Floor Clean' },
@@ -428,6 +462,45 @@ function closeTipsModal() {
   document.getElementById('tipsOverlay').classList.remove('show');
 }
 
+/* ── Camera-based barcode/QR scanner ──
+   Works for our own generated QR codes AND manufacturer barcodes on equipment
+   (Code128, EAN, UPC, etc — html5-qrcode decodes both QR and 1D barcodes).
+   Physical Bluetooth/USB barcode scanners need no code at all here — they act
+   as a keyboard, so scanning while any text input is focused just types the
+   code in and hits Enter on their own. */
+var _scannerInstance = null;
+var _scannerResultCallback = null;
+
+function openBarcodeScanner(onResult, hintText) {
+  _scannerResultCallback = onResult;
+  document.getElementById('scannerHint').textContent = hintText || 'Point the camera at a QR code or barcode';
+  document.getElementById('scannerOverlay').classList.add('show');
+
+  _scannerInstance = new Html5Qrcode('scannerReader');
+  _scannerInstance.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: { width: 240, height: 160 } },
+    function(decodedText) {
+      closeBarcodeScanner();
+      if (_scannerResultCallback) _scannerResultCallback(decodedText);
+    },
+    function(){ /* ignore per-frame no-match noise */ }
+  ).catch(function(err){
+    showToast('Camera unavailable: ' + err, 'error');
+    closeBarcodeScanner();
+  });
+}
+
+function closeBarcodeScanner() {
+  document.getElementById('scannerOverlay').classList.remove('show');
+  if (_scannerInstance) {
+    _scannerInstance.stop().then(function(){
+      _scannerInstance.clear();
+      _scannerInstance = null;
+    }).catch(function(){ _scannerInstance = null; });
+  }
+}
+
 function getIdentifierValue() {
   var input = document.getElementById('staffNameInput');
   var cfg = getLocConfig(currentLoc);
@@ -449,7 +522,16 @@ function getQrIdentifier() {
   return params.get('round');
 }
 
+function getAssetId() {
+  var hash = window.location.hash.slice(1); // "asset=uuid"
+  var params = new URLSearchParams(hash);
+  return params.get('asset');
+}
+
 async function init() {
+  var assetId = getAssetId();
+  if (assetId) { renderAssetDetail(assetId); return; }
+
   var qrId = getQrIdentifier();
   if (!qrId) {
     app.innerHTML = '<div class="center-msg">⚠ No location code found in this link.<br>Please scan the QR code again.</div>';
@@ -507,11 +589,25 @@ function renderLanding() {
     '</div>' +
     '<div style="text-align:center;margin-top:6px;">' +
       '<button class="neu-btn ghost" onclick="viewAssets()">View Assets on File →</button>' +
+      (isCleaningCapableLocation(loc) ? '<br><button class="neu-btn ghost" onclick="viewMyCleanings()">📋 My Completed Cleanings Today →</button>' : '') +
+      (isResidentRoom ? '<br><button class="neu-btn ghost" onclick="viewMyAssignedRooms()">🗂 My Assigned Rooms →</button>' : '') +
     '</div>';
 }
 
+function isCleaningCapableLocation(loc) {
+  return loc.location_type === 'room' || loc.location_type === 'office' || loc.location_type === 'bathroom';
+}
+
+// Room cleaning purpose (Routine vs Admissions Prep) and optional admission photo
+var cleaningPurpose = null;          // 'routine' | 'admission_prep'
+var admissionPhotoFile = null;       // File object staged for upload
+var admissionPhotoPreviewUrl = null; // local object URL for on-page preview
+
 function backToLanding() {
   roundValues = {}; issueDrafts = {}; extraIssues = [];
+  cleaningPurpose = null;
+  if (admissionPhotoPreviewUrl) { URL.revokeObjectURL(admissionPhotoPreviewUrl); }
+  admissionPhotoFile = null; admissionPhotoPreviewUrl = null;
   renderLanding();
 }
 
@@ -525,12 +621,63 @@ function startRound() {
 function startRoomCleaning() {
   currentChecklistMode = 'cleaning';
   roundValues = {}; issueDrafts = {};
+  cleaningPurpose = null;
+  admissionPhotoFile = null; admissionPhotoPreviewUrl = null;
+  renderCleaningPurposeChoice();
+}
+
+function renderCleaningPurposeChoice() {
+  var loc = currentLoc;
+  app.innerHTML =
+    '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
+    '<div class="rr-header" style="padding:16px 18px;">' +
+      '<div class="rr-name" style="font-size:16px;">' + loc.display_name + '</div>' +
+      '<div class="rr-meta">What\'s this cleaning for?</div>' +
+    '</div>' +
+    '<div class="choice-card" onclick="selectCleaningPurpose(\'routine\')">' +
+      '<div class="choice-icon">🧹</div>' +
+      '<div><div class="choice-title">Routine</div>' +
+        '<div class="choice-sub">Standard scheduled cleaning</div></div>' +
+      '<div class="choice-arrow">›</div>' +
+    '</div>' +
+    '<div class="choice-card" onclick="selectCleaningPurpose(\'admission_prep\')">' +
+      '<div class="choice-icon">🛎</div>' +
+      '<div><div class="choice-title">Admissions Prep</div>' +
+        '<div class="choice-sub">Room being prepared for a new admission</div></div>' +
+      '<div class="choice-arrow">›</div>' +
+    '</div>' +
+    '<div class="choice-card" onclick="selectCleaningPurpose(\'strip_wax\')">' +
+      '<div class="choice-icon">🪣</div>' +
+      '<div><div class="choice-title">Stripping & Waxing</div>' +
+        '<div class="choice-sub">Floor stripped and refinished</div></div>' +
+      '<div class="choice-arrow">›</div>' +
+    '</div>';
+}
+
+function selectCleaningPurpose(purpose) {
+  cleaningPurpose = purpose;
+  roundValues = {}; issueDrafts = {};
   renderChecklist();
 }
 
+// Extra checklist section only added when Stripping & Waxing is picked as the purpose
+var STRIP_WAX_SECTIONS = [
+  { title:'Stripping & Waxing', dept:'Housekeeping', type:'passfail', items:[
+    { key:'floor_stripped', label:'Old Wax/Finish Fully Stripped' },
+    { key:'floor_neutralized', label:'Floor Neutralized & Rinsed' },
+    { key:'wax_applied', label:'New Wax/Finish Applied (Multiple Coats)' },
+    { key:'floor_dried', label:'Floor Fully Dried Before Resuming Use' },
+    { key:'furniture_protected', label:'Furniture & Baseboards Protected During Process' },
+    { key:'wet_floor_signs', label:'Wet Floor Warning Signs Posted' }
+  ]}
+];
+
 function getSections() {
   var t = currentLoc.location_type;
-  if (t === 'room') return currentChecklistMode === 'cleaning' ? ROOM_CLEANING_SECTIONS : ROOM_SECTIONS;
+  if (t === 'room') {
+    if (currentChecklistMode !== 'cleaning') return ROOM_SECTIONS;
+    return cleaningPurpose === 'strip_wax' ? ROOM_CLEANING_SECTIONS.concat(STRIP_WAX_SECTIONS) : ROOM_CLEANING_SECTIONS;
+  }
   if (t === 'office') return OFFICE_SECTIONS;
   if (t === 'bathroom') return BATHROOM_SECTIONS;
   return EOC_SECTIONS;
@@ -557,6 +704,7 @@ function renderChecklist() {
     html += '<div class="card"><div class="section-title"><span>' + section.title + '</span></div>';
     section.items.forEach(function(item) {
       var val = roundValues[item.key];
+      var itemDept = item.dept || section.dept;
       var posLabel = section.type === 'yesno' ? 'Yes' : 'Pass';
       var negLabel = section.type === 'yesno' ? 'No' : 'Fail';
       var posVal = section.type === 'yesno' ? 'yes' : 'pass';
@@ -565,15 +713,24 @@ function renderChecklist() {
         '<div class="check-row">' +
           '<div class="check-label">' + item.label + '</div>' +
           '<div class="check-btns">' +
-            '<button class="check-btn' + (val===posVal?' sel-pass':'') + '" onclick="setCheckValue(\''+item.key+'\',\''+posVal+'\',\''+section.dept+'\',\''+item.label.replace(/'/g,"\\'")+'\')">✓ ' + posLabel + '</button>' +
-            '<button class="check-btn' + (val===negVal?' sel-fail':'') + '" onclick="setCheckValue(\''+item.key+'\',\''+negVal+'\',\''+section.dept+'\',\''+item.label.replace(/'/g,"\\'")+'\')">✕ ' + negLabel + '</button>' +
-            '<button class="check-btn' + (val==='n/a'?' sel-na':'') + '" onclick="setCheckValue(\''+item.key+'\',\'n/a\',\''+section.dept+'\',\''+item.label.replace(/'/g,"\\'")+'\')">N/A</button>' +
+            '<button class="check-btn' + (val===posVal?' sel-pass':'') + '" onclick="setCheckValue(\''+item.key+'\',\''+posVal+'\',\''+itemDept+'\',\''+item.label.replace(/'/g,"\\'")+'\')">✓ ' + posLabel + '</button>' +
+            '<button class="check-btn' + (val===negVal?' sel-fail':'') + '" onclick="setCheckValue(\''+item.key+'\',\''+negVal+'\',\''+itemDept+'\',\''+item.label.replace(/'/g,"\\'")+'\')">✕ ' + negLabel + '</button>' +
+            '<button class="check-btn' + (val==='n/a'?' sel-na':'') + '" onclick="setCheckValue(\''+item.key+'\',\'n/a\',\''+itemDept+'\',\''+item.label.replace(/'/g,"\\'")+'\')">N/A</button>' +
           '</div>' +
           '<div id="issue-slot-' + item.key + '"></div>' +
         '</div>';
     });
     html += '</div>';
   });
+
+  if (currentLoc.location_type === 'room' && currentChecklistMode === 'cleaning' && cleaningPurpose === 'admission_prep') {
+    html += '<div class="card" id="admissionPhotoCard">' +
+      '<div class="section-title">📸 Admission-Ready Photo <span style="text-transform:none;font-weight:400;">(optional)</span></div>' +
+      '<div id="photoPreviewWrap"></div>' +
+      '<input type="file" accept="image/*" capture="environment" id="admissionPhotoInput" style="display:none;" onchange="handlePhotoSelected(event)">' +
+      '<button class="neu-btn block" onclick="document.getElementById(\'admissionPhotoInput\').click()">📷 Take / Choose Photo</button>' +
+    '</div>';
+  }
 
   html += '<div class="card" id="extraIssuesCard"><div class="section-title"><span>Additional Issues</span><span class="section-count" id="extraIssueCount">' + extraIssues.length + '</span></div>' +
     '<div id="extraIssuesList"></div>' +
@@ -585,7 +742,35 @@ function renderChecklist() {
   app.innerHTML = html;
   Object.keys(issueDrafts).forEach(function(k){ renderIssueSlot(k); });
   renderExtraIssues();
+  renderPhotoPreview();
   updateProgressBar();
+}
+
+function handlePhotoSelected(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  admissionPhotoFile = file;
+  if (admissionPhotoPreviewUrl) URL.revokeObjectURL(admissionPhotoPreviewUrl);
+  admissionPhotoPreviewUrl = URL.createObjectURL(file);
+  renderPhotoPreview();
+}
+
+function renderPhotoPreview() {
+  var wrap = document.getElementById('photoPreviewWrap');
+  if (!wrap) return;
+  if (admissionPhotoPreviewUrl) {
+    wrap.innerHTML = '<img src="' + admissionPhotoPreviewUrl + '" style="width:100%;border-radius:14px;margin-bottom:10px;display:block;">' +
+      '<button class="neu-btn" style="font-size:12px;margin-bottom:10px;" onclick="removeAdmissionPhoto()">✕ Remove Photo</button>';
+  } else {
+    wrap.innerHTML = '';
+  }
+}
+
+function removeAdmissionPhoto() {
+  admissionPhotoFile = null;
+  if (admissionPhotoPreviewUrl) URL.revokeObjectURL(admissionPhotoPreviewUrl);
+  admissionPhotoPreviewUrl = null;
+  renderPhotoPreview();
 }
 
 function setCheckValue(key, val, dept, label) {
@@ -724,6 +909,10 @@ async function submitRound() {
       scores[k] = roundValues[k];
       if (roundValues[k] !== 'n/a') { totalScored++; if (roundValues[k] === 'pass') passCount++; }
     });
+    // Added after the pass/fail tally so it doesn't count as a checklist item
+    if (loc.location_type === 'room' && currentChecklistMode === 'cleaning' && cleaningPurpose) {
+      scores.cleaning_purpose = cleaningPurpose;
+    }
     roundRow.eoc_scores = JSON.stringify(scores);
     roundRow.eoc_compliance_pct = totalScored ? Math.round((passCount/totalScored)*100) : null;
   }
@@ -733,6 +922,22 @@ async function submitRound() {
     showToast('Error saving round: ' + roundErr.message, 'error');
     if (wrap) { var btn2 = wrap.querySelector('button'); if (btn2) btn2.textContent = 'Review →'; }
     return;
+  }
+
+  // Optional admission-ready photo — uploaded after the round exists so we have an
+  // id to name the file with. Failure here doesn't undo the round save.
+  if (cleaningPurpose === 'admission_prep' && admissionPhotoFile) {
+    var ext = (admissionPhotoFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
+    var photoPath = loc.qr_identifier + '/' + insertedRound.id + '.' + ext;
+    var { error: uploadErr } = await sb.storage.from('round-photos').upload(photoPath, admissionPhotoFile, { upsert: true });
+    if (uploadErr) {
+      showToast('Round was saved, but the photo failed to upload: ' + uploadErr.message, 'error');
+    } else {
+      var pub = sb.storage.from('round-photos').getPublicUrl(photoPath);
+      var updatedScores = JSON.parse(insertedRound.eoc_scores || '{}');
+      updatedScores.admission_photo_url = pub.data.publicUrl;
+      await sb.from('zone_rounds').update({ eoc_scores: JSON.stringify(updatedScores) }).eq('id', insertedRound.id);
+    }
   }
 
   // Build the full list of issues: auto-flagged from failed items + manually added
@@ -772,12 +977,14 @@ async function submitRound() {
 }
 
 function renderSuccess(issueCount) {
+  var photoNote = (cleaningPurpose === 'admission_prep' && admissionPhotoFile) ? '<br>📸 Photo attached.' : '';
   app.innerHTML =
     '<div class="card success-wrap">' +
       '<div class="success-icon">✅</div>' +
       '<div class="success-title">Round Complete</div>' +
       '<div class="success-sub">' + currentLoc.display_name + ' has been logged.' +
         (issueCount ? '<br>' + issueCount + ' issue' + (issueCount>1?'s':'') + ' reported.' : '<br>No issues reported.') +
+        photoNote +
       '</div>' +
       '<button class="neu-btn primary block" style="margin-top:20px;" onclick="backToLanding()">Back to Menu</button>' +
     '</div>';
@@ -874,12 +1081,71 @@ async function viewAssets() {
   app.innerHTML = '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
     '<div class="rr-header" style="padding:16px 18px;"><div class="rr-name" style="font-size:16px;">' + loc.display_name + '</div>' +
     '<div class="rr-meta">' + locSubtitle(loc) + '</div></div>' +
-    '<div class="card"><div class="section-title">Assets on File</div><div id="assetsListView">Loading…</div></div>';
+    '<button class="neu-btn block" style="margin-bottom:14px;" onclick="scanToFindAsset()">📷 Scan to Find an Asset</button>' +
+    '<div class="card"><div class="section-title">Assets on File</div><div id="assetsListView">Loading…</div></div>' +
+    '<div class="card" id="addAssetCard">' +
+      '<div class="section-title">+ Add an Asset</div>' +
+      '<div class="field"><label>Type</label><select id="na-type">' +
+        Object.keys(ASSET_ICONS).map(function(t){ return '<option>'+t+'</option>'; }).join('') +
+      '</select></div>' +
+      '<div class="field"><label>Asset Name</label><input type="text" id="na-name" placeholder="e.g. Samsung 32in TV"></div>' +
+      '<div class="field"><label>Serial # (optional)</label>' +
+        '<div style="display:flex;gap:8px;">' +
+          '<input type="text" id="na-serial" style="flex:1;" placeholder="Type or scan">' +
+          '<button type="button" class="scan-btn" onclick="scanToFillSerial()" title="Scan barcode">📷</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="field"><label>Condition</label><select id="na-condition"><option>New</option><option selected>Good</option><option>Fair</option><option>Needs Repair</option><option>Out of Service</option></select></div>' +
+      '<button class="neu-btn primary block" onclick="saveNewAsset()">✓ Add Asset & Generate QR</button>' +
+    '</div>' +
+    '<div id="newAssetQrCard"></div>';
 
+  loadAssetsList();
+}
+
+function scanToFillSerial() {
+  openBarcodeScanner(function(code){
+    document.getElementById('na-serial').value = code;
+    showToast('Serial number scanned.', 'success');
+  }, 'Scan the manufacturer barcode or serial tag');
+}
+
+async function scanToFindAsset() {
+  openBarcodeScanner(async function(code){
+    // Our own generated QR codes decode to a full round.html URL — route directly if so
+    if (code.indexOf('round.html#asset=') > -1) {
+      var assetId = code.split('#asset=')[1];
+      window.location.hash = 'asset=' + assetId;
+      init();
+      return;
+    }
+    if (code.indexOf('round.html#round=') > -1) {
+      var qrId = code.split('#round=')[1];
+      window.location.hash = 'round=' + qrId;
+      init();
+      return;
+    }
+    // Otherwise treat it as a manufacturer barcode/serial number and look it up
+    var { data: found, error } = await sb.from('room_assets').select('*')
+      .eq('facility_id', FACILITY_ID).eq('serial_number', code).eq('is_active', true).maybeSingle();
+    if (error) { showToast('Lookup error: ' + error.message, 'error'); return; }
+    if (found) {
+      window.location.hash = 'asset=' + found.id;
+      init();
+    } else {
+      showToast('No asset found with serial "' + code + '" — you can add it below.', 'error');
+      var serialInput = document.getElementById('na-serial');
+      if (serialInput) serialInput.value = code;
+    }
+  }, 'Scan an asset\'s QR code or barcode');
+}
+
+async function loadAssetsList() {
+  var loc = currentLoc;
+  var listEl = document.getElementById('assetsListView');
   var { data: assets, error } = await sb.from('room_assets').select('*')
     .eq('qr_identifier', loc.qr_identifier).eq('is_active', true).order('created_at', {ascending:true});
 
-  var listEl = document.getElementById('assetsListView');
   if (error) { listEl.innerHTML = '<div style="color:var(--red);font-size:12.5px;">Error: ' + error.message + '</div>'; return; }
   if (!assets || !assets.length) { listEl.innerHTML = '<div style="color:var(--gray-light);font-size:12.5px;text-align:center;padding:12px;">No assets on file for this ' + (loc.location_type==='room'?'room':'area') + '.</div>'; return; }
 
@@ -888,13 +1154,220 @@ async function viewAssets() {
                     a.condition==='Fair' ? 'rgba(245,158,11,.12);color:#B45309' :
                     a.condition==='Needs Repair' ? 'rgba(239,68,68,.12);color:#DC2626' :
                     'rgba(107,114,128,.15);color:#6B7280';
-    return '<div class="asset-item">' +
+    return '<div class="asset-item" style="cursor:pointer;" onclick="showAssetQrModal(\''+a.id+'\',\''+a.asset_name.replace(/'/g,"\\'")+'\')">' +
       '<div class="asset-icon">' + (ASSET_ICONS[a.asset_type]||'📦') + '</div>' +
       '<div class="asset-info"><div class="asset-name">' + a.asset_name + '</div>' +
       '<div class="asset-meta">' + (a.asset_type||'') + (a.serial_number?' · SN: '+a.serial_number:'') + '</div></div>' +
       '<span class="asset-condition" style="background:' + condColor + '">' + a.condition + '</span>' +
     '</div>';
   }).join('');
+}
+
+async function saveNewAsset() {
+  var loc = currentLoc;
+  var type = document.getElementById('na-type').value;
+  var name = document.getElementById('na-name').value.trim();
+  var serial = document.getElementById('na-serial').value.trim();
+  var condition = document.getElementById('na-condition').value;
+  if (!name) { showToast('Enter an asset name.', 'error'); return; }
+
+  var { data: inserted, error } = await sb.from('room_assets').insert({
+    facility_id: FACILITY_ID,
+    qr_id: loc.id || null,
+    qr_identifier: loc.qr_identifier,
+    asset_name: name, asset_type: type, serial_number: serial || null, condition: condition
+  }).select().single();
+
+  if (error) { showToast('Error adding asset: ' + error.message, 'error'); return; }
+
+  document.getElementById('na-name').value = '';
+  document.getElementById('na-serial').value = '';
+  loadAssetsList();
+  showToast('✓ ' + name + ' added.', 'success');
+  showAssetQrCard(inserted.id, inserted.asset_name);
+}
+
+function showAssetQrCard(assetId, assetName) {
+  var link = ASSET_URL_BASE + assetId;
+  var card = document.getElementById('newAssetQrCard');
+  card.innerHTML =
+    '<div class="card" style="text-align:center;">' +
+      '<div class="section-title">QR Code for ' + assetName + '</div>' +
+      '<div style="background:white;border-radius:16px;padding:14px;width:150px;margin:0 auto 12px;box-shadow:var(--shadow-out);" id="newAssetQrHolder"></div>' +
+      '<div style="font-size:11px;color:var(--gray);margin-bottom:10px;">Print and attach this to the item — scanning it later shows what it is and which room it belongs to.</div>' +
+    '</div>';
+  var holder = document.getElementById('newAssetQrHolder');
+  new QRCode(holder, { text: link, width: 122, height: 122, colorDark:'#1A1A1A', colorLight:'#FFFFFF' });
+}
+
+function showAssetQrModal(assetId, assetName) {
+  document.getElementById('newAssetQrCard').scrollIntoView({behavior:'smooth', block:'start'});
+  showAssetQrCard(assetId, assetName);
+}
+
+/* ── Asset detail (scanning a printed asset QR) ── */
+async function renderAssetDetail(assetId) {
+  app.innerHTML = '<div class="center-msg">Loading…</div>';
+  var { data: asset, error } = await sb.from('room_assets').select('*').eq('id', assetId).maybeSingle();
+  if (error) { app.innerHTML = '<div class="center-msg">⚠ Error loading asset.<br>'+error.message+'</div>'; return; }
+  if (!asset || !asset.is_active) { app.innerHTML = '<div class="center-msg">⚠ This asset wasn\'t found or has been removed.</div>'; return; }
+
+  var { data: loc } = await sb.from('room_qr_codes').select('*').eq('qr_identifier', asset.qr_identifier).maybeSingle();
+  var condColor = asset.condition==='Good' ? '#16A34A' : asset.condition==='Fair' ? '#B45309' :
+                  asset.condition==='Needs Repair' ? '#DC2626' : '#6B7280';
+
+  app.innerHTML =
+    '<div class="rr-header">' +
+      '<div class="rr-icon">' + (ASSET_ICONS[asset.asset_type]||'📦') + '</div>' +
+      '<div class="rr-name">' + asset.asset_name + '</div>' +
+      '<div class="rr-meta">' + (asset.asset_type||'') + (asset.serial_number ? ' · SN: '+asset.serial_number : '') + '</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<div class="section-title">Details</div>' +
+      '<div class="asset-item"><div class="asset-icon">📍</div><div class="asset-info"><div class="asset-name">Location</div>' +
+        '<div class="asset-meta">' + (loc ? loc.display_name + (loc.unit?' · '+loc.unit:'') : asset.qr_identifier) + '</div></div></div>' +
+      '<div class="asset-item"><div class="asset-icon" style="background:none;">⚙️</div><div class="asset-info"><div class="asset-name">Condition</div>' +
+        '<div class="asset-meta" style="color:'+condColor+';font-weight:700;">' + asset.condition + '</div></div></div>' +
+      '<div class="asset-item"><div class="asset-icon">🗓</div><div class="asset-info"><div class="asset-name">Added</div>' +
+        '<div class="asset-meta">' + new Date(asset.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) + '</div></div></div>' +
+    '</div>' +
+    (loc ? '<div style="text-align:center;"><button class="neu-btn" onclick="window.location.hash=\'round='+loc.qr_identifier+'\';init();">← Go to ' + loc.display_name + '</button></div>' : '');
+}
+
+/* ── My Completed Cleanings Today (housekeeping self-check) ── */
+function viewMyCleanings() {
+  var savedId = localStorage.getItem('agrhodes_employee_id') || '';
+  app.innerHTML =
+    '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
+    '<div class="rr-header" style="padding:16px 18px;">' +
+      '<div class="rr-name" style="font-size:16px;">📋 My Completed Cleanings</div>' +
+      '<div class="rr-meta">Today · ' + new Date().toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'}) + '</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<div class="field"><label>Employee ID</label><input type="text" id="mc-employee-id" placeholder="Enter your employee ID" value="' + savedId.replace(/"/g,'&quot;') + '"></div>' +
+      '<button class="neu-btn primary block" onclick="loadMyCleanings()">🔍 Show My Completed Rooms</button>' +
+    '</div>' +
+    '<div id="myCleaningsResults"></div>';
+
+  if (savedId) loadMyCleanings();
+}
+
+async function loadMyCleanings() {
+  var employeeId = document.getElementById('mc-employee-id').value.trim();
+  var resultsEl = document.getElementById('myCleaningsResults');
+  if (!employeeId) { showToast('Enter your employee ID.', 'error'); return; }
+  localStorage.setItem('agrhodes_employee_id', employeeId);
+
+  resultsEl.innerHTML = '<div class="card"><div style="text-align:center;color:var(--gray);padding:10px;">Loading…</div></div>';
+
+  var todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  var { data: rounds, error } = await sb.from('zone_rounds').select('*')
+    .eq('facility_id', FACILITY_ID)
+    .eq('rounded_by', employeeId)
+    .in('round_type', ['room_cleaning','office','bathroom'])
+    .gte('rounded_at', todayStart.toISOString())
+    .order('rounded_at', {ascending:false});
+
+  if (error) { resultsEl.innerHTML = '<div class="card"><div style="color:var(--red);font-size:12.5px;">Error: '+error.message+'</div></div>'; return; }
+  if (!rounds || !rounds.length) {
+    resultsEl.innerHTML = '<div class="card"><div style="color:var(--gray-light);font-size:12.5px;text-align:center;padding:14px;">No completed cleanings logged yet today for this employee ID.</div></div>';
+    return;
+  }
+
+  var qrIds = rounds.map(function(r){ return r.qr_identifier; });
+  var { data: locs } = await sb.from('room_qr_codes').select('qr_identifier,display_name,unit,eoc_department').in('qr_identifier', qrIds);
+  var locByQr = {};
+  (locs||[]).forEach(function(l){ locByQr[l.qr_identifier] = l; });
+
+  var html = '<div class="card"><div class="section-title">' + rounds.length + ' Completed Today</div>';
+  html += rounds.map(function(r){
+    var loc = locByQr[r.qr_identifier];
+    var name = loc ? loc.display_name : r.qr_identifier;
+    var area = loc ? (loc.unit || loc.eoc_department || '') : '';
+    var time = new Date(r.rounded_at).toLocaleTimeString('en-US',{hour:'2-digit', minute:'2-digit'});
+    var purposeTag = '';
+    if (r.round_type === 'room_cleaning' && r.eoc_scores) {
+      var scores = typeof r.eoc_scores === 'string' ? JSON.parse(r.eoc_scores) : r.eoc_scores;
+      if (scores.cleaning_purpose === 'admission_prep') purposeTag = '🛎 Admissions Prep';
+      else if (scores.cleaning_purpose === 'strip_wax') purposeTag = '🪣 Stripping & Waxing';
+      else purposeTag = '🧹 Routine';
+    }
+    return '<div class="asset-item">' +
+      '<div class="asset-icon">✅</div>' +
+      '<div class="asset-info"><div class="asset-name">' + name + '</div>' +
+      '<div class="asset-meta">' + (area?area+' · ':'') + time + (purposeTag?' · '+purposeTag:'') + '</div></div>' +
+    '</div>';
+  }).join('');
+  html += '</div>';
+
+  resultsEl.innerHTML = html;
+}
+
+/* ── My Assigned Rooms (manager self-check for zone rounds) ── */
+function viewMyAssignedRooms() {
+  var savedName = localStorage.getItem('agrhodes_manager_name') || '';
+  app.innerHTML =
+    '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
+    '<div class="rr-header" style="padding:16px 18px;">' +
+      '<div class="rr-name" style="font-size:16px;">🗂 My Assigned Rooms</div>' +
+      '<div class="rr-meta">Today · ' + new Date().toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'}) + '</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<div class="field"><label>Manager Name</label><input type="text" id="ar-manager-name" placeholder="Enter your name as assigned" value="' + savedName.replace(/"/g,'&quot;') + '"></div>' +
+      '<button class="neu-btn primary block" onclick="loadMyAssignedRooms()">🔍 Show My Rooms</button>' +
+    '</div>' +
+    '<div id="myAssignedResults"></div>';
+
+  if (savedName) loadMyAssignedRooms();
+}
+
+async function loadMyAssignedRooms() {
+  var managerName = document.getElementById('ar-manager-name').value.trim();
+  var resultsEl = document.getElementById('myAssignedResults');
+  if (!managerName) { showToast('Enter your name.', 'error'); return; }
+  localStorage.setItem('agrhodes_manager_name', managerName);
+
+  resultsEl.innerHTML = '<div class="card"><div style="text-align:center;color:var(--gray);padding:10px;">Loading…</div></div>';
+
+  var { data: assignments, error } = await sb.from('room_assignments').select('*')
+    .eq('facility_id', FACILITY_ID).ilike('manager_name', managerName);
+
+  if (error) { resultsEl.innerHTML = '<div class="card"><div style="color:var(--red);font-size:12.5px;">Error: '+error.message+'</div></div>'; return; }
+  if (!assignments || !assignments.length) {
+    resultsEl.innerHTML = '<div class="card"><div style="color:var(--gray-light);font-size:12.5px;text-align:center;padding:14px;">No rooms assigned to this name yet — check with your administrator.</div></div>';
+    return;
+  }
+
+  var qrIds = assignments.map(function(a){ return a.qr_identifier; });
+  var { data: locs } = await sb.from('room_qr_codes').select('*').in('qr_identifier', qrIds);
+  var locByQr = {};
+  (locs||[]).forEach(function(l){ locByQr[l.qr_identifier] = l; });
+
+  var todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  var { data: roundsToday } = await sb.from('zone_rounds').select('qr_identifier')
+    .eq('facility_id', FACILITY_ID).eq('round_type','room')
+    .in('qr_identifier', qrIds).gte('rounded_at', todayStart.toISOString());
+  var doneQrs = new Set((roundsToday||[]).map(function(r){ return r.qr_identifier; }));
+
+  var rooms = qrIds.map(function(qr){ return locByQr[qr]; }).filter(Boolean)
+    .sort(function(a,b){ return (+a.room_number||0) - (+b.room_number||0); });
+
+  var doneCount = rooms.filter(function(r){ return doneQrs.has(r.qr_identifier); }).length;
+
+  var html = '<div class="card">' +
+    '<div class="section-title">' + doneCount + ' / ' + rooms.length + ' Checked Today</div>';
+  html += rooms.map(function(r){
+    var isDone = doneQrs.has(r.qr_identifier);
+    return '<div class="asset-item" style="cursor:pointer;" onclick="window.location.hash=\'round='+r.qr_identifier+'\';init();">' +
+      '<div class="asset-icon">' + (isDone ? '✅' : '⭕') + '</div>' +
+      '<div class="asset-info"><div class="asset-name">' + r.display_name + '</div>' +
+      '<div class="asset-meta">' + (r.unit||'') + '</div></div>' +
+      '<span style="font-size:11px;font-weight:700;color:' + (isDone?'var(--green)':'var(--gray-light)') + ';flex-shrink:0;">' + (isDone?'Done':'Pending') + '</span>' +
+    '</div>';
+  }).join('');
+  html += '</div>';
+
+  resultsEl.innerHTML = html;
 }
 
 init();
