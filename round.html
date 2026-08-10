@@ -28,21 +28,33 @@
 html, body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--black); }
 body { min-height: 100vh; padding-bottom: 100px; }
 
-.wrap { max-width: 480px; margin: 0 auto; padding: 20px 16px; }
+.wrap { max-width: 480px; margin: 0 auto; padding: 22px 18px; }
 
 /* ── Header ── */
 .rr-header {
-  background: var(--surface); border-radius: 24px; box-shadow: var(--shadow-card);
-  padding: 22px 20px; text-align: center; margin-bottom: 18px;
+  background: var(--surface); border-radius: 26px; box-shadow: var(--shadow-card);
+  padding: 26px 22px; text-align: center; margin-bottom: 20px;
 }
-.rr-icon { font-size: 30px; margin-bottom: 6px; }
-.rr-name { font-size: 21px; font-weight: 800; letter-spacing: -.02em; }
-.rr-meta { font-size: 12.5px; color: var(--gray); margin-top: 3px; }
+.rr-icon { font-size: 34px; margin-bottom: 8px; }
+.rr-name { font-size: 23px; font-weight: 800; letter-spacing: -.02em; }
+.rr-meta { font-size: 13.5px; color: var(--gray); margin-top: 4px; }
+
+/* ── Reusable search bar (matches the job-board reference) ── */
+.search-bar {
+  display: flex; align-items: center; gap: 10px; background: var(--surface);
+  border-radius: 999px; box-shadow: var(--shadow-card); padding: 14px 18px; margin-bottom: 16px;
+}
+.search-bar-icon { font-size: 16px; color: var(--gray-light); flex-shrink: 0; }
+.search-bar input {
+  border: none; outline: none; background: transparent; flex: 1;
+  font-family: inherit; font-size: 15px; color: var(--black);
+}
+.search-bar input::placeholder { color: var(--gray-light); }
 
 /* ── Buttons ── */
 .neu-btn {
-  padding: 12px 20px; border-radius: var(--r-pill); border: none; cursor: pointer;
-  font-family: inherit; font-size: 14px; font-weight: 600;
+  padding: 14px 22px; border-radius: var(--r-pill); border: none; cursor: pointer;
+  font-family: inherit; font-size: 15px; font-weight: 600;
   background: var(--surface); box-shadow: var(--shadow-out);
   color: var(--black); transition: all .15s;
 }
@@ -51,39 +63,39 @@ body { min-height: 100vh; padding-bottom: 100px; }
   box-shadow: 4px 4px 12px rgba(245,166,35,.5), -2px -2px 8px rgba(245,166,35,.2); }
 .neu-btn.primary:active { box-shadow: inset 3px 3px 8px rgba(0,0,0,.15); }
 .neu-btn.block { width: 100%; }
-.neu-btn.ghost { background: transparent; box-shadow: none; color: var(--gray); font-size: 13px; }
+.neu-btn.ghost { background: transparent; box-shadow: none; color: var(--gray); font-size: 14px; }
 
 /* ── Landing choice cards ── */
 .choice-card {
-  background: var(--surface); border-radius: 22px; box-shadow: var(--shadow-card);
-  padding: 22px 20px; display: flex; align-items: center; gap: 16px;
-  cursor: pointer; margin-bottom: 14px; transition: transform .15s;
+  background: var(--surface); border-radius: 24px; box-shadow: var(--shadow-card);
+  padding: 24px 22px; display: flex; align-items: center; gap: 18px;
+  cursor: pointer; margin-bottom: 16px; transition: transform .15s;
 }
 .choice-card:active { transform: scale(.98); }
 .choice-icon {
-  width: 54px; height: 54px; border-radius: 16px; background: var(--orange-light);
-  display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0;
+  width: 58px; height: 58px; border-radius: 18px; background: var(--orange-light);
+  display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0;
 }
-.choice-title { font-size: 15.5px; font-weight: 800; }
-.choice-sub { font-size: 12px; color: var(--gray); margin-top: 2px; }
-.choice-arrow { margin-left: auto; font-size: 18px; color: var(--gray-light); }
+.choice-title { font-size: 17px; font-weight: 800; }
+.choice-sub { font-size: 13px; color: var(--gray); margin-top: 3px; }
+.choice-arrow { margin-left: auto; font-size: 20px; color: var(--gray-light); }
 
 /* ── Cards / sections ── */
-.card { background: var(--surface); border-radius: 22px; box-shadow: var(--shadow-card); padding: 20px; margin-bottom: 14px; }
+.card { background: var(--surface); border-radius: 24px; box-shadow: var(--shadow-card); padding: 22px; margin-bottom: 16px; }
 .section-title {
-  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
-  color: var(--gray); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--gray); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
 }
-.section-count { font-family: 'DM Mono', monospace; font-size: 10px; background: var(--bg); padding: 2px 8px; border-radius: 999px; box-shadow: var(--shadow-out); }
+.section-count { font-family: 'DM Mono', monospace; font-size: 10.5px; background: var(--bg); padding: 3px 9px; border-radius: 999px; box-shadow: var(--shadow-out); }
 
 /* ── Checklist item ── */
-.check-row { margin-bottom: 16px; }
+.check-row { margin-bottom: 18px; }
 .check-row:last-child { margin-bottom: 0; }
-.check-label { font-size: 13.5px; font-weight: 700; margin-bottom: 8px; }
+.check-label { font-size: 14.5px; font-weight: 700; margin-bottom: 10px; }
 .check-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
 .check-btn {
-  padding: 11px 8px; border-radius: 12px; border: none; cursor: pointer;
-  font-family: inherit; font-size: 12px; font-weight: 700;
+  padding: 13px 8px; border-radius: 14px; border: none; cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 700;
   background: var(--bg); box-shadow: var(--shadow-out); color: var(--gray); transition: all .15s;
 }
 .check-btn.sel-pass { background: rgba(34,197,94,.15); color: #16A34A; box-shadow: 3px 3px 8px rgba(34,197,94,.25); }
@@ -93,38 +105,74 @@ body { min-height: 100vh; padding-bottom: 100px; }
 /* ── Progress bar (sticky) ── */
 .progress-bar-wrap {
   position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface);
-  box-shadow: 0 -6px 20px rgba(0,0,0,.08); padding: 14px 16px; z-index: 50;
+  box-shadow: 0 -6px 20px rgba(0,0,0,.08); padding: 16px 18px; z-index: 50;
 }
 .progress-bar-inner { max-width: 480px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
-.progress-track { flex: 1; height: 8px; border-radius: 999px; background: var(--bg); box-shadow: var(--shadow-in); overflow: hidden; }
+.progress-track { flex: 1; height: 9px; border-radius: 999px; background: var(--bg); box-shadow: var(--shadow-in); overflow: hidden; }
 .progress-fill { height: 100%; background: var(--orange); border-radius: 999px; transition: width .3s ease; width: 0%; }
-.progress-label { font-family: 'DM Mono', monospace; font-size: 11.5px; color: var(--gray); flex-shrink: 0; }
+.progress-label { font-family: 'DM Mono', monospace; font-size: 12.5px; color: var(--gray); flex-shrink: 0; }
 
 /* ── Issue block ── */
-.issue-card { background: var(--bg); border-radius: 16px; padding: 14px; box-shadow: var(--shadow-out); margin-bottom: 10px; }
-.issue-card-title { font-size: 12.5px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.issue-card { background: var(--bg); border-radius: 18px; padding: 16px; box-shadow: var(--shadow-out); margin-bottom: 12px; }
+.issue-card-title { font-size: 13.5px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
 .issue-card textarea, .issue-card input, .issue-card select {
-  width: 100%; padding: 10px 12px; border: none; border-radius: 10px;
+  width: 100%; padding: 12px 14px; border: none; border-radius: 12px;
   background: var(--surface); box-shadow: var(--shadow-in);
-  font-family: inherit; font-size: 12.5px; color: var(--black); margin-bottom: 8px; resize: vertical;
+  font-family: inherit; font-size: 13.5px; color: var(--black); margin-bottom: 10px; resize: vertical;
 }
 .priority-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
 .priority-btn {
-  padding: 8px; border-radius: 10px; border: none; cursor: pointer; font-family: inherit;
-  font-size: 11.5px; font-weight: 700; background: var(--surface); box-shadow: var(--shadow-out); color: var(--gray);
+  padding: 10px; border-radius: 12px; border: none; cursor: pointer; font-family: inherit;
+  font-size: 12.5px; font-weight: 700; background: var(--surface); box-shadow: var(--shadow-out); color: var(--gray);
 }
 .priority-btn.sel-High { background: rgba(239,68,68,.15); color: var(--red); }
 .priority-btn.sel-Medium { background: rgba(245,158,11,.15); color: var(--amber); }
 .priority-btn.sel-Low { background: rgba(34,197,94,.15); color: var(--green); }
-.issue-remove { background: none; border: none; color: var(--gray-light); font-size: 13px; cursor: pointer; margin-left: auto; }
+.issue-remove { background: none; border: none; color: var(--gray-light); font-size: 14px; cursor: pointer; margin-left: auto; }
 
-/* ── Asset view (read only) ── */
-.asset-item { display: flex; align-items: center; gap: 12px; background: var(--bg); border-radius: 16px; padding: 13px 15px; box-shadow: var(--shadow-out); margin-bottom: 9px; }
-.asset-icon { width: 40px; height: 40px; border-radius: 12px; background: var(--orange-light); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+/* ── List item card — resident-app version of a "job card" ── */
+.asset-item {
+  display: flex; align-items: center; gap: 14px; background: var(--surface); border-radius: 20px;
+  padding: 16px 17px; box-shadow: var(--shadow-card); margin-bottom: 12px;
+}
+.asset-icon { width: 48px; height: 48px; border-radius: 16px; background: var(--orange-light); display: flex; align-items: center; justify-content: center; font-size: 21px; flex-shrink: 0; }
 .asset-info { flex: 1; min-width: 0; }
-.asset-name { font-size: 13px; font-weight: 700; }
-.asset-meta { font-size: 11px; color: var(--gray); margin-top: 1px; }
-.asset-condition { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 999px; flex-shrink: 0; }
+.asset-name { font-size: 15px; font-weight: 800; }
+.asset-meta { font-size: 12.5px; color: var(--gray); margin-top: 3px; }
+.asset-condition { font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 999px; flex-shrink: 0; }
+.asset-tag-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.asset-tag { font-size: 10.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--bg); color: var(--gray); }
+
+/* ── Compact room checkbox grid (Assign Housekeepers) ── */
+.hk-room-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.hk-room-item {
+  display: flex; align-items: center; gap: 8px; background: var(--bg); border-radius: 10px;
+  padding: 9px 10px; box-shadow: var(--shadow-out); cursor: pointer; font-size: 11.5px; font-weight: 600;
+}
+.hk-room-item.checked { background: var(--orange-light); }
+.hk-room-item input { width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--orange); }
+.hk-room-item .hk-room-meta { font-size: 9.5px; color: var(--gray); font-weight: 500; margin-top: 1px; }
+
+/* ── Employee search picker ── */
+.emp-search-result {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: var(--bg); border-radius: 14px; padding: 13px 15px; margin-bottom: 7px;
+  cursor: pointer; box-shadow: var(--shadow-out); font-size: 14px; font-weight: 600;
+}
+.emp-search-result:active { box-shadow: var(--shadow-in); }
+.emp-selected-chip {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--orange-light); border-radius: 14px; padding: 14px 16px; margin-bottom: 4px;
+  font-size: 14px; font-weight: 700;
+}
+.emp-selected-chip button { background: none; border: none; color: var(--orange); font-size: 13px; font-weight: 700; cursor: pointer; }
+
+/* ── Sticky confirm bar ── */
+.sticky-confirm-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface);
+  box-shadow: 0 -6px 20px rgba(0,0,0,.08); padding: 14px 16px; z-index: 50;
+}
+.sticky-confirm-bar .sticky-confirm-inner { max-width: 520px; margin: 0 auto; }
 
 /* ── Success ── */
 .success-wrap { text-align: center; padding: 40px 20px; }
@@ -679,6 +727,7 @@ function renderLanding() {
     '<div style="text-align:center;margin-top:6px;">' +
       '<button class="neu-btn ghost" onclick="viewAssets()">View Assets on File →</button>' +
       (isCleaningCapableLocation(loc) ? '<br><button class="neu-btn ghost" onclick="viewMyCleanings()">📋 My Completed Cleanings Today →</button>' : '') +
+      (isResidentRoom ? '<br><button class="neu-btn ghost" onclick="viewMyCleaningAssignments()">🧺 My Cleaning Assignments →</button>' : '') +
       (isResidentRoom && canDoZoneRound() ? '<br><button class="neu-btn ghost" onclick="viewMyAssignedRooms()">🗂 My Assigned Rooms →</button>' : '') +
       (isManagerOrAdmin() ? '<br><button class="neu-btn ghost" onclick="assignHousekeepersView()">🧹 Assign Housekeepers →</button>' : '') +
       (isManagerOrAdmin() ? '<br><button class="neu-btn ghost" onclick="deepCleanCalendarView()">📅 Deep Clean Calendar →</button>' : '') +
@@ -1417,8 +1466,8 @@ async function loadMyAssignedRooms() {
   var emp = currentEmployee;
   app.innerHTML =
     '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
-    '<div class="rr-header" style="padding:16px 18px;">' +
-      '<div class="rr-name" style="font-size:16px;">🗂 My Assigned Rooms</div>' +
+    '<div class="rr-header">' +
+      '<div class="rr-name">🗂 My Assigned Rooms</div>' +
       '<div class="rr-meta">' + emp.first_name + ' ' + emp.last_name + ' (' + emp.employee_number + ') · Today</div>' +
     '</div>' +
     '<div id="myAssignedResults"><div class="card"><div style="text-align:center;color:var(--gray);padding:10px;">Loading…</div></div></div>';
@@ -1426,7 +1475,7 @@ async function loadMyAssignedRooms() {
   var resultsEl = document.getElementById('myAssignedResults');
 
   var { data: assignments, error } = await sb.from('room_assignments').select('*')
-    .eq('facility_id', FACILITY_ID).eq('employee_id', emp.employee_number);
+    .eq('facility_id', FACILITY_ID).eq('employee_id', emp.employee_number).eq('assignment_type', 'zone_round');
 
   if (error) { resultsEl.innerHTML = '<div class="card"><div style="color:var(--red);font-size:12.5px;">Error: '+error.message+'</div></div>'; return; }
   if (!assignments || !assignments.length) {
@@ -1466,12 +1515,72 @@ async function loadMyAssignedRooms() {
   resultsEl.innerHTML = html;
 }
 
+/* ── My Cleaning Assignments (housekeeper self-check) ── */
+async function viewMyCleaningAssignments() {
+  var emp = currentEmployee;
+  app.innerHTML =
+    '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
+    '<div class="rr-header">' +
+      '<div class="rr-icon">🧺</div>' +
+      '<div class="rr-name">My Cleaning Assignments</div>' +
+      '<div class="rr-meta">' + emp.first_name + ' ' + emp.last_name + ' (' + emp.employee_number + ') · Today</div>' +
+    '</div>' +
+    '<div id="myHkResults"><div class="card"><div style="text-align:center;color:var(--gray);padding:10px;">Loading…</div></div></div>';
+
+  var resultsEl = document.getElementById('myHkResults');
+
+  var { data: assignments, error } = await sb.from('room_assignments').select('*')
+    .eq('facility_id', FACILITY_ID).eq('employee_id', emp.employee_number).eq('assignment_type', 'housekeeping');
+
+  if (error) { resultsEl.innerHTML = '<div class="card"><div style="color:var(--red);font-size:13px;">Error: '+error.message+'</div></div>'; return; }
+  if (!assignments || !assignments.length) {
+    resultsEl.innerHTML = '<div class="card"><div style="color:var(--gray-light);font-size:13px;text-align:center;padding:16px;">No rooms assigned to you yet — check with your housekeeping manager.</div></div>';
+    return;
+  }
+
+  var qrIds = assignments.map(function(a){ return a.qr_identifier; });
+  var { data: locs } = await sb.from('room_qr_codes').select('*').in('qr_identifier', qrIds);
+  var locByQr = {};
+  (locs||[]).forEach(function(l){ locByQr[l.qr_identifier] = l; });
+
+  var todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  var { data: roundsToday } = await sb.from('zone_rounds').select('qr_identifier')
+    .eq('facility_id', FACILITY_ID).eq('round_type','room_cleaning')
+    .in('qr_identifier', qrIds).gte('rounded_at', todayStart.toISOString());
+  var doneQrs = new Set((roundsToday||[]).map(function(r){ return r.qr_identifier; }));
+
+  var rooms = qrIds.map(function(qr){ return locByQr[qr]; }).filter(Boolean)
+    .sort(function(a,b){ return (+a.room_number||0) - (+b.room_number||0); });
+
+  var doneCount = rooms.filter(function(r){ return doneQrs.has(r.qr_identifier); }).length;
+
+  var html = '<div class="card">' +
+    '<div class="section-title">' + doneCount + ' / ' + rooms.length + ' Cleaned Today</div>';
+  html += rooms.map(function(r){
+    var isDone = doneQrs.has(r.qr_identifier);
+    return '<div class="asset-item" style="cursor:pointer;" onclick="window.location.hash=\'round='+r.qr_identifier+'\';routeToContent();">' +
+      '<div class="asset-icon" style="background:' + (isDone?'rgba(34,197,94,.15)':'var(--orange-light)') + ';">' + (isDone ? '✅' : '🧹') + '</div>' +
+      '<div class="asset-info"><div class="asset-name">' + r.display_name + '</div>' +
+      '<div class="asset-meta">' + (r.unit||'') + '</div>' +
+      '<div class="asset-tag-row"><span class="asset-tag">' + (isDone?'Cleaned':'Not yet cleaned') + '</span></div></div>' +
+    '</div>';
+  }).join('');
+  html += '</div>';
+
+  resultsEl.innerHTML = html;
+}
+
 /* ── Assign Housekeepers (Manager/Admin only) ── */
 var lastHkRooms = [];
 var lastHkAssignments = [];
 
+var hkSelectedEmployee = null;
+var lastAllEmployees = [];
+
 async function assignHousekeepersView() {
-  app.innerHTML = '<div class="center-msg">Loading rooms…</div>';
+  app.innerHTML = '<div class="center-msg">Loading…</div>';
+  hkSelectedEmployee = null;
+
   var { data: rooms } = await sb.from('room_qr_codes').select('*')
     .eq('facility_id', FACILITY_ID).eq('location_type','room').eq('is_active', true);
   lastHkRooms = (rooms||[]).sort(function(a,b){
@@ -1483,49 +1592,107 @@ async function assignHousekeepersView() {
     .eq('facility_id', FACILITY_ID).eq('assignment_type','housekeeping');
   lastHkAssignments = assignments || [];
 
+  var { data: emps } = await sb.from('employees').select('*')
+    .eq('facility_id', FACILITY_ID).eq('is_active', true).order('last_name');
+  lastAllEmployees = emps || [];
+
+  renderAssignHousekeepersScreen();
+}
+
+function renderAssignHousekeepersScreen() {
   app.innerHTML =
     '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
     '<div class="rr-header" style="padding:16px 18px;"><div class="rr-name" style="font-size:16px;">🧹 Assign Housekeepers</div>' +
     '<div class="rr-meta">' + currentEmployee.first_name + ' ' + currentEmployee.last_name + '</div></div>' +
     '<div class="card">' +
-      '<div class="field"><label>Housekeeper Employee ID</label><input type="text" id="hk-employee-id" placeholder="Enter their Employee ID"></div>' +
-      '<div class="section-title" style="margin:14px 0 8px;">Check every room they\'re responsible for cleaning</div>' +
-      '<div id="hkRoomGrid"></div>' +
-      '<button class="neu-btn primary block" style="margin-top:14px;" onclick="saveHousekeeperAssignments()">✓ Save Assignments</button>' +
-    '</div>';
+      '<div class="section-title" style="margin-bottom:8px;">Housekeeper</div>' +
+      '<div id="hkEmployeePicker"></div>' +
+      '<div class="section-title" style="margin:16px 0 8px;">Check every room they\'re responsible for cleaning</div>' +
+      '<div class="hk-room-grid" id="hkRoomGrid"></div>' +
+    '</div>' +
+    '<div style="height:80px;"></div>' + // spacer so the sticky bar never covers content
+    '<div class="sticky-confirm-bar"><div class="sticky-confirm-inner">' +
+      '<button class="neu-btn primary block" onclick="saveHousekeeperAssignments()">✓ Save Assignments</button>' +
+    '</div></div>';
 
+  renderHkEmployeePicker();
   renderHkRoomGrid();
-  document.getElementById('hk-employee-id').addEventListener('input', renderHkRoomGrid);
+}
+
+function renderHkEmployeePicker() {
+  var el = document.getElementById('hkEmployeePicker');
+  if (hkSelectedEmployee) {
+    el.innerHTML = '<div class="emp-selected-chip">' +
+      '<span>👤 ' + hkSelectedEmployee.first_name + ' ' + hkSelectedEmployee.last_name + ' (' + hkSelectedEmployee.employee_number + ')</span>' +
+      '<button onclick="clearHkEmployeeSelection()">Change</button>' +
+    '</div>';
+    return;
+  }
+  el.innerHTML =
+    '<div class="search-bar" style="margin-bottom:10px;">' +
+      '<span class="search-bar-icon">🔍</span>' +
+      '<input type="text" id="hk-emp-search" placeholder="Search by name…">' +
+    '</div>' +
+    '<div id="hkEmpSearchResults"></div>';
+  document.getElementById('hk-emp-search').focus();
+}
+
+function clearHkEmployeeSelection() {
+  hkSelectedEmployee = null;
+  renderHkEmployeePicker();
+  renderHkRoomGrid();
+}
+
+document.addEventListener('input', function(e){
+  if (e.target && e.target.id === 'hk-emp-search') {
+    var term = e.target.value.trim().toLowerCase();
+    var resultsEl = document.getElementById('hkEmpSearchResults');
+    if (!term) { resultsEl.innerHTML = ''; return; }
+    var matches = lastAllEmployees.filter(function(emp){
+      var haystack = (emp.first_name + ' ' + emp.last_name + ' ' + emp.employee_number).toLowerCase();
+      return haystack.indexOf(term) > -1;
+    }).slice(0, 15);
+    resultsEl.innerHTML = matches.length
+      ? matches.map(function(emp){
+          return '<div class="emp-search-result" onclick=\'selectHkEmployee(' + JSON.stringify(emp) + ')\'>' +
+            '<span>' + emp.first_name + ' ' + emp.last_name + '</span>' +
+            '<span style="font-size:10.5px;color:var(--gray);">ID ' + emp.employee_number + '</span>' +
+          '</div>';
+        }).join('')
+      : '<div style="color:var(--gray-light);font-size:12px;text-align:center;padding:8px;">No matches.</div>';
+  }
+});
+
+function selectHkEmployee(emp) {
+  hkSelectedEmployee = emp;
+  renderHkEmployeePicker();
+  renderHkRoomGrid();
 }
 
 function renderHkRoomGrid() {
   var grid = document.getElementById('hkRoomGrid');
-  var typedId = document.getElementById('hk-employee-id').value.trim();
-  var theirQrs = lastHkAssignments.filter(function(a){ return a.employee_id === typedId; }).map(function(a){ return a.qr_identifier; });
+  var selectedId = hkSelectedEmployee ? hkSelectedEmployee.employee_number : null;
+  var theirQrs = selectedId ? lastHkAssignments.filter(function(a){ return a.employee_id === selectedId; }).map(function(a){ return a.qr_identifier; }) : [];
 
   grid.innerHTML = lastHkRooms.map(function(r){
     var checked = theirQrs.indexOf(r.qr_identifier) > -1;
     var existingOwner = lastHkAssignments.find(function(a){ return a.qr_identifier === r.qr_identifier; });
-    var ownerNote = (existingOwner && existingOwner.employee_id !== typedId && typedId) ? ' · currently ' + existingOwner.employee_id : '';
-    return '<label class="asset-item" style="cursor:pointer;">' +
-      '<input type="checkbox" data-qr="'+r.qr_identifier+'" ' + (checked?'checked':'') + ' style="width:18px;height:18px;margin-right:4px;">' +
-      '<div class="asset-info"><div class="asset-name">' + r.display_name + '</div>' +
-      '<div class="asset-meta">' + (r.unit||'') + ownerNote + '</div></div>' +
+    var ownerNote = (existingOwner && existingOwner.employee_id !== selectedId) ? ' · ' + existingOwner.employee_id : '';
+    return '<label class="hk-room-item' + (checked?' checked':'') + '" data-qr="'+r.qr_identifier+'">' +
+      '<input type="checkbox" ' + (checked?'checked':'') + ' onchange="this.closest(\'.hk-room-item\').classList.toggle(\'checked\',this.checked)">' +
+      '<span><div>' + r.display_name + '</div><div class="hk-room-meta">' + (r.unit||'') + ownerNote + '</div></span>' +
     '</label>';
   }).join('');
 }
 
 async function saveHousekeeperAssignments() {
-  var employeeId = document.getElementById('hk-employee-id').value.trim();
-  if (!employeeId) { showToast('Enter the housekeeper\'s Employee ID.', 'error'); return; }
-
-  var { data: hkEmp } = await sb.from('employees').select('*')
-    .eq('facility_id', FACILITY_ID).eq('employee_number', employeeId).eq('is_active', true).maybeSingle();
-  if (!hkEmp) { showToast('Employee ID not found.', 'error'); return; }
+  if (!hkSelectedEmployee) { showToast('Search for and select a housekeeper first.', 'error'); return; }
+  var employeeId = hkSelectedEmployee.employee_number;
+  var hkEmp = hkSelectedEmployee;
 
   var checkedQrs = Array.prototype.map.call(
-    document.querySelectorAll('#hkRoomGrid input:checked'),
-    function(input){ return input.getAttribute('data-qr'); }
+    document.querySelectorAll('#hkRoomGrid .hk-room-item input:checked'),
+    function(input){ return input.closest('.hk-room-item').getAttribute('data-qr'); }
   );
 
   var previouslyTheirs = lastHkAssignments.filter(function(a){ return a.employee_id === employeeId; }).map(function(a){ return a.qr_identifier; });
