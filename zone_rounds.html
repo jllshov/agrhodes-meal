@@ -449,6 +449,13 @@ h1,h2,.page-title,.stat-num,.rr-name,.room-hero-name { font-family: 'Outfit', 'I
 .qr-tile { border-radius: 22px; cursor: pointer; transition: transform .15s, box-shadow .15s; position: relative; }
 .qr-tile:hover { transform: translateY(-3px); }
 .qr-tile:active { transform: scale(.97); }
+.qr-tile.bulk-selected { box-shadow: 0 0 0 3px var(--red), var(--shadow-card); }
+.qr-tile-select-badge {
+  position: absolute; top: 10px; left: 10px; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--surface); box-shadow: var(--shadow-out); display: flex; align-items: center;
+  justify-content: center; font-size: 13px; z-index: 3; border: 2px solid var(--bg);
+}
+.qr-tile.bulk-selected .qr-tile-select-badge { background: var(--red); color: white; border-color: var(--red); }
 .qr-tile-print-btn {
   position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border-radius: 10px;
   border: none; background: var(--surface); box-shadow: var(--shadow-out); cursor: pointer;
@@ -1010,6 +1017,13 @@ table.policy-table tr:last-child td { border-bottom: none; }
       <div id="assignmentOverview"></div>
     </div>
 
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <button class="neu-btn" id="bulkSelectToggleBtn" onclick="toggleBulkSelectMode()">☑ Select Multiple</button>
+      <div id="bulkSelectActions" style="display:none;">
+        <span id="bulkSelectCount" style="font-size:12.5px;color:var(--gray);font-weight:700;margin-right:10px;"></span>
+        <button class="neu-btn" style="background:var(--red);color:white;font-size:12.5px;padding:9px 16px;" onclick="bulkRemoveSelectedRooms()">🗑 Remove Selected</button>
+      </div>
+    </div>
     <div id="roomsGrid"></div>
   </div>
 
@@ -1910,6 +1924,48 @@ async function generateSingleRoom() {
   openRoomDetail(inserted);
 }
 
+/* ── Bulk select & remove (Rooms grid) ── */
+var bulkSelectMode = false;
+var bulkSelectedQrs = new Set();
+
+function toggleBulkSelectMode() {
+  bulkSelectMode = !bulkSelectMode;
+  bulkSelectedQrs.clear();
+  document.getElementById('bulkSelectToggleBtn').textContent = bulkSelectMode ? '✕ Cancel' : '☑ Select Multiple';
+  document.getElementById('bulkSelectActions').style.display = bulkSelectMode ? 'inline-block' : 'none';
+  updateBulkSelectCount();
+  loadRooms();
+}
+
+function toggleBulkSelectRoom(qrIdentifier, tileEl) {
+  if (bulkSelectedQrs.has(qrIdentifier)) { bulkSelectedQrs.delete(qrIdentifier); tileEl.classList.remove('bulk-selected'); }
+  else { bulkSelectedQrs.add(qrIdentifier); tileEl.classList.add('bulk-selected'); }
+  var badge = tileEl.querySelector('.qr-tile-select-badge');
+  if (badge) badge.textContent = bulkSelectedQrs.has(qrIdentifier) ? '✓' : '';
+  updateBulkSelectCount();
+}
+
+function updateBulkSelectCount() {
+  var el = document.getElementById('bulkSelectCount');
+  if (el) el.textContent = bulkSelectedQrs.size + ' selected';
+}
+
+async function bulkRemoveSelectedRooms() {
+  if (!bulkSelectedQrs.size) { alert('Select at least one room first.'); return; }
+  if (!confirm('Remove ' + bulkSelectedQrs.size + ' selected room(s)? This can be undone by an administrator directly in the database if needed, but not from this screen.')) return;
+
+  var { error } = await sb.from('room_qr_codes').update({ is_active: false })
+    .eq('facility_id', FACILITY_ID).in('qr_identifier', Array.from(bulkSelectedQrs));
+  if (error) { alert('Error: ' + error.message); return; }
+
+  alert('✓ Removed ' + bulkSelectedQrs.size + ' room(s).');
+  bulkSelectMode = false;
+  bulkSelectedQrs.clear();
+  document.getElementById('bulkSelectToggleBtn').textContent = '☑ Select Multiple';
+  document.getElementById('bulkSelectActions').style.display = 'none';
+  loadRooms();
+}
+
 async function loadRooms() {
   var grid = document.getElementById('roomsGrid');
   grid.innerHTML = '<div style="padding:20px;color:var(--gray)">Loading…</div>';
@@ -2781,7 +2837,19 @@ function toggleFacilityArea(area) {
 
 function renderQRTile(loc, container) {
   var tile = document.createElement('div'); tile.className = 'qr-tile';
-  tile.onclick = function() { openRoomDetail(loc); };
+  tile.setAttribute('data-qr', loc.qr_identifier);
+  if (bulkSelectedQrs.has(loc.qr_identifier)) tile.classList.add('bulk-selected');
+  tile.onclick = function() {
+    if (bulkSelectMode) { toggleBulkSelectRoom(loc.qr_identifier, tile); return; }
+    openRoomDetail(loc);
+  };
+
+  if (bulkSelectMode) {
+    var badge = document.createElement('div');
+    badge.className = 'qr-tile-select-badge';
+    badge.textContent = bulkSelectedQrs.has(loc.qr_identifier) ? '✓' : '';
+    tile.appendChild(badge);
+  }
 
   // QR code container — must be appended before QRCode renders into it
   var qrDiv = document.createElement('div');
