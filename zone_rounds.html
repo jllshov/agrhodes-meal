@@ -710,6 +710,8 @@ table.policy-table tr:last-child td { border-bottom: none; }
         <button class="nav-item" id="drawer-eoc" onclick="drawerNav('eoc')"><span class="nav-icon">📋</span> EOC Areas</button>
         <button class="nav-item" id="drawer-facilities" onclick="drawerNav('facilities')"><span class="nav-icon">🧹</span> Offices & Bathrooms</button>
         <button class="nav-item" id="drawer-inventory" onclick="drawerNav('inventory')"><span class="nav-icon">🧳</span> Patient Inventory</button>
+        <button class="nav-item" id="drawer-hkassign" onclick="drawerNav('hkassign')"><span class="nav-icon">🧑‍🔧</span> Assign Housekeepers</button>
+        <button class="nav-item" id="drawer-dccalendar" onclick="drawerNav('dccalendar')"><span class="nav-icon">📅</span> Deep Clean Calendar</button>
       </div>
     </div>
   </div>
@@ -774,6 +776,8 @@ table.policy-table tr:last-child td { border-bottom: none; }
         <button onclick="navigateToSubtab('eoc')"><span class="nav-icon">📋</span> EOC Areas</button>
         <button onclick="navigateToSubtab('facilities')"><span class="nav-icon">🧹</span> Offices & Bathrooms</button>
         <button onclick="navigateToSubtab('inventory')"><span class="nav-icon">🧳</span> Patient Inventory</button>
+        <button onclick="navigateToSubtab('hkassign')"><span class="nav-icon">🧑‍🔧</span> Assign Housekeepers</button>
+        <button onclick="navigateToSubtab('dccalendar')"><span class="nav-icon">📅</span> Deep Clean Calendar</button>
       </div>
     </div>
 
@@ -953,9 +957,8 @@ table.policy-table tr:last-child td { border-bottom: none; }
       <div class="card-sub">Assign each employee a set of resident rooms to check</div>
 
       <div class="bulk-form" style="grid-template-columns:1fr auto;margin-bottom:14px;">
-        <div class="field"><label>Employee ID</label>
-          <input type="text" id="assign-employee-id" list="assign-employee-list" placeholder="e.g. 104582">
-          <datalist id="assign-employee-list"></datalist>
+        <div class="field"><label>Employee</label>
+          <select id="assign-employee-id"><option value="">Select an employee…</option></select>
         </div>
         <button class="neu-btn primary" onclick="saveRoomAssignments()">✓ Save Assignments</button>
       </div>
@@ -1219,6 +1222,70 @@ table.policy-table tr:last-child td { border-bottom: none; }
       <div class="card-title">Saved Inventories</div>
       <div class="card-sub">Click any entry to view full detail, or use the share button for a QR/link to that record</div>
       <div id="invSavedList"></div>
+    </div>
+  </div>
+
+  <!-- ── Assign Housekeepers ── -->
+  <div class="panel" id="panel-hkassign" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Assign Housekeepers</div><div class="page-sub">Which rooms each housekeeper is responsible for cleaning</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title">Assign Rooms</div>
+      <div class="card-sub">Pick a housekeeper by name, check their rooms, save</div>
+      <div class="bulk-form" style="grid-template-columns:1fr auto;margin-bottom:14px;">
+        <div class="field"><label>Housekeeper</label>
+          <select id="hk-employee-select"><option value="">Select a housekeeper…</option></select>
+        </div>
+        <button class="neu-btn primary" onclick="saveHkAssignmentsAdmin()">✓ Save Assignments</button>
+      </div>
+      <div class="card-sub" style="margin-bottom:8px;">Check every room this person is responsible for — this replaces their previous list</div>
+      <div class="inv-check-grid" id="hkAssignRoomGrid" style="grid-template-columns:repeat(4,1fr);max-height:280px;overflow-y:auto;padding-right:4px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Current Housekeeping Assignments</div>
+      <div id="hkAssignmentOverview"></div>
+    </div>
+  </div>
+
+  <!-- ── Deep Clean Calendar ── -->
+  <div class="panel" id="panel-dccalendar" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Deep Clean Calendar</div><div class="page-sub">Schedule rooms for deep cleaning or stripping & waxing</div></div>
+    </div>
+
+    <div class="content-grid">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <button class="neu-btn" onclick="navigateDcCalendarAdmin(-1)">‹ Prev</button>
+          <div id="dcCalMonthLabel" style="font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;"></div>
+          <button class="neu-btn" onclick="navigateDcCalendarAdmin(1)">Next ›</button>
+        </div>
+        <div id="dcCalGrid"></div>
+        <div style="display:flex;gap:16px;margin-top:14px;font-size:11px;color:var(--gray);">
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--orange);margin-right:5px;"></span>Deep Clean</span>
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#8B5CF6;margin-right:5px;"></span>Strip & Wax</span>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card">
+          <div class="card-title">Schedule a Room</div>
+          <div class="field"><label>Room</label><select id="dc-admin-room"></select></div>
+          <div class="field"><label>Type</label>
+            <select id="dc-admin-type"><option value="deep_clean">Deep Clean</option><option value="strip_wax">Stripping & Waxing</option></select>
+          </div>
+          <div class="field"><label>Date</label><input type="date" id="dc-admin-date"></div>
+          <div class="field"><label>Notes (optional)</label><textarea id="dc-admin-notes" rows="2"></textarea></div>
+          <button class="neu-btn primary block" onclick="saveDcScheduleAdmin()">✓ Add to Calendar</button>
+        </div>
+        <div class="card" id="dcSelectedDayCard" style="display:none;">
+          <div class="card-title" id="dcSelectedDayTitle"></div>
+          <div id="dcSelectedDayList"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1920,10 +1987,12 @@ async function loadEmployeesList() {
       '</div>';
     }).join('');
   }
-  // Feed the assignment card's autocomplete
-  document.getElementById('assign-employee-list').innerHTML = lastEmployees.map(function(e){
-    return '<option value="'+e.employee_number+'">'+e.first_name+' '+e.last_name+'</option>';
-  }).join('');
+  // Feed the assignment dropdown
+  var prevSelected = document.getElementById('assign-employee-id') ? document.getElementById('assign-employee-id').value : '';
+  document.getElementById('assign-employee-id').innerHTML = '<option value="">Select an employee…</option>' +
+    lastEmployees.map(function(e){
+      return '<option value="'+e.employee_number+'"'+(e.employee_number===prevSelected?' selected':'')+'>'+e.first_name+' '+e.last_name+' (' + e.employee_number + ')</option>';
+    }).join('');
 }
 
 async function updateEmployeePermission(id, permission) {
@@ -2001,8 +2070,8 @@ function renderAssignRoomGrid() {
   }).join('');
 }
 
-// Re-render the grid whenever the employee ID changes, so checkboxes reflect that specific person
-document.addEventListener('input', function(e){
+// Re-render the grid whenever the selected employee changes, so checkboxes reflect that specific person
+document.addEventListener('change', function(e){
   if (e.target && e.target.id === 'assign-employee-id') renderAssignRoomGrid();
 });
 
@@ -2078,6 +2147,221 @@ async function loadAssignmentOverview() {
       '<span style="font-weight:800;color:'+color+';font-size:13px;flex-shrink:0;">' + doneCount + '/' + qrs.length + '</span>' +
     '</div>';
   }).join('');
+}
+
+/* ── Assign Housekeepers (admin tab) ── */
+var lastHkAdminRooms = [];
+var lastHkAdminAssignments = [];
+
+async function initHkAssignPanel() {
+  await loadEmployeesList();
+  document.getElementById('hk-employee-select').innerHTML = '<option value="">Select a housekeeper…</option>' +
+    lastEmployees.map(function(e){ return '<option value="'+e.employee_number+'">'+e.first_name+' '+e.last_name+' (' + e.employee_number + ')</option>'; }).join('');
+
+  var { data: rooms } = await sb.from('room_qr_codes').select('*')
+    .eq('facility_id', FACILITY_ID).eq('location_type','room').eq('is_active', true);
+  lastHkAdminRooms = (rooms||[]).sort(function(a,b){
+    if (a.unit !== b.unit) return (a.unit||'').localeCompare(b.unit||'');
+    return (+a.room_number||0) - (+b.room_number||0);
+  });
+
+  var { data: assignments } = await sb.from('room_assignments').select('*')
+    .eq('facility_id', FACILITY_ID).eq('assignment_type','housekeeping');
+  lastHkAdminAssignments = assignments || [];
+
+  document.getElementById('hk-employee-select').onchange = renderHkAdminRoomGrid;
+  renderHkAdminRoomGrid();
+  renderHkAdminOverview();
+}
+
+function renderHkAdminRoomGrid() {
+  var grid = document.getElementById('hkAssignRoomGrid');
+  var selectedId = document.getElementById('hk-employee-select').value;
+  var theirQrs = lastHkAdminAssignments.filter(function(a){ return a.employee_id === selectedId; }).map(function(a){ return a.qr_identifier; });
+
+  grid.innerHTML = lastHkAdminRooms.map(function(r){
+    var checked = theirQrs.indexOf(r.qr_identifier) > -1;
+    var existingOwner = lastHkAdminAssignments.find(function(a){ return a.qr_identifier === r.qr_identifier; });
+    var ownerNote = (existingOwner && existingOwner.employee_id !== selectedId && selectedId)
+      ? '<span style="color:var(--red);font-size:9.5px;">→ ' + empLabel(existingOwner.employee_id) + '</span>' : '';
+    return '<label class="inv-check-item' + (checked?' checked':'') + '" style="flex-direction:column;align-items:flex-start;gap:2px;" data-qr="' + r.qr_identifier + '">' +
+      '<span style="display:flex;align-items:center;gap:8px;width:100%;"><input type="checkbox" ' + (checked?'checked':'') + '><span>' + r.display_name + '</span></span>' +
+      '<span style="font-size:9.5px;color:var(--gray);padding-left:24px;">' + (r.unit||'') + (existingOwner && !checked ? ' · ' + ownerNote : '') + '</span>' +
+    '</label>';
+  }).join('');
+}
+
+async function saveHkAssignmentsAdmin() {
+  var employeeId = document.getElementById('hk-employee-select').value;
+  if (!employeeId) { alert('Select a housekeeper'); return; }
+
+  var checkedQrs = Array.prototype.map.call(
+    document.querySelectorAll('#hkAssignRoomGrid .inv-check-item input:checked'),
+    function(input){ return input.closest('.inv-check-item').getAttribute('data-qr'); }
+  );
+
+  var previouslyTheirs = lastHkAdminAssignments.filter(function(a){ return a.employee_id === employeeId; }).map(function(a){ return a.qr_identifier; });
+  var toUnassign = previouslyTheirs.filter(function(qr){ return checkedQrs.indexOf(qr) === -1; });
+
+  if (toUnassign.length) {
+    await sb.from('room_assignments').delete().eq('facility_id', FACILITY_ID)
+      .eq('assignment_type','housekeeping').in('qr_identifier', toUnassign);
+  }
+  if (checkedQrs.length) {
+    var emp = lastEmployees.find(function(e){ return e.employee_number === employeeId; });
+    var displayName = emp ? emp.first_name + ' ' + emp.last_name : employeeId;
+    var rows = checkedQrs.map(function(qr){
+      return { facility_id: FACILITY_ID, qr_identifier: qr, employee_id: employeeId, manager_name: displayName, assignment_type: 'housekeeping' };
+    });
+    var { error } = await sb.from('room_assignments').upsert(rows, {onConflict:'qr_identifier,assignment_type'});
+    if (error) { alert('Error: ' + error.message); return; }
+  }
+  alert('✓ Saved ' + checkedQrs.length + ' room(s) for ' + empLabel(employeeId));
+  initHkAssignPanel();
+}
+
+function renderHkAdminOverview() {
+  var el = document.getElementById('hkAssignmentOverview');
+  if (!lastHkAdminAssignments.length) {
+    el.innerHTML = '<div style="color:var(--gray-light);font-size:12px;text-align:center;padding:10px;">No housekeeping assignments yet.</div>';
+    return;
+  }
+  var byEmployee = {};
+  lastHkAdminAssignments.forEach(function(a){ (byEmployee[a.employee_id] = byEmployee[a.employee_id] || []).push(a); });
+  var roomsByQr = {};
+  lastHkAdminRooms.forEach(function(r){ roomsByQr[r.qr_identifier] = r; });
+
+  el.innerHTML = Object.keys(byEmployee).sort().map(function(empId){
+    var rows = byEmployee[empId];
+    var names = rows.map(function(r){ return roomsByQr[r.qr_identifier] ? roomsByQr[r.qr_identifier].display_name : r.qr_identifier; });
+    return '<div class="inv-saved-row" style="cursor:default;">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-weight:700;font-size:13px;">' + empLabel(empId) + '</div>' +
+        '<div style="font-size:11.5px;color:var(--gray);margin-top:2px;">' + names.slice(0,5).join(', ') + (names.length>5?' +'+(names.length-5)+' more':'') + '</div>' +
+      '</div>' +
+      '<span style="font-weight:800;color:var(--black);font-size:13px;flex-shrink:0;">' + rows.length + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+/* ── Deep Clean Calendar (admin tab) ── */
+var dcAdminCalDate = new Date();
+var dcAdminCalData = {};
+var dcAdminSelectedDate = null;
+
+async function initDcCalendarPanel() {
+  var { data: rooms } = await sb.from('room_qr_codes').select('*')
+    .eq('facility_id', FACILITY_ID).eq('location_type','room').eq('is_active', true);
+  var sorted = (rooms||[]).sort(function(a,b){ return (+a.room_number||0) - (+b.room_number||0); });
+  document.getElementById('dc-admin-room').innerHTML = sorted.map(function(r){
+    return '<option value="'+r.qr_identifier+'">'+r.display_name+' ('+(r.unit||'')+')</option>';
+  }).join('');
+  document.getElementById('dc-admin-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('dcSelectedDayCard').style.display = 'none';
+
+  await renderDcCalendarAdmin();
+}
+
+async function renderDcCalendarAdmin() {
+  var year = dcAdminCalDate.getFullYear();
+  var month = dcAdminCalDate.getMonth();
+  var monthStart = new Date(year, month, 1);
+  var monthEnd = new Date(year, month + 1, 0);
+
+  var { data: scheduled } = await sb.from('deep_clean_schedule').select('*')
+    .eq('facility_id', FACILITY_ID)
+    .gte('scheduled_date', monthStart.toISOString().split('T')[0])
+    .lte('scheduled_date', monthEnd.toISOString().split('T')[0]);
+
+  var qrIds = (scheduled||[]).map(function(s){ return s.qr_identifier; });
+  var locByQr = {};
+  if (qrIds.length) {
+    var { data: locs } = await sb.from('room_qr_codes').select('qr_identifier,display_name').in('qr_identifier', qrIds);
+    (locs||[]).forEach(function(l){ locByQr[l.qr_identifier] = l; });
+  }
+
+  dcAdminCalData = {};
+  (scheduled||[]).forEach(function(s){
+    (dcAdminCalData[s.scheduled_date] = dcAdminCalData[s.scheduled_date] || []).push({
+      id: s.id, roomName: locByQr[s.qr_identifier] ? locByQr[s.qr_identifier].display_name : s.qr_identifier,
+      cleanType: s.clean_type, status: s.status, notes: s.notes
+    });
+  });
+
+  document.getElementById('dcCalMonthLabel').textContent = dcAdminCalDate.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+
+  var startWeekday = monthStart.getDay();
+  var daysInMonth = monthEnd.getDate();
+  var todayStr = new Date().toISOString().split('T')[0];
+
+  var dow = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(d){ return '<div style="text-align:center;font-size:10px;font-weight:700;color:var(--gray);">'+d+'</div>'; }).join('');
+  var cells = '';
+  for (var i=0;i<startWeekday;i++) cells += '<div></div>';
+  for (var d=1; d<=daysInMonth; d++) {
+    var dateStr = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    var entries = dcAdminCalData[dateStr] || [];
+    var isToday = dateStr === todayStr;
+    cells += '<div onclick="selectDcAdminDay(\''+dateStr+'\')" style="min-height:64px;border-radius:12px;padding:7px;cursor:pointer;background:var(--surface);box-shadow:var(--shadow-card);' + (isToday?'box-shadow:0 0 0 2px var(--accent), var(--shadow-card);':'') + '">' +
+      '<div style="font-size:11.5px;font-weight:700;color:var(--gray);">' + d + '</div>' +
+      (entries.length ? '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:5px;">' + entries.slice(0,6).map(function(e){
+        return '<span style="width:7px;height:7px;border-radius:50%;background:' + (e.cleanType==='strip_wax'?'#8B5CF6':'var(--orange)') + ';"></span>';
+      }).join('') + '</div>' : '') +
+    '</div>';
+  }
+
+  document.getElementById('dcCalGrid').innerHTML =
+    '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;">' + dow + '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">' + cells + '</div>';
+}
+
+function navigateDcCalendarAdmin(delta) {
+  dcAdminCalDate = new Date(dcAdminCalDate.getFullYear(), dcAdminCalDate.getMonth() + delta, 1);
+  renderDcCalendarAdmin();
+}
+
+function selectDcAdminDay(dateStr) {
+  dcAdminSelectedDate = dateStr;
+  var entries = dcAdminCalData[dateStr] || [];
+  var dateLabel = new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+  document.getElementById('dc-admin-date').value = dateStr;
+
+  var card = document.getElementById('dcSelectedDayCard');
+  card.style.display = 'block';
+  document.getElementById('dcSelectedDayTitle').textContent = dateLabel;
+  var listEl = document.getElementById('dcSelectedDayList');
+  if (!entries.length) {
+    listEl.innerHTML = '<div style="color:var(--gray-light);font-size:12px;text-align:center;padding:10px;">Nothing scheduled this day.</div>';
+  } else {
+    listEl.innerHTML = entries.map(function(e){
+      return '<div class="inv-saved-row" style="cursor:default;">' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-weight:700;font-size:13px;">' + e.roomName + '</div>' +
+          '<div style="font-size:11px;color:var(--gray);margin-top:2px;">' + (e.cleanType==='strip_wax'?'Stripping & Waxing':'Deep Clean') + ' · ' + e.status + (e.notes?' · '+e.notes:'') + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+}
+
+async function saveDcScheduleAdmin() {
+  var qr = document.getElementById('dc-admin-room').value;
+  var type = document.getElementById('dc-admin-type').value;
+  var date = document.getElementById('dc-admin-date').value;
+  var notes = document.getElementById('dc-admin-notes').value.trim();
+  if (!date || !qr) { alert('Pick a room and a date'); return; }
+
+  var adminSession = getAdminSession();
+  var createdBy = adminSession ? (adminSession.first_name + ' ' + adminSession.last_name) : 'Admin';
+
+  var { error } = await sb.from('deep_clean_schedule').insert({
+    facility_id: FACILITY_ID, qr_identifier: qr, clean_type: type,
+    scheduled_date: date, notes: notes || null, created_by: createdBy
+  });
+  if (error) { alert('Error: ' + error.message); return; }
+
+  document.getElementById('dc-admin-notes').value = '';
+  dcAdminCalDate = new Date(date + 'T12:00:00');
+  renderDcCalendarAdmin();
 }
 
 
@@ -2677,12 +2961,13 @@ function toggleDrawerGroup(group) {
 var NAV_GROUP_MAP = {
   dashboard: 'dashboard',
   rooms: 'housekeeping', eoc: 'housekeeping', facilities: 'housekeeping', inventory: 'housekeeping',
+  hkassign: 'housekeeping', dccalendar: 'housekeeping',
   compliance: 'maintenance', issues: 'maintenance',
   reports: 'reports', policies: 'reports', surveyprep: 'reports'
 };
 
 function switchTab_direct(tab) {
-  ['dashboard','rooms','eoc','facilities','issues','compliance','reports','policies','inventory','surveyprep'].forEach(function(p){
+  ['dashboard','rooms','eoc','facilities','issues','compliance','reports','policies','inventory','surveyprep','hkassign','dccalendar'].forEach(function(p){
     document.getElementById('panel-'+p).style.display = p===tab ? 'block' : 'none';
   });
   currentPanel = tab;
@@ -2696,6 +2981,8 @@ function switchTab_direct(tab) {
   if (tab==='reports') initReportsPanel();
   if (tab==='inventory') initInventoryPanel();
   if (tab==='surveyprep') initSurveyPrepPanel();
+  if (tab==='hkassign') initHkAssignPanel();
+  if (tab==='dccalendar') initDcCalendarPanel();
 }
 
 function updateNavActiveState(tab) {
