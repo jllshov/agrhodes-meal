@@ -932,24 +932,36 @@ table.policy-table tr:last-child td { border-bottom: none; }
       </div>
     </div>
     <div class="card" style="margin-bottom:20px;">
-      <div class="card-title">🪪 Employees</div>
-      <div class="card-sub">Shared with the meal tracking app — same employee list, same Employee ID. Permission controls what they can do in Zone Rounds specifically.</div>
-      <div class="bulk-form" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr auto;margin-bottom:14px;">
-        <div class="field"><label>Employee ID</label><input type="text" id="emp-id"></div>
-        <div class="field"><label>First Name</label><input type="text" id="emp-first"></div>
-        <div class="field"><label>Last Name</label><input type="text" id="emp-last"></div>
-        <div class="field"><label>Role</label><input type="text" id="emp-role" placeholder="e.g. DON"></div>
-        <div class="field"><label>Unit</label><input type="text" id="emp-unit"></div>
-        <div class="field"><label>Permission</label>
-          <select id="emp-permission">
-            <option value="staff">Staff</option>
-            <option value="manager">Manager</option>
-            <option value="admin">Admin</option>
-          </select>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div class="card-title" style="margin-bottom:2px;">🪪 Employees</div>
+          <div class="card-sub" style="margin-bottom:0;">Search the shared employee list to set permissions</div>
         </div>
-        <button class="neu-btn primary" onclick="saveEmployee()">✓ Add</button>
+        <button class="neu-btn" style="font-size:11.5px;padding:8px 14px;flex-shrink:0;" onclick="toggleAddEmployeeForm()">+ Add New Employee</button>
       </div>
-      <div id="employeeList"></div>
+
+      <div style="margin-top:14px;">
+        <input type="text" id="emp-search" placeholder="🔍 Search by name or Employee ID…" style="width:100%;padding:11px 14px;border:none;border-radius:12px;background:var(--bg);box-shadow:var(--shadow-in);font-family:inherit;font-size:13.5px;">
+      </div>
+      <div id="employeeList" style="margin-top:12px;"></div>
+
+      <div id="addEmployeeForm" style="display:none;margin-top:18px;padding-top:18px;border-top:1px dashed rgba(0,0,0,.1);">
+        <div class="bulk-form" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr auto;">
+          <div class="field"><label>Employee ID</label><input type="text" id="emp-id"></div>
+          <div class="field"><label>First Name</label><input type="text" id="emp-first"></div>
+          <div class="field"><label>Last Name</label><input type="text" id="emp-last"></div>
+          <div class="field"><label>Role</label><input type="text" id="emp-role" placeholder="e.g. DON"></div>
+          <div class="field"><label>Unit</label><input type="text" id="emp-unit"></div>
+          <div class="field"><label>Permission</label>
+            <select id="emp-permission">
+              <option value="staff">Staff</option>
+              <option value="manager">Manager</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <button class="neu-btn primary" onclick="saveEmployee()">✓ Add</button>
+        </div>
+      </div>
     </div>
 
     <div class="card" style="margin-bottom:20px;">
@@ -1966,27 +1978,13 @@ async function loadEmployeesList() {
   var { data } = await sb.from('employees').select('*')
     .eq('facility_id', FACILITY_ID).eq('is_active', true).order('last_name');
   lastEmployees = data || [];
+
   var listEl = document.getElementById('employeeList');
-  if (!lastEmployees.length) {
-    listEl.innerHTML = '<div style="color:var(--gray-light);font-size:12px;text-align:center;padding:10px;">No employees found for this facility yet.</div>';
-  } else {
-    listEl.innerHTML = lastEmployees.map(function(e){
-      var perm = e.zone_rounds_permission || 'staff';
-      var badgeColor = perm==='admin' ? 'rgba(239,68,68,.12);color:var(--red)' : perm==='manager' ? 'var(--accent-dim);color:#5B5A0E' : 'rgba(107,114,128,.12);color:var(--gray)';
-      return '<div class="inv-saved-row" style="cursor:default;">' +
-        '<div style="flex:1;min-width:0;">' +
-          '<div style="font-weight:700;font-size:13px;">' + e.first_name + ' ' + e.last_name + ' <span style="color:var(--gray);font-weight:600;font-size:11.5px;">· ID ' + e.employee_number + '</span></div>' +
-          '<div style="font-size:11.5px;color:var(--gray);margin-top:2px;">' + (e.role||'') + (e.unit?' · '+e.unit:'') + '</div>' +
-        '</div>' +
-        '<select style="font-size:11px;padding:5px 8px;border:none;border-radius:8px;background:' + badgeColor + ';font-weight:700;margin-right:8px;" onchange="updateEmployeePermission(\''+e.id+'\',this.value)">' +
-          '<option value="staff"' + (perm==='staff'?' selected':'') + '>Staff</option>' +
-          '<option value="manager"' + (perm==='manager'?' selected':'') + '>Manager</option>' +
-          '<option value="admin"' + (perm==='admin'?' selected':'') + '>Admin</option>' +
-        '</select>' +
-        '<button class="neu-btn" style="font-size:11px;padding:6px 12px;" onclick="removeEmployee(\''+e.id+'\')">Remove</button>' +
-      '</div>';
-    }).join('');
+  if (listEl) {
+    listEl.innerHTML = '<div style="color:var(--gray-light);font-size:12px;text-align:center;padding:14px;">' +
+      lastEmployees.length + ' employee' + (lastEmployees.length!==1?'s':'') + ' available — search above to find someone</div>';
   }
+
   // Feed the assignment dropdown
   var prevSelected = document.getElementById('assign-employee-id') ? document.getElementById('assign-employee-id').value : '';
   document.getElementById('assign-employee-id').innerHTML = '<option value="">Select an employee…</option>' +
@@ -1995,10 +1993,56 @@ async function loadEmployeesList() {
     }).join('');
 }
 
+function renderEmployeeRow(e) {
+  var perm = e.zone_rounds_permission || 'staff';
+  var badgeColor = perm==='admin' ? 'rgba(239,68,68,.12);color:var(--red)' : perm==='manager' ? 'var(--accent-dim);color:#5B5A0E' : 'rgba(107,114,128,.12);color:var(--gray)';
+  return '<div class="inv-saved-row" style="cursor:default;">' +
+    '<div style="flex:1;min-width:0;">' +
+      '<div style="font-weight:700;font-size:13px;">' + e.first_name + ' ' + e.last_name + ' <span style="color:var(--gray);font-weight:600;font-size:11.5px;">· ID ' + e.employee_number + '</span></div>' +
+      '<div style="font-size:11.5px;color:var(--gray);margin-top:2px;">' + (e.role||'') + (e.unit?' · '+e.unit:'') + '</div>' +
+    '</div>' +
+    '<select style="font-size:11px;padding:5px 8px;border:none;border-radius:8px;background:' + badgeColor + ';font-weight:700;margin-right:8px;" onchange="updateEmployeePermission(\''+e.id+'\',this.value)">' +
+      '<option value="staff"' + (perm==='staff'?' selected':'') + '>Staff</option>' +
+      '<option value="manager"' + (perm==='manager'?' selected':'') + '>Manager</option>' +
+      '<option value="admin"' + (perm==='admin'?' selected':'') + '>Admin</option>' +
+    '</select>' +
+    '<button class="neu-btn" style="font-size:11px;padding:6px 12px;" onclick="removeEmployee(\''+e.id+'\')">Remove</button>' +
+  '</div>';
+}
+
+function searchEmployees() {
+  var term = document.getElementById('emp-search').value.trim().toLowerCase();
+  var listEl = document.getElementById('employeeList');
+  if (!term) {
+    listEl.innerHTML = '<div style="color:var(--gray-light);font-size:12px;text-align:center;padding:14px;">' +
+      lastEmployees.length + ' employee' + (lastEmployees.length!==1?'s':'') + ' available — search above to find someone</div>';
+    return;
+  }
+  var matches = lastEmployees.filter(function(e){
+    var haystack = (e.first_name + ' ' + e.last_name + ' ' + e.employee_number).toLowerCase();
+    return haystack.indexOf(term) > -1;
+  }).slice(0, 30);
+
+  if (!matches.length) {
+    listEl.innerHTML = '<div style="color:var(--gray-light);font-size:12px;text-align:center;padding:14px;">No matches for "' + term + '".</div>';
+    return;
+  }
+  listEl.innerHTML = matches.map(renderEmployeeRow).join('');
+}
+document.addEventListener('input', function(e){
+  if (e.target && e.target.id === 'emp-search') searchEmployees();
+});
+
+function toggleAddEmployeeForm() {
+  var form = document.getElementById('addEmployeeForm');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
 async function updateEmployeePermission(id, permission) {
   var { error } = await sb.from('employees').update({ zone_rounds_permission: permission }).eq('id', id);
   if (error) { alert('Error: ' + error.message); return; }
-  loadEmployeesList();
+  await loadEmployeesList();
+  if (document.getElementById('emp-search').value.trim()) searchEmployees();
 }
 
 async function saveEmployee() {
@@ -2017,13 +2061,16 @@ async function saveEmployee() {
   if (error) { alert('Error: ' + error.message); return; }
 
   ['emp-id','emp-first','emp-last','emp-role','emp-unit'].forEach(function(id){ document.getElementById(id).value = ''; });
-  loadEmployeesList();
+  document.getElementById('addEmployeeForm').style.display = 'none';
+  await loadEmployeesList();
+  if (document.getElementById('emp-search').value.trim()) searchEmployees();
 }
 
 async function removeEmployee(id) {
   if (!confirm('Remove this employee? Their room assignments will remain but won\'t resolve to a name until reassigned. Note: this also affects their record in the meal tracking app, since both apps share this employee list.')) return;
   await sb.from('employees').update({ is_active: false }).eq('id', id);
-  loadEmployeesList();
+  await loadEmployeesList();
+  if (document.getElementById('emp-search').value.trim()) searchEmployees();
 }
 
 /* ── Zone Round Assignments (employee → rooms) ── */
