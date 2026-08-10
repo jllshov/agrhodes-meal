@@ -617,6 +617,25 @@ table.policy-table tr:last-child td { border-bottom: none; }
 }
 .inv-check-item.checked { background: var(--accent-dim); box-shadow: var(--shadow-in); }
 .inv-check-item input { width: 16px; height: 16px; accent-color: var(--black); flex-shrink: 0; }
+
+/* ── Employee search-and-select picker ── */
+.emp-picker-search {
+  width: 100%; padding: 11px 14px; border: none; border-radius: 12px;
+  background: var(--bg); box-shadow: var(--shadow-in); font-family: inherit; font-size: 13.5px;
+}
+.emp-picker-results { margin-top: 6px; max-height: 220px; overflow-y: auto; }
+.emp-picker-result {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: var(--bg); border-radius: 10px; padding: 10px 12px; margin-bottom: 5px;
+  cursor: pointer; font-size: 12.5px; font-weight: 600; box-shadow: var(--shadow-out);
+}
+.emp-picker-result:hover { background: var(--accent-dim); }
+.emp-picker-chip {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--accent-dim); border-radius: 12px; padding: 12px 14px; font-weight: 700; font-size: 13px;
+}
+.emp-picker-chip button { background: none; border: none; color: var(--black); font-size: 11.5px; font-weight: 700; cursor: pointer; text-decoration: underline; }
+
 .inv-expand-card {
   background: var(--bg); border-radius: 16px; padding: 14px 16px; margin-top: 12px; box-shadow: var(--shadow-in);
 }
@@ -969,14 +988,13 @@ table.policy-table tr:last-child td { border-bottom: none; }
       <div class="card-title">🧑‍💼 Zone Round Assignments</div>
       <div class="card-sub">Assign each employee a set of resident rooms to check</div>
 
-      <div class="bulk-form" style="grid-template-columns:1fr auto;margin-bottom:14px;">
-        <div class="field"><label>Employee</label>
-          <select id="assign-employee-id"><option value="">Select an employee…</option></select>
-        </div>
-        <button class="neu-btn primary" onclick="saveRoomAssignments()">✓ Save Assignments</button>
+      <div class="field" style="margin-bottom:14px;">
+        <label>Employee</label>
+        <div id="assignEmployeePicker"></div>
       </div>
       <div class="card-sub" style="margin-bottom:8px;">Check every room this employee is responsible for — this replaces their previous assignment list</div>
       <div class="inv-check-grid" id="assignRoomGrid" style="grid-template-columns:repeat(4,1fr);max-height:260px;overflow-y:auto;padding-right:4px;"></div>
+      <button class="neu-btn primary block" style="margin-top:14px;" onclick="saveRoomAssignments()">✓ Save Assignments</button>
 
       <div class="card-sub" style="margin:18px 0 8px;font-weight:700;color:var(--black);">Today's Assignment Status</div>
       <div id="assignmentOverview"></div>
@@ -1985,13 +2003,6 @@ async function loadEmployeesList() {
     listEl.innerHTML = '<div style="color:var(--gray-light);font-size:12px;text-align:center;padding:14px;">' +
       lastEmployees.length + ' employee' + (lastEmployees.length!==1?'s':'') + ' available — search above to find someone</div>';
   }
-
-  // Feed the assignment dropdown
-  var prevSelected = document.getElementById('assign-employee-id') ? document.getElementById('assign-employee-id').value : '';
-  document.getElementById('assign-employee-id').innerHTML = '<option value="">Select an employee…</option>' +
-    lastEmployees.map(function(e){
-      return '<option value="'+e.employee_number+'"'+(e.employee_number===prevSelected?' selected':'')+'>'+e.first_name+' '+e.last_name+' (' + e.employee_number + ')</option>';
-    }).join('');
 }
 
 function renderEmployeeRow(e) {
@@ -2081,6 +2092,7 @@ async function removeEmployee(id) {
 /* ── Zone Round Assignments (employee → rooms) ── */
 var lastAssignableRooms = [];
 var lastRoomAssignments = [];
+var zrSelectedEmployee = null;
 
 async function loadRoomAssignmentsPanel(rooms) {
   lastAssignableRooms = rooms;
@@ -2089,6 +2101,7 @@ async function loadRoomAssignmentsPanel(rooms) {
     .eq('facility_id', FACILITY_ID).eq('assignment_type', 'zone_round');
   lastRoomAssignments = assignments || [];
 
+  renderAssignEmployeePicker();
   renderAssignRoomGrid();
   loadAssignmentOverview();
 }
@@ -2098,9 +2111,56 @@ function empLabel(employeeId) {
   return e ? e.first_name + ' ' + e.last_name + ' (' + employeeId + ')' : employeeId;
 }
 
+function renderAssignEmployeePicker() {
+  var el = document.getElementById('assignEmployeePicker');
+  if (!el) return;
+  if (zrSelectedEmployee) {
+    el.innerHTML = '<div class="emp-picker-chip">' +
+      '<span>👤 ' + zrSelectedEmployee.first_name + ' ' + zrSelectedEmployee.last_name + ' (' + zrSelectedEmployee.employee_number + ')</span>' +
+      '<button onclick="clearZrEmployeeSelection()">Change</button>' +
+    '</div>';
+    return;
+  }
+  el.innerHTML =
+    '<input type="text" class="emp-picker-search" id="zr-emp-search" placeholder="🔍 Search by name or Employee ID…">' +
+    '<div class="emp-picker-results" id="zrEmpSearchResults"></div>';
+}
+
+function clearZrEmployeeSelection() {
+  zrSelectedEmployee = null;
+  renderAssignEmployeePicker();
+  renderAssignRoomGrid();
+}
+
+document.addEventListener('input', function(e){
+  if (e.target && e.target.id === 'zr-emp-search') {
+    var term = e.target.value.trim().toLowerCase();
+    var resultsEl = document.getElementById('zrEmpSearchResults');
+    if (!term) { resultsEl.innerHTML = ''; return; }
+    var matches = lastEmployees.filter(function(emp){
+      var haystack = (emp.first_name + ' ' + emp.last_name + ' ' + emp.employee_number).toLowerCase();
+      return haystack.indexOf(term) > -1;
+    }).slice(0, 15);
+    resultsEl.innerHTML = matches.length
+      ? matches.map(function(emp){
+          return '<div class="emp-picker-result" onclick=\'selectZrEmployee(' + JSON.stringify(emp) + ')\'>' +
+            '<span>' + emp.first_name + ' ' + emp.last_name + '</span>' +
+            '<span style="color:var(--gray);font-size:11px;">ID ' + emp.employee_number + '</span>' +
+          '</div>';
+        }).join('')
+      : '<div style="color:var(--gray-light);font-size:12px;text-align:center;padding:8px;">No matches.</div>';
+  }
+});
+
+function selectZrEmployee(emp) {
+  zrSelectedEmployee = emp;
+  renderAssignEmployeePicker();
+  renderAssignRoomGrid();
+}
+
 function renderAssignRoomGrid() {
   var grid = document.getElementById('assignRoomGrid');
-  var typedId = document.getElementById('assign-employee-id').value.trim();
+  var typedId = zrSelectedEmployee ? zrSelectedEmployee.employee_number : '';
   var assignedQrsForEmployee = lastRoomAssignments
     .filter(function(a){ return a.employee_id === typedId; })
     .map(function(a){ return a.qr_identifier; });
@@ -2122,17 +2182,9 @@ function renderAssignRoomGrid() {
   }).join('');
 }
 
-// Re-render the grid whenever the selected employee changes, so checkboxes reflect that specific person
-document.addEventListener('change', function(e){
-  if (e.target && e.target.id === 'assign-employee-id') renderAssignRoomGrid();
-});
-
 async function saveRoomAssignments() {
-  var employeeId = document.getElementById('assign-employee-id').value.trim();
-  if (!employeeId) { alert('Enter an Employee ID'); return; }
-  if (!lastEmployees.find(function(e){ return e.employee_number === employeeId; })) {
-    if (!confirm('No employee found with ID "' + employeeId + '" — add them under Employees first. Continue anyway?')) return;
-  }
+  if (!zrSelectedEmployee) { alert('Search for and select an employee first'); return; }
+  var employeeId = zrSelectedEmployee.employee_number;
 
   var checkedQrs = Array.prototype.map.call(
     document.querySelectorAll('#assignRoomGrid .inv-check-item input:checked'),
