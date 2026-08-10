@@ -646,18 +646,23 @@ function renderLanding() {
   var cfg = getLocConfig(loc);
   var isRoom = loc.location_type === 'room' || loc.location_type === 'eoc_area';
   var isResidentRoom = loc.location_type === 'room';
+  // Zone Defense (the nursing round) is restricted to Manager/Admin for resident rooms.
+  // EOC area rounds are left open, since that's a separate, pre-existing feature.
+  var canShowZoneRound = isResidentRoom ? canDoZoneRound() : true;
+
   app.innerHTML =
     '<div class="rr-header">' +
       '<div class="rr-icon">' + cfg.icon + '</div>' +
       '<div class="rr-name">' + loc.display_name + '</div>' +
       '<div class="rr-meta">' + locSubtitle(loc) + '</div>' +
     '</div>' +
-    '<div class="choice-card" onclick="startRound()">' +
-      '<div class="choice-icon">' + (isRoom ? '📋' : '🧹') + '</div>' +
-      '<div><div class="choice-title">' + cfg.roundTitle + '</div>' +
-        '<div class="choice-sub">' + cfg.roundSub + '</div></div>' +
-      '<div class="choice-arrow">›</div>' +
-    '</div>' +
+    (canShowZoneRound ?
+      '<div class="choice-card" onclick="startRound()">' +
+        '<div class="choice-icon">' + (isRoom ? '📋' : '🧹') + '</div>' +
+        '<div><div class="choice-title">' + cfg.roundTitle + '</div>' +
+          '<div class="choice-sub">' + cfg.roundSub + '</div></div>' +
+        '<div class="choice-arrow">›</div>' +
+      '</div>' : '') +
     (isResidentRoom ?
       '<div class="choice-card" onclick="startRoomCleaning()">' +
         '<div class="choice-icon">🧹</div>' +
@@ -674,10 +679,14 @@ function renderLanding() {
     '<div style="text-align:center;margin-top:6px;">' +
       '<button class="neu-btn ghost" onclick="viewAssets()">View Assets on File →</button>' +
       (isCleaningCapableLocation(loc) ? '<br><button class="neu-btn ghost" onclick="viewMyCleanings()">📋 My Completed Cleanings Today →</button>' : '') +
-      (isResidentRoom ? '<br><button class="neu-btn ghost" onclick="viewMyAssignedRooms()">🗂 My Assigned Rooms →</button>' : '') +
+      (isResidentRoom && canDoZoneRound() ? '<br><button class="neu-btn ghost" onclick="viewMyAssignedRooms()">🗂 My Assigned Rooms →</button>' : '') +
       (isManagerOrAdmin() ? '<br><button class="neu-btn ghost" onclick="assignHousekeepersView()">🧹 Assign Housekeepers →</button>' : '') +
       (isManagerOrAdmin() ? '<br><button class="neu-btn ghost" onclick="deepCleanCalendarView()">📅 Deep Clean Calendar →</button>' : '') +
     '</div>';
+}
+
+function canDoZoneRound() {
+  return currentEmployee && (currentEmployee.zone_rounds_permission === 'manager' || currentEmployee.zone_rounds_permission === 'admin');
 }
 
 function isManagerOrAdmin() {
@@ -705,6 +714,10 @@ function backToLanding() {
 
 /* ── Checklist flow ── */
 function startRound() {
+  if (currentLoc.location_type === 'room' && !canDoZoneRound()) {
+    showToast('Only managers can complete Zone Defense rounds.', 'error');
+    return;
+  }
   currentChecklistMode = 'round';
   roundValues = {}; issueDrafts = {};
   renderChecklist();
