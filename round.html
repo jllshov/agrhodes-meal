@@ -675,7 +675,15 @@ function renderLanding() {
       '<button class="neu-btn ghost" onclick="viewAssets()">View Assets on File →</button>' +
       (isCleaningCapableLocation(loc) ? '<br><button class="neu-btn ghost" onclick="viewMyCleanings()">📋 My Completed Cleanings Today →</button>' : '') +
       (isResidentRoom ? '<br><button class="neu-btn ghost" onclick="viewMyAssignedRooms()">🗂 My Assigned Rooms →</button>' : '') +
+      (isManagerOrAdmin() ? '<br><button class="neu-btn ghost" onclick="assignHousekeepersView()">🧹 Assign Housekeepers →</button>' : '') +
+      (isManagerOrAdmin() ? '<br><button class="neu-btn ghost" onclick="deepCleanCalendarView()">📅 Deep Clean Calendar →</button>' : '') +
     '</div>';
+}
+
+function isManagerOrAdmin() {
+  if (!currentEmployee) return false;
+  var perm = currentEmployee.zone_rounds_permission;
+  return perm === 'manager' || perm === 'housekeeping_manager' || perm === 'admin';
 }
 
 function isCleaningCapableLocation(loc) {
@@ -1443,6 +1451,225 @@ async function loadMyAssignedRooms() {
   html += '</div>';
 
   resultsEl.innerHTML = html;
+}
+
+/* ── Assign Housekeepers (Manager/Admin only) ── */
+var lastHkRooms = [];
+var lastHkAssignments = [];
+
+async function assignHousekeepersView() {
+  app.innerHTML = '<div class="center-msg">Loading rooms…</div>';
+  var { data: rooms } = await sb.from('room_qr_codes').select('*')
+    .eq('facility_id', FACILITY_ID).eq('location_type','room').eq('is_active', true);
+  lastHkRooms = (rooms||[]).sort(function(a,b){
+    if (a.unit !== b.unit) return (a.unit||'').localeCompare(b.unit||'');
+    return (+a.room_number||0) - (+b.room_number||0);
+  });
+
+  var { data: assignments } = await sb.from('room_assignments').select('*')
+    .eq('facility_id', FACILITY_ID).eq('assignment_type','housekeeping');
+  lastHkAssignments = assignments || [];
+
+  app.innerHTML =
+    '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
+    '<div class="rr-header" style="padding:16px 18px;"><div class="rr-name" style="font-size:16px;">🧹 Assign Housekeepers</div>' +
+    '<div class="rr-meta">' + currentEmployee.first_name + ' ' + currentEmployee.last_name + '</div></div>' +
+    '<div class="card">' +
+      '<div class="field"><label>Housekeeper Employee ID</label><input type="text" id="hk-employee-id" placeholder="Enter their Employee ID"></div>' +
+      '<div class="section-title" style="margin:14px 0 8px;">Check every room they\'re responsible for cleaning</div>' +
+      '<div id="hkRoomGrid"></div>' +
+      '<button class="neu-btn primary block" style="margin-top:14px;" onclick="saveHousekeeperAssignments()">✓ Save Assignments</button>' +
+    '</div>';
+
+  renderHkRoomGrid();
+  document.getElementById('hk-employee-id').addEventListener('input', renderHkRoomGrid);
+}
+
+function renderHkRoomGrid() {
+  var grid = document.getElementById('hkRoomGrid');
+  var typedId = document.getElementById('hk-employee-id').value.trim();
+  var theirQrs = lastHkAssignments.filter(function(a){ return a.employee_id === typedId; }).map(function(a){ return a.qr_identifier; });
+
+  grid.innerHTML = lastHkRooms.map(function(r){
+    var checked = theirQrs.indexOf(r.qr_identifier) > -1;
+    var existingOwner = lastHkAssignments.find(function(a){ return a.qr_identifier === r.qr_identifier; });
+    var ownerNote = (existingOwner && existingOwner.employee_id !== typedId && typedId) ? ' · currently ' + existingOwner.employee_id : '';
+    return '<label class="asset-item" style="cursor:pointer;">' +
+      '<input type="checkbox" data-qr="'+r.qr_identifier+'" ' + (checked?'checked':'') + ' style="width:18px;height:18px;margin-right:4px;">' +
+      '<div class="asset-info"><div class="asset-name">' + r.display_name + '</div>' +
+      '<div class="asset-meta">' + (r.unit||'') + ownerNote + '</div></div>' +
+    '</label>';
+  }).join('');
+}
+
+async function saveHousekeeperAssignments() {
+  var employeeId = document.getElementById('hk-employee-id').value.trim();
+  if (!employeeId) { showToast('Enter the housekeeper\'s Employee ID.', 'error'); return; }
+
+  var { data: hkEmp } = await sb.from('employees').select('*')
+    .eq('facility_id', FACILITY_ID).eq('employee_number', employeeId).eq('is_active', true).maybeSingle();
+  if (!hkEmp) { showToast('Employee ID not found.', 'error'); return; }
+
+  var checkedQrs = Array.prototype.map.call(
+    document.querySelectorAll('#hkRoomGrid input:checked'),
+    function(input){ return input.getAttribute('data-qr'); }
+  );
+
+  var previouslyTheirs = lastHkAssignments.filter(function(a){ return a.employee_id === employeeId; }).map(function(a){ return a.qr_identifier; });
+  var toUnassign = previouslyTheirs.filter(function(qr){ return checkedQrs.indexOf(qr) === -1; });
+
+  if (toUnassign.length) {
+    await sb.from('room_assignments').delete().eq('facility_id', FACILITY_ID)
+      .eq('assignment_type','housekeeping').in('qr_identifier', toUnassign);
+  }
+  if (checkedQrs.length) {
+    var rows = checkedQrs.map(function(qr){
+      return { facility_id: FACILITY_ID, qr_identifier: qr, employee_id: employeeId,
+        manager_name: hkEmp.first_name + ' ' + hkEmp.last_name, assignment_type: 'housekeeping' };
+    });
+    var { error } = await sb.from('room_assignments').upsert(rows, { onConflict: 'qr_identifier,assignment_type' });
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  }
+  showToast('✓ Saved ' + checkedQrs.length + ' room(s) for ' + hkEmp.first_name + ' ' + hkEmp.last_name, 'success');
+  assignHousekeepersView();
+}
+
+/* ── Deep Clean / Strip & Wax Calendar (Manager/Admin only) ── */
+var dcCalendarDate = new Date();
+var dcCalendarData = {};
+
+async function deepCleanCalendarView() {
+  app.innerHTML = '<div class="center-msg">Loading calendar…</div>';
+  await renderDcCalendar();
+}
+
+async function renderDcCalendar() {
+  var year = dcCalendarDate.getFullYear();
+  var month = dcCalendarDate.getMonth();
+  var monthStart = new Date(year, month, 1);
+  var monthEnd = new Date(year, month + 1, 0);
+
+  var { data: scheduled } = await sb.from('deep_clean_schedule').select('*')
+    .eq('facility_id', FACILITY_ID)
+    .gte('scheduled_date', monthStart.toISOString().split('T')[0])
+    .lte('scheduled_date', monthEnd.toISOString().split('T')[0]);
+
+  var qrIds = (scheduled||[]).map(function(s){ return s.qr_identifier; });
+  var locByQr = {};
+  if (qrIds.length) {
+    var { data: locs } = await sb.from('room_qr_codes').select('qr_identifier,display_name').in('qr_identifier', qrIds);
+    (locs||[]).forEach(function(l){ locByQr[l.qr_identifier] = l; });
+  }
+
+  dcCalendarData = {};
+  (scheduled||[]).forEach(function(s){
+    (dcCalendarData[s.scheduled_date] = dcCalendarData[s.scheduled_date] || []).push({
+      id: s.id, roomName: locByQr[s.qr_identifier] ? locByQr[s.qr_identifier].display_name : s.qr_identifier,
+      cleanType: s.clean_type, status: s.status
+    });
+  });
+
+  var monthLabel = dcCalendarDate.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+  var startWeekday = monthStart.getDay();
+  var daysInMonth = monthEnd.getDate();
+  var todayStr = new Date().toISOString().split('T')[0];
+
+  var dow = ['S','M','T','W','T','F','S'].map(function(d){ return '<div style="text-align:center;font-size:9px;font-weight:700;color:var(--gray);">'+d+'</div>'; }).join('');
+  var cells = '';
+  for (var i=0;i<startWeekday;i++) cells += '<div></div>';
+  for (var d=1; d<=daysInMonth; d++) {
+    var dateStr = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    var entries = dcCalendarData[dateStr] || [];
+    var isToday = dateStr === todayStr;
+    cells += '<div onclick="openDcDay(\''+dateStr+'\')" style="min-height:50px;border-radius:10px;padding:5px;cursor:pointer;background:var(--bg);box-shadow:var(--shadow-out);' + (isToday?'box-shadow:0 0 0 2px var(--orange);':'') + '">' +
+      '<div style="font-size:10.5px;font-weight:700;color:var(--gray);">' + d + '</div>' +
+      (entries.length ? '<div style="display:flex;gap:2px;flex-wrap:wrap;margin-top:3px;">' + entries.slice(0,4).map(function(e){
+        return '<span style="width:6px;height:6px;border-radius:50%;background:' + (e.cleanType==='strip_wax'?'#8B5CF6':'var(--orange)') + ';"></span>';
+      }).join('') + '</div>' : '') +
+    '</div>';
+  }
+
+  app.innerHTML =
+    '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
+    '<div class="rr-header" style="padding:16px 18px;"><div class="rr-name" style="font-size:16px;">📅 Deep Clean Calendar</div>' +
+    '<div class="rr-meta">Deep cleans & stripping/waxing</div></div>' +
+    '<div class="card">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">' +
+        '<button class="neu-btn" style="font-size:11px;padding:6px 12px;" onclick="navigateDcMonth(-1)">‹ Prev</button>' +
+        '<div style="font-weight:800;font-size:14px;">' + monthLabel + '</div>' +
+        '<button class="neu-btn" style="font-size:11px;padding:6px 12px;" onclick="navigateDcMonth(1)">Next ›</button>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;">' + dow + '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">' + cells + '</div>' +
+      '<div style="display:flex;gap:14px;margin-top:12px;font-size:10.5px;color:var(--gray);">' +
+        '<span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--orange);margin-right:4px;"></span>Deep Clean</span>' +
+        '<span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#8B5CF6;margin-right:4px;"></span>Strip & Wax</span>' +
+      '</div>' +
+    '</div>' +
+    '<button class="neu-btn primary block" onclick="openDcScheduleForm()">+ Schedule a Room</button>';
+}
+
+function navigateDcMonth(delta) {
+  dcCalendarDate = new Date(dcCalendarDate.getFullYear(), dcCalendarDate.getMonth() + delta, 1);
+  renderDcCalendar();
+}
+
+function openDcDay(dateStr) {
+  var entries = dcCalendarData[dateStr] || [];
+  var dateLabel = new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+  var html = '<button class="back-link" onclick="renderDcCalendar()">‹ Back to calendar</button>' +
+    '<div class="rr-header" style="padding:16px 18px;"><div class="rr-name" style="font-size:16px;">' + dateLabel + '</div></div>' +
+    '<div class="card">';
+  if (!entries.length) {
+    html += '<div class="lead-card-empty" style="padding:16px;color:var(--gray-light);text-align:center;">Nothing scheduled this day.</div>';
+  } else {
+    html += entries.map(function(e){
+      return '<div class="asset-item">' +
+        '<div class="asset-icon">' + (e.cleanType==='strip_wax'?'🪣':'🧽') + '</div>' +
+        '<div class="asset-info"><div class="asset-name">' + e.roomName + '</div>' +
+        '<div class="asset-meta">' + (e.cleanType==='strip_wax'?'Stripping & Waxing':'Deep Clean') + ' · ' + e.status + '</div></div>' +
+      '</div>';
+    }).join('');
+  }
+  html += '</div><button class="neu-btn primary block" onclick="openDcScheduleForm(\''+dateStr+'\')">+ Schedule Another Room For This Day</button>';
+  app.innerHTML = html;
+}
+
+async function openDcScheduleForm(prefillDate) {
+  var { data: rooms } = await sb.from('room_qr_codes').select('*')
+    .eq('facility_id', FACILITY_ID).eq('location_type','room').eq('is_active', true);
+  var sorted = (rooms||[]).sort(function(a,b){ return (+a.room_number||0) - (+b.room_number||0); });
+
+  app.innerHTML =
+    '<button class="back-link" onclick="renderDcCalendar()">‹ Back to calendar</button>' +
+    '<div class="rr-header" style="padding:16px 18px;"><div class="rr-name" style="font-size:16px;">Schedule a Room</div></div>' +
+    '<div class="card">' +
+      '<div class="field"><label>Room</label><select id="dc-room">' +
+        sorted.map(function(r){ return '<option value="'+r.qr_identifier+'">'+r.display_name+' ('+(r.unit||'')+')</option>'; }).join('') +
+      '</select></div>' +
+      '<div class="field"><label>Type</label><select id="dc-type"><option value="deep_clean">Deep Clean</option><option value="strip_wax">Stripping & Waxing</option></select></div>' +
+      '<div class="field"><label>Date</label><input type="date" id="dc-date" value="'+(prefillDate||new Date().toISOString().split('T')[0])+'"></div>' +
+      '<div class="field"><label>Notes (optional)</label><textarea id="dc-notes" rows="2"></textarea></div>' +
+      '<button class="neu-btn primary block" onclick="saveDcSchedule()">✓ Add to Calendar</button>' +
+    '</div>';
+}
+
+async function saveDcSchedule() {
+  var qr = document.getElementById('dc-room').value;
+  var type = document.getElementById('dc-type').value;
+  var date = document.getElementById('dc-date').value;
+  var notes = document.getElementById('dc-notes').value.trim();
+  if (!date) { showToast('Pick a date.', 'error'); return; }
+
+  var { error } = await sb.from('deep_clean_schedule').insert({
+    facility_id: FACILITY_ID, qr_identifier: qr, clean_type: type,
+    scheduled_date: date, notes: notes || null,
+    created_by: currentEmployee.first_name + ' ' + currentEmployee.last_name
+  });
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  showToast('✓ Added to calendar', 'success');
+  dcCalendarDate = new Date(date + 'T12:00:00');
+  renderDcCalendar();
 }
 
 init();
