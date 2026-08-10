@@ -985,6 +985,16 @@ table.policy-table tr:last-child td { border-bottom: none; }
     </div>
 
     <div class="card" style="margin-bottom:20px;">
+      <div class="card-title">🔀 Auto-Divide Rooms Among Managers</div>
+      <div class="card-sub">Splits your resident rooms into roughly-equal groups (kept spatially together by hall where possible) — you just assign a name to each</div>
+      <div class="bulk-form" style="grid-template-columns:1fr auto;margin-bottom:6px;">
+        <div class="field"><label># of Managers</label><input type="number" id="auto-zone-count" value="13" min="1" max="50"></div>
+        <button class="neu-btn primary" onclick="divideRoomsIntoZones()">🔀 Divide Rooms</button>
+      </div>
+      <div id="autoZonesResults"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
       <div class="card-title">🧑‍💼 Zone Round Assignments</div>
       <div class="card-sub">Assign each employee a set of resident rooms to check</div>
 
@@ -2087,6 +2097,134 @@ async function removeEmployee(id) {
   await sb.from('employees').update({ is_active: false }).eq('id', id);
   await loadEmployeesList();
   if (document.getElementById('emp-search').value.trim()) searchEmployees();
+}
+
+/* ── Auto-Divide Rooms Among Managers ── */
+var autoZones = [];
+
+async function divideRoomsIntoZones() {
+  var count = parseInt(document.getElementById('auto-zone-count').value, 10);
+  if (!count || count < 1) { alert('Enter a valid number of managers'); return; }
+
+  var rooms = lastAssignableRooms.length ? lastAssignableRooms : (await sb.from('room_qr_codes').select('*')
+    .eq('facility_id', FACILITY_ID).eq('location_type','room').eq('is_active', true)).data || [];
+
+  // Sort by hall/unit, then room number — keeps each group spatially together
+  // rather than scattering rooms randomly across the building.
+  var sorted = rooms.slice().sort(function(a,b){
+    if (a.unit !== b.unit) return (a.unit||'').localeCompare(b.unit||'');
+    return (+a.room_number||0) - (+b.room_number||0);
+  });
+
+  if (count > sorted.length) { alert('You have ' + sorted.length + ' rooms, but asked for ' + count + ' groups — reduce the number.'); return; }
+
+  // Divide into as-equal-as-possible contiguous chunks
+  var base = Math.floor(sorted.length / count);
+  var remainder = sorted.length % count;
+  autoZones = [];
+  var idx = 0;
+  for (var i = 0; i < count; i++) {
+    var size = base + (i < remainder ? 1 : 0);
+    autoZones.push({ rooms: sorted.slice(idx, idx + size), selectedEmployee: null });
+    idx += size;
+  }
+
+  renderAutoZones();
+}
+
+function zoneRoomRangeLabel(rooms) {
+  if (!rooms.length) return 'No rooms';
+  var units = Array.from(new Set(rooms.map(function(r){ return r.unit || '—'; })));
+  var nums = rooms.map(function(r){ return +r.room_number || 0; }).filter(Boolean).sort(function(a,b){return a-b;});
+  var range = nums.length ? (nums.length>1 ? nums[0]+'–'+nums[nums.length-1] : ''+nums[0]) : '';
+  return (units.length===1 ? units[0] : units.join(', ')) + (range ? ' · Rooms '+range : '') + ' (' + rooms.length + ')';
+}
+
+function renderAutoZones() {
+  var el = document.getElementById('autoZonesResults');
+  el.innerHTML = autoZones.map(function(zone, i){
+    return '<div class="card" style="background:var(--bg);box-shadow:var(--shadow-out);margin-bottom:10px;">' +
+      '<div style="font-weight:800;font-size:13px;margin-bottom:2px;">Group ' + (i+1) + '</div>' +
+      '<div style="font-size:11.5px;color:var(--gray);margin-bottom:10px;">' + zoneRoomRangeLabel(zone.rooms) + '</div>' +
+      '<div id="autoZonePicker-' + i + '"></div>' +
+    '</div>';
+  }).join('') + '<button class="neu-btn primary block" style="margin-top:6px;" onclick="saveAllAutoZoneAssignments()">✓ Save All ' + autoZones.length + ' Group Assignments</button>';
+
+  autoZones.forEach(function(zone, i){ renderAutoZonePicker(i); });
+}
+
+function renderAutoZonePicker(i) {
+  var el = document.getElementById('autoZonePicker-' + i);
+  var zone = autoZones[i];
+  if (zone.selectedEmployee) {
+    el.innerHTML = '<div class="emp-picker-chip">' +
+      '<span>👤 ' + zone.selectedEmployee.first_name + ' ' + zone.selectedEmployee.last_name + ' (' + zone.selectedEmployee.employee_number + ')</span>' +
+      '<button onclick="clearAutoZoneEmployee(' + i + ')">Change</button>' +
+    '</div>';
+    return;
+  }
+  el.innerHTML =
+    '<input type="text" class="emp-picker-search" data-zone-idx="' + i + '" placeholder="🔍 Search by name…">' +
+    '<div class="emp-picker-results" id="autoZoneResults-' + i + '"></div>';
+}
+
+function clearAutoZoneEmployee(i) {
+  autoZones[i].selectedEmployee = null;
+  renderAutoZonePicker(i);
+}
+
+document.addEventListener('input', function(e){
+  if (e.target && e.target.classList && e.target.classList.contains('emp-picker-search') && e.target.hasAttribute('data-zone-idx')) {
+    var i = +e.target.getAttribute('data-zone-idx');
+    var term = e.target.value.trim().toLowerCase();
+    var resultsEl = document.getElementById('autoZoneResults-' + i);
+    if (!term) { resultsEl.innerHTML = ''; return; }
+    var matches = lastEmployees.filter(function(emp){
+      var haystack = (emp.first_name + ' ' + emp.last_name + ' ' + emp.employee_number).toLowerCase();
+      return haystack.indexOf(term) > -1;
+    }).slice(0, 10);
+    resultsEl.innerHTML = matches.length
+      ? matches.map(function(emp){
+          return '<div class="emp-picker-result" onclick=\'selectAutoZoneEmployee(' + i + ',' + JSON.stringify(emp) + ')\'>' +
+            '<span>' + emp.first_name + ' ' + emp.last_name + '</span>' +
+            '<span style="color:var(--gray);font-size:11px;">ID ' + emp.employee_number + '</span>' +
+          '</div>';
+        }).join('')
+      : '<div style="color:var(--gray-light);font-size:12px;text-align:center;padding:8px;">No matches.</div>';
+  }
+});
+
+function selectAutoZoneEmployee(i, emp) {
+  autoZones[i].selectedEmployee = emp;
+  renderAutoZonePicker(i);
+}
+
+async function saveAllAutoZoneAssignments() {
+  var unassigned = autoZones.filter(function(z){ return !z.selectedEmployee; }).length;
+  if (unassigned > 0) {
+    if (!confirm(unassigned + ' group(s) don\'t have anyone selected yet and will be skipped. Save the rest?')) return;
+  }
+
+  var allRows = [];
+  autoZones.forEach(function(zone){
+    if (!zone.selectedEmployee) return;
+    zone.rooms.forEach(function(r){
+      allRows.push({
+        facility_id: FACILITY_ID, qr_identifier: r.qr_identifier, employee_id: zone.selectedEmployee.employee_number,
+        manager_name: zone.selectedEmployee.first_name + ' ' + zone.selectedEmployee.last_name, assignment_type: 'zone_round'
+      });
+    });
+  });
+
+  if (!allRows.length) { alert('No groups have an assigned employee yet.'); return; }
+
+  var { error } = await sb.from('room_assignments').upsert(allRows, { onConflict: 'qr_identifier,assignment_type' });
+  if (error) { alert('Error: ' + error.message); return; }
+
+  alert('✓ Saved assignments for ' + allRows.length + ' room(s) across ' + (autoZones.length - unassigned) + ' group(s).');
+  autoZones = [];
+  document.getElementById('autoZonesResults').innerHTML = '';
+  loadRoomAssignmentsPanel(lastAssignableRooms);
 }
 
 /* ── Zone Round Assignments (employee → rooms) ── */
