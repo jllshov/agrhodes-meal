@@ -34,6 +34,15 @@ body { min-height: 100vh; display: flex; padding: 18px; }
 h1,h2,.page-title,.stat-num,.rr-name,.room-hero-name { font-family: 'Outfit', 'Inter', sans-serif; }
 
 /* ── Admin login gate ── */
+/* ── Restricted manager session (Survey Prep only) ── */
+body.restricted-mode .pill-nav, body.restricted-mode .mobile-topbar,
+body.restricted-mode .mobile-drawer, body.restricted-mode .mobile-drawer-overlay { display: none !important; }
+body.restricted-mode .app-shell { display: block; }
+.restricted-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--black); color: var(--accent); padding: 16px 24px; font-size: 13.5px;
+}
+
 .admin-gate-overlay {
   display: none; position: fixed; inset: 0; z-index: 9999; background: var(--frame);
   align-items: center; justify-content: center; padding: 20px;
@@ -1348,6 +1357,12 @@ table.policy-table tr:last-child td { border-bottom: none; }
   <div class="panel" id="panel-surveyprep" style="display:none;">
     <div class="page-header">
       <div><div class="page-title">Survey Preparedness</div><div class="page-sub">Department self-assessment checklists — mirrors your paper validation checklists</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title">Department Assignments</div>
+      <div class="card-sub">Assign each department to a manager — they'll get a direct link that opens only their own assessment, no picker involved</div>
+      <div id="spDeptAssignments"></div>
     </div>
 
     <div class="card" id="spDeptPickerCard" style="margin-bottom:20px;">
@@ -4377,6 +4392,81 @@ function initSurveyPrepPanel() {
   }).join('');
   document.getElementById('spAssessmentForm').innerHTML = '';
   loadSavedSurveyPreps();
+  loadSpDeptAssignments();
+}
+
+/* ── Survey Prep department assignments ── */
+var lastSpDeptAssignments = [];
+
+async function loadSpDeptAssignments() {
+  await loadEmployeesList();
+  var { data } = await sb.from('survey_prep_dept_assignments').select('*').eq('facility_id', FACILITY_ID);
+  lastSpDeptAssignments = data || [];
+  renderSpDeptAssignments();
+}
+
+function renderSpDeptAssignments() {
+  var el = document.getElementById('spDeptAssignments');
+  el.innerHTML = SURVEY_DEPARTMENTS.map(function(d){
+    var existing = lastSpDeptAssignments.find(function(a){ return a.department_key === d.key; });
+    var emp = existing ? lastEmployees.find(function(e){ return e.employee_number === existing.employee_id; }) : null;
+    return '<div class="inv-saved-row" style="cursor:default;flex-wrap:wrap;">' +
+      '<div style="flex:1;min-width:160px;">' +
+        '<div style="font-weight:700;font-size:13px;">' + d.icon + ' ' + d.label + '</div>' +
+        '<div style="font-size:11.5px;color:var(--gray);margin-top:2px;">' +
+          (emp ? 'Assigned to ' + emp.first_name + ' ' + emp.last_name + ' (' + emp.employee_number + ')' : 'Not yet assigned') +
+        '</div>' +
+      '</div>' +
+      '<div id="spAssignPicker-' + d.key + '" style="min-width:200px;"></div>' +
+      (emp ? '<button class="neu-btn" style="font-size:11px;padding:6px 12px;" onclick="copySpDeptLink(\''+d.key+'\',\''+emp.employee_number+'\')">🔗 Copy Link</button>' : '') +
+    '</div>';
+  }).join('');
+  SURVEY_DEPARTMENTS.forEach(function(d){ renderSpAssignPicker(d.key); });
+}
+
+function renderSpAssignPicker(deptKey) {
+  var el = document.getElementById('spAssignPicker-' + deptKey);
+  if (!el) return;
+  el.innerHTML =
+    '<input type="text" class="emp-picker-search" data-sp-dept="' + deptKey + '" placeholder="🔍 Assign a manager…" style="font-size:12px;padding:8px 12px;">' +
+    '<div class="emp-picker-results" id="spAssignResults-' + deptKey + '"></div>';
+}
+
+document.addEventListener('input', function(e){
+  if (e.target && e.target.hasAttribute && e.target.hasAttribute('data-sp-dept')) {
+    var deptKey = e.target.getAttribute('data-sp-dept');
+    var term = e.target.value.trim().toLowerCase();
+    var resultsEl = document.getElementById('spAssignResults-' + deptKey);
+    if (!term) { resultsEl.innerHTML = ''; return; }
+    var matches = lastEmployees.filter(function(emp){
+      var haystack = (emp.first_name + ' ' + emp.last_name + ' ' + emp.employee_number).toLowerCase();
+      return haystack.indexOf(term) > -1;
+    }).slice(0, 10);
+    resultsEl.innerHTML = matches.length
+      ? matches.map(function(emp){
+          return '<div class="emp-picker-result" onclick="assignSpDepartment(\''+deptKey+'\',\''+emp.employee_number+'\')">' +
+            '<span>' + emp.first_name + ' ' + emp.last_name + '</span>' +
+            '<span style="color:var(--gray);font-size:11px;">ID ' + emp.employee_number + '</span>' +
+          '</div>';
+        }).join('')
+      : '<div style="color:var(--gray-light);font-size:12px;text-align:center;padding:8px;">No matches.</div>';
+  }
+});
+
+async function assignSpDepartment(deptKey, employeeId) {
+  var { error } = await sb.from('survey_prep_dept_assignments')
+    .upsert({ facility_id: FACILITY_ID, department_key: deptKey, employee_id: employeeId }, { onConflict: 'department_key' });
+  if (error) { alert('Error: ' + error.message); return; }
+  loadSpDeptAssignments();
+}
+
+function copySpDeptLink(deptKey, employeeId) {
+  var link = window.location.origin + window.location.pathname + '?employee_id=' + employeeId + '#surveyprep=' + deptKey;
+  navigator.clipboard.writeText(link).then(function(){
+    alert('✓ Link copied — send this directly to that manager. It opens straight to their assessment, nothing else.');
+  }).catch(function(){
+    prompt('Copy this link:', link);
+  });
 }
 
 function startSurveyPrepAssessment(deptKey, skipHashUpdate) {
@@ -4510,6 +4600,20 @@ async function saveSurveyPrepAssessment() {
     corrective_actions: correctiveActions
   });
   if (error) { alert('Error saving assessment: ' + error.message); return; }
+
+  var savedDeptKey = spCurrentDept.key;
+  var savedDeptLabel = spCurrentDept.label;
+
+  if (document.body.classList.contains('restricted-mode')) {
+    document.getElementById('spAssessmentForm').innerHTML =
+      '<div class="card" style="text-align:center;padding:40px 24px;">' +
+        '<div style="font-size:44px;margin-bottom:12px;">✅</div>' +
+        '<div style="font-weight:800;font-size:16px;margin-bottom:6px;">Assessment Submitted</div>' +
+        '<div style="color:var(--gray);font-size:13px;margin-bottom:20px;">' + savedDeptLabel + ' — thank you</div>' +
+        '<button class="neu-btn primary" onclick="startSurveyPrepAssessment(\'' + savedDeptKey + '\', true)">+ Submit Another</button>' +
+      '</div>';
+    return;
+  }
 
   alert('✓ Assessment saved for ' + spCurrentDept.label);
   cancelSurveyPrepAssessment();
@@ -4818,7 +4922,8 @@ async function checkAdminGate() {
   var existing = getAdminSession();
   if (existing) {
     document.getElementById('adminGateOverlay').classList.remove('show');
-    bootDashboard();
+    if (existing.zone_rounds_permission === 'admin') { bootDashboard(); }
+    else { bootRestrictedSurveyPrep(existing); }
     return;
   }
 
@@ -4837,22 +4942,43 @@ async function checkAdminGate() {
 
 async function tryAdminLogin(employeeId, silent) {
   var { data: emp, error } = await sb.from('employees').select('*')
-    .eq('facility_id', FACILITY_ID).eq('employee_number', employeeId)
-    .eq('is_active', true).eq('zone_rounds_permission', 'admin').maybeSingle();
+    .eq('facility_id', FACILITY_ID).eq('employee_number', employeeId).eq('is_active', true).maybeSingle();
 
   if (error || !emp) {
     if (!silent) {
       var errEl = document.getElementById('adminGateError');
-      errEl.textContent = error ? ('Error: ' + error.message) : 'Employee ID not found or not authorized for admin access.';
+      errEl.textContent = error ? ('Error: ' + error.message) : 'Employee ID not found.';
       errEl.style.display = 'block';
     }
     return false;
   }
 
-  sessionStorage.setItem('agrhodes_admin_session', JSON.stringify(emp));
-  document.getElementById('adminGateOverlay').classList.remove('show');
-  bootDashboard();
-  return true;
+  if (emp.zone_rounds_permission === 'admin') {
+    sessionStorage.setItem('agrhodes_admin_session', JSON.stringify(emp));
+    document.getElementById('adminGateOverlay').classList.remove('show');
+    bootDashboard();
+    return true;
+  }
+
+  // Not an admin — check whether they're assigned a Survey Prep department instead.
+  // If so, they get a restricted, single-purpose session (their form only).
+  if (emp.zone_rounds_permission === 'manager' || emp.zone_rounds_permission === 'housekeeping_manager') {
+    var { data: assignment } = await sb.from('survey_prep_dept_assignments')
+      .select('*').eq('facility_id', FACILITY_ID).eq('employee_id', employeeId).maybeSingle();
+    if (assignment) {
+      sessionStorage.setItem('agrhodes_admin_session', JSON.stringify(emp));
+      document.getElementById('adminGateOverlay').classList.remove('show');
+      bootRestrictedSurveyPrep(emp);
+      return true;
+    }
+  }
+
+  if (!silent) {
+    var errEl2 = document.getElementById('adminGateError');
+    errEl2.textContent = 'This Employee ID isn\'t authorized for the full dashboard or assigned a Survey Prep department.';
+    errEl2.style.display = 'block';
+  }
+  return false;
 }
 
 function submitAdminLogin() {
@@ -4872,8 +4998,37 @@ function adminLogOut() {
 }
 
 function bootDashboard() {
+  document.body.classList.remove('restricted-mode');
   loadDashboard();
   if (window.location.hash) handleHashRoute();
+}
+
+async function bootRestrictedSurveyPrep(emp) {
+  document.body.classList.add('restricted-mode');
+
+  var { data: assignment } = await sb.from('survey_prep_dept_assignments')
+    .select('*').eq('facility_id', FACILITY_ID).eq('employee_id', emp.employee_number).maybeSingle();
+
+  if (!assignment) {
+    document.querySelector('.main').innerHTML =
+      '<div class="center-msg" style="padding:60px 20px;">⚠ No Survey Prep department is assigned to you.<br>Contact your administrator.<br><br>' +
+      '<button class="neu-btn" onclick="adminLogOut()">Log Out</button></div>';
+    return;
+  }
+
+  var dept = SURVEY_DEPARTMENTS.find(function(d){ return d.key === assignment.department_key; });
+
+  document.querySelector('.main').innerHTML =
+    '<div class="restricted-banner">' +
+      '<div><b>' + emp.first_name + ' ' + emp.last_name + '</b> — ' + (dept ? dept.icon + ' ' + dept.label : assignment.department_key) + ' Self-Assessment</div>' +
+      '<button class="neu-btn" style="font-size:12px;padding:8px 14px;" onclick="adminLogOut()">Log Out</button>' +
+    '</div>' +
+    '<div class="panel" id="panel-surveyprep" style="display:block;">' +
+      '<div class="card" id="spDeptPickerCard" style="display:none;"></div>' +
+      '<div id="spAssessmentForm"></div>' +
+    '</div>';
+
+  startSurveyPrepAssessment(assignment.department_key, true);
 }
 
 // Boot
