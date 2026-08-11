@@ -153,6 +153,55 @@ body { min-height: 100vh; padding-bottom: 100px; }
 .hk-room-item input { width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--orange); }
 .hk-room-item .hk-room-meta { font-size: 9.5px; color: var(--gray); font-weight: 500; margin-top: 1px; }
 
+/* ── "My Assigned Rooms" — adapted from the career-1 job-board pattern ── */
+.assign-badge {
+  display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(0,0,0,.08);
+  background: var(--bg); border-radius: 999px; padding: 7px 15px; font-size: 12px;
+  font-weight: 700; color: var(--gray); margin-bottom: 14px;
+}
+.assign-heading { font-size: 24px; font-weight: 800; letter-spacing: -.02em; margin-bottom: 6px; }
+.assign-heading .hl { position: relative; }
+.assign-heading .hl::after { content: ''; position: absolute; left: 0; right: 0; bottom: 2px; height: 7px; background: var(--orange-light); border-radius: 3px; z-index: -1; }
+.assign-desc { font-size: 13.5px; color: var(--gray); margin-bottom: 20px; }
+
+.assign-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.assign-tab {
+  display: inline-flex; align-items: center; gap: 7px; border: none; border-radius: 999px;
+  padding: 10px 17px; font-size: 13.5px; font-weight: 700; cursor: pointer;
+  background: var(--surface); box-shadow: var(--shadow-out); color: var(--gray); transition: all .15s;
+}
+.assign-tab.active { background: var(--black); color: white; box-shadow: none; }
+.assign-tab-count {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 19px; height: 19px;
+  padding: 0 5px; border-radius: 999px; font-size: 10.5px; font-weight: 800; background: var(--bg);
+}
+.assign-tab.active .assign-tab-count { background: rgba(255,255,255,.22); color: white; }
+
+.assign-list-card { background: var(--surface); border-radius: 22px; box-shadow: var(--shadow-card); padding: 0 20px; }
+.assign-row { display: flex; align-items: center; gap: 14px; padding: 19px 0; border-bottom: 1px solid rgba(0,0,0,.06); cursor: pointer; }
+.assign-row:last-child { border-bottom: none; }
+.assign-row:active { opacity: .7; }
+.assign-row-main { flex: 1; min-width: 0; }
+.assign-row-title-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.assign-row-title { font-size: 15.5px; font-weight: 800; }
+.assign-badge-new {
+  display: inline-flex; align-items: center; gap: 3px; background: rgba(245,158,11,.12); color: #B45309;
+  border: 1px solid rgba(245,158,11,.25); border-radius: 999px; padding: 2px 9px; font-size: 10px; font-weight: 800;
+}
+.assign-row-sub { font-size: 12.5px; color: var(--gray); margin-top: 3px; }
+.assign-status-pill {
+  display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 6px 12px;
+  font-size: 11px; font-weight: 800; border: 1px solid transparent; flex-shrink: 0;
+}
+.assign-status-done { background: rgba(34,197,94,.1); color: #16A34A; border-color: rgba(34,197,94,.22); }
+.assign-status-pending { background: rgba(245,166,35,.12); color: var(--orange); border-color: rgba(245,166,35,.22); }
+.assign-row-arrow {
+  width: 30px; height: 30px; border-radius: 50%; background: var(--bg); display: flex;
+  align-items: center; justify-content: center; font-size: 13px; color: var(--gray); flex-shrink: 0;
+}
+.assign-empty { text-align: center; padding: 50px 20px; }
+.assign-empty-icon { font-size: 34px; margin-bottom: 12px; }
+
 /* ── Employee search picker ── */
 .emp-search-result {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -708,6 +757,10 @@ function renderLanding() {
   // Zone Defense (the nursing round) is restricted to Manager/Admin for resident rooms.
   // EOC area rounds are left open, since that's a separate, pre-existing feature.
   var canShowZoneRound = isResidentRoom ? canDoZoneRound() : true;
+  // A plain Manager's view is intentionally minimal: Zone Round, Report an Issue,
+  // My Assigned Rooms, and Survey Prep (if assigned) — nothing housekeeping-related.
+  // Staff, Housekeeping Manager, and Admin still see the full cleaning-related set.
+  var showHousekeepingLinks = isResidentRoom && !isZoneRoundOnlyManager();
 
   app.innerHTML =
     '<div class="rr-header">' +
@@ -722,7 +775,7 @@ function renderLanding() {
           '<div class="choice-sub">' + cfg.roundSub + '</div></div>' +
         '<div class="choice-arrow">›</div>' +
       '</div>' : '') +
-    (isResidentRoom ?
+    (showHousekeepingLinks ?
       '<div class="choice-card" onclick="startRoomCleaning()">' +
         '<div class="choice-icon">🧹</div>' +
         '<div><div class="choice-title">' + ROOM_CLEANING_CONFIG.roundTitle + '</div>' +
@@ -736,12 +789,12 @@ function renderLanding() {
       '<div class="choice-arrow">›</div>' +
     '</div>' +
     '<div style="text-align:center;margin-top:6px;">' +
-      '<button class="neu-btn ghost" onclick="viewAssets()">View Assets on File →</button>' +
-      (isCleaningCapableLocation(loc) ? '<br><button class="neu-btn ghost" onclick="viewMyCleanings()">📋 My Completed Cleanings Today →</button>' : '') +
-      (isResidentRoom ? '<br><button class="neu-btn ghost" onclick="viewMyCleaningAssignments()">🧺 My Cleaning Assignments →</button>' : '') +
+      (showHousekeepingLinks ? '<button class="neu-btn ghost" onclick="viewAssets()">View Assets on File →</button>' : '') +
+      (showHousekeepingLinks && isCleaningCapableLocation(loc) ? '<br><button class="neu-btn ghost" onclick="viewMyCleanings()">📋 My Completed Cleanings Today →</button>' : '') +
+      (showHousekeepingLinks ? '<br><button class="neu-btn ghost" onclick="viewMyCleaningAssignments()">🧺 My Cleaning Assignments →</button>' : '') +
       (isResidentRoom && canDoZoneRound() ? '<br><button class="neu-btn ghost" onclick="viewMyAssignedRooms()">🗂 My Assigned Rooms →</button>' : '') +
-      (isManagerOrAdmin() ? '<br><button class="neu-btn ghost" onclick="assignHousekeepersView()">🧹 Assign Housekeepers →</button>' : '') +
-      (isManagerOrAdmin() ? '<br><button class="neu-btn ghost" onclick="deepCleanCalendarView()">📅 Deep Clean Calendar →</button>' : '') +
+      (canManageHousekeepingStaff() ? '<br><button class="neu-btn ghost" onclick="assignHousekeepersView()">🧹 Assign Housekeepers →</button>' : '') +
+      (canManageHousekeepingStaff() ? '<br><button class="neu-btn ghost" onclick="deepCleanCalendarView()">📅 Deep Clean Calendar →</button>' : '') +
       (currentSurveyPrepDept ? '<br><button class="neu-btn ghost" onclick="openMySurveyPrep()">📋 My Survey Prep Assessment →</button>' : '') +
     '</div>';
 }
@@ -755,10 +808,17 @@ function canDoZoneRound() {
   return currentEmployee && (currentEmployee.zone_rounds_permission === 'manager' || currentEmployee.zone_rounds_permission === 'admin');
 }
 
-function isManagerOrAdmin() {
+// True for the plain "Manager" tier specifically — not Staff, not Housekeeping Manager, not Admin.
+// Used to strip housekeeping-related options down to just their four essentials.
+function isZoneRoundOnlyManager() {
+  return currentEmployee && currentEmployee.zone_rounds_permission === 'manager';
+}
+
+// Housekeeping Manager and Admin only — plain Manager no longer gets these.
+function canManageHousekeepingStaff() {
   if (!currentEmployee) return false;
   var perm = currentEmployee.zone_rounds_permission;
-  return perm === 'manager' || perm === 'housekeeping_manager' || perm === 'admin';
+  return perm === 'housekeeping_manager' || perm === 'admin';
 }
 
 function isCleaningCapableLocation(loc) {
@@ -790,6 +850,10 @@ function startRound() {
 }
 
 function startRoomCleaning() {
+  if (currentLoc.location_type === 'room' && isZoneRoundOnlyManager()) {
+    showToast('Managers handle Zone Rounds — cleaning tasks go to Housekeeping.', 'error');
+    return;
+  }
   currentChecklistMode = 'cleaning';
   roundValues = {}; issueDrafts = {};
   cleaningPurpose = null;
@@ -1479,57 +1543,114 @@ function viewMyAssignedRooms() {
   loadMyAssignedRooms();
 }
 
+var lastMyAssignedRooms = [];
+var lastMyAssignedDoneQrs = new Set();
+var myAssignedFilter = 'all';
+
 async function loadMyAssignedRooms() {
   var emp = currentEmployee;
-  app.innerHTML =
-    '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
-    '<div class="rr-header">' +
-      '<div class="rr-name">🗂 My Assigned Rooms</div>' +
-      '<div class="rr-meta">' + emp.first_name + ' ' + emp.last_name + ' (' + emp.employee_number + ') · Today</div>' +
-    '</div>' +
-    '<div id="myAssignedResults"><div class="card"><div style="text-align:center;color:var(--gray);padding:10px;">Loading…</div></div></div>';
-
-  var resultsEl = document.getElementById('myAssignedResults');
+  app.innerHTML = '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
+    '<div class="center-msg">Loading your assignments…</div>';
 
   var { data: assignments, error } = await sb.from('room_assignments').select('*')
     .eq('facility_id', FACILITY_ID).eq('employee_id', emp.employee_number).eq('assignment_type', 'zone_round');
 
-  if (error) { resultsEl.innerHTML = '<div class="card"><div style="color:var(--red);font-size:12.5px;">Error: '+error.message+'</div></div>'; return; }
-  if (!assignments || !assignments.length) {
-    resultsEl.innerHTML = '<div class="card"><div style="color:var(--gray-light);font-size:12.5px;text-align:center;padding:14px;">No rooms assigned to you yet — check with your administrator.</div></div>';
-    return;
+  if (error) { app.innerHTML = '<div class="card"><div style="color:var(--red);font-size:13px;">Error: '+error.message+'</div></div>'; return; }
+
+  var qrIds = (assignments||[]).map(function(a){ return a.qr_identifier; });
+  var locByQr = {};
+  if (qrIds.length) {
+    var { data: locs } = await sb.from('room_qr_codes').select('*').in('qr_identifier', qrIds);
+    (locs||[]).forEach(function(l){ locByQr[l.qr_identifier] = l; });
   }
 
-  var qrIds = assignments.map(function(a){ return a.qr_identifier; });
-  var { data: locs } = await sb.from('room_qr_codes').select('*').in('qr_identifier', qrIds);
-  var locByQr = {};
-  (locs||[]).forEach(function(l){ locByQr[l.qr_identifier] = l; });
-
   var todayStart = new Date(); todayStart.setHours(0,0,0,0);
-  var { data: roundsToday } = await sb.from('zone_rounds').select('qr_identifier')
-    .eq('facility_id', FACILITY_ID).eq('round_type','room')
-    .in('qr_identifier', qrIds).gte('rounded_at', todayStart.toISOString());
-  var doneQrs = new Set((roundsToday||[]).map(function(r){ return r.qr_identifier; }));
+  var doneQrs = new Set();
+  if (qrIds.length) {
+    var { data: roundsToday } = await sb.from('zone_rounds').select('qr_identifier')
+      .eq('facility_id', FACILITY_ID).eq('round_type','room')
+      .in('qr_identifier', qrIds).gte('rounded_at', todayStart.toISOString());
+    doneQrs = new Set((roundsToday||[]).map(function(r){ return r.qr_identifier; }));
+  }
 
-  var rooms = qrIds.map(function(qr){ return locByQr[qr]; }).filter(Boolean)
+  lastMyAssignedRooms = qrIds.map(function(qr){ return locByQr[qr]; }).filter(Boolean)
     .sort(function(a,b){ return (+a.room_number||0) - (+b.room_number||0); });
+  lastMyAssignedDoneQrs = doneQrs;
+  myAssignedFilter = 'all';
 
+  renderMyAssignedRoomsPage();
+}
+
+function renderMyAssignedRoomsPage() {
+  var emp = currentEmployee;
+  var rooms = lastMyAssignedRooms;
+  var doneQrs = lastMyAssignedDoneQrs;
   var doneCount = rooms.filter(function(r){ return doneQrs.has(r.qr_identifier); }).length;
+  var pendingCount = rooms.length - doneCount;
 
-  var html = '<div class="card">' +
-    '<div class="section-title">' + doneCount + ' / ' + rooms.length + ' Checked Today</div>';
-  html += rooms.map(function(r){
-    var isDone = doneQrs.has(r.qr_identifier);
-    return '<div class="asset-item" style="cursor:pointer;" onclick="window.location.hash=\'round='+r.qr_identifier+'\';routeToContent();">' +
-      '<div class="asset-icon">' + (isDone ? '✅' : '⭕') + '</div>' +
-      '<div class="asset-info"><div class="asset-name">' + r.display_name + '</div>' +
-      '<div class="asset-meta">' + (r.unit||'') + '</div></div>' +
-      '<span style="font-size:11px;font-weight:700;color:' + (isDone?'var(--green)':'var(--gray-light)') + ';flex-shrink:0;">' + (isDone?'Done':'Pending') + '</span>' +
+  var filtered = rooms.filter(function(r){
+    if (myAssignedFilter === 'done') return doneQrs.has(r.qr_identifier);
+    if (myAssignedFilter === 'pending') return !doneQrs.has(r.qr_identifier);
+    return true;
+  });
+
+  var html = '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>';
+
+  html += '<div class="assign-badge">🗂 ' + emp.first_name + ' ' + emp.last_name + ' · ID ' + emp.employee_number + '</div>' +
+    '<div class="assign-heading">Your <span class="hl">assigned rooms</span></div>' +
+    '<div class="assign-desc">' + (rooms.length
+      ? doneCount + ' of ' + rooms.length + ' checked today — ' + pendingCount + ' remaining.'
+      : 'No rooms assigned to you yet.') + '</div>';
+
+  if (rooms.length) {
+    html += '<div class="assign-tabs">' +
+      ['all','pending','done'].map(function(f){
+        var label = f==='all' ? 'All Rooms' : f==='pending' ? 'Pending' : 'Done';
+        var count = f==='all' ? rooms.length : f==='pending' ? pendingCount : doneCount;
+        return '<button class="assign-tab' + (myAssignedFilter===f?' active':'') + '" onclick="setMyAssignedFilter(\''+f+'\')">' +
+          label + '<span class="assign-tab-count">' + count + '</span>' +
+        '</button>';
+      }).join('') +
     '</div>';
-  }).join('');
-  html += '</div>';
+  }
 
-  resultsEl.innerHTML = html;
+  if (!rooms.length) {
+    html += '<div class="assign-list-card"><div class="assign-empty">' +
+      '<div class="assign-empty-icon">🗂</div>' +
+      '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">No assignments yet</div>' +
+      '<div style="font-size:12.5px;color:var(--gray);max-width:240px;margin:0 auto;">Check with your administrator to get rooms assigned to you.</div>' +
+    '</div></div>';
+  } else if (!filtered.length) {
+    html += '<div class="assign-list-card"><div class="assign-empty">' +
+      '<div class="assign-empty-icon">✨</div>' +
+      '<div style="font-weight:700;font-size:14px;">Nothing here</div>' +
+    '</div></div>';
+  } else {
+    html += '<div class="assign-list-card"><ul style="list-style:none;">' +
+      filtered.map(function(r){
+        var isDone = doneQrs.has(r.qr_identifier);
+        return '<li class="assign-row" onclick="window.location.hash=\'round='+r.qr_identifier+'\';routeToContent();">' +
+          '<div class="assign-row-main">' +
+            '<div class="assign-row-title-line">' +
+              '<span class="assign-row-title">' + r.display_name + '</span>' +
+            '</div>' +
+            '<div class="assign-row-sub">' + (r.unit||'') + '</div>' +
+          '</div>' +
+          '<span class="assign-status-pill ' + (isDone?'assign-status-done':'assign-status-pending') + '">' +
+            (isDone ? '✓ Done' : 'Pending') +
+          '</span>' +
+          '<span class="assign-row-arrow">›</span>' +
+        '</li>';
+      }).join('') +
+    '</ul></div>';
+  }
+
+  app.innerHTML += html;
+}
+
+function setMyAssignedFilter(f) {
+  myAssignedFilter = f;
+  renderMyAssignedRoomsPage();
 }
 
 /* ── My Cleaning Assignments (housekeeper self-check) ── */
@@ -1595,6 +1716,7 @@ var hkSelectedEmployee = null;
 var lastAllEmployees = [];
 
 async function assignHousekeepersView() {
+  if (!canManageHousekeepingStaff()) { showToast('Only Housekeeping Managers can assign housekeepers.', 'error'); backToLanding(); return; }
   app.innerHTML = '<div class="center-msg">Loading…</div>';
   hkSelectedEmployee = null;
 
@@ -1736,6 +1858,7 @@ var dcCalendarDate = new Date();
 var dcCalendarData = {};
 
 async function deepCleanCalendarView() {
+  if (!canManageHousekeepingStaff()) { showToast('Only Housekeeping Managers can access the Deep Clean Calendar.', 'error'); backToLanding(); return; }
   app.innerHTML = '<div class="center-msg">Loading calendar…</div>';
   await renderDcCalendar();
 }
