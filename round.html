@@ -708,6 +708,10 @@ function renderLanding() {
   // Zone Defense (the nursing round) is restricted to Manager/Admin for resident rooms.
   // EOC area rounds are left open, since that's a separate, pre-existing feature.
   var canShowZoneRound = isResidentRoom ? canDoZoneRound() : true;
+  // A plain Manager's view is intentionally minimal: Zone Round, Report an Issue,
+  // My Assigned Rooms, and Survey Prep (if assigned) — nothing housekeeping-related.
+  // Staff, Housekeeping Manager, and Admin still see the full cleaning-related set.
+  var showHousekeepingLinks = isResidentRoom && !isZoneRoundOnlyManager();
 
   app.innerHTML =
     '<div class="rr-header">' +
@@ -722,7 +726,7 @@ function renderLanding() {
           '<div class="choice-sub">' + cfg.roundSub + '</div></div>' +
         '<div class="choice-arrow">›</div>' +
       '</div>' : '') +
-    (isResidentRoom ?
+    (showHousekeepingLinks ?
       '<div class="choice-card" onclick="startRoomCleaning()">' +
         '<div class="choice-icon">🧹</div>' +
         '<div><div class="choice-title">' + ROOM_CLEANING_CONFIG.roundTitle + '</div>' +
@@ -736,12 +740,12 @@ function renderLanding() {
       '<div class="choice-arrow">›</div>' +
     '</div>' +
     '<div style="text-align:center;margin-top:6px;">' +
-      '<button class="neu-btn ghost" onclick="viewAssets()">View Assets on File →</button>' +
-      (isCleaningCapableLocation(loc) ? '<br><button class="neu-btn ghost" onclick="viewMyCleanings()">📋 My Completed Cleanings Today →</button>' : '') +
-      (isResidentRoom ? '<br><button class="neu-btn ghost" onclick="viewMyCleaningAssignments()">🧺 My Cleaning Assignments →</button>' : '') +
+      (showHousekeepingLinks ? '<button class="neu-btn ghost" onclick="viewAssets()">View Assets on File →</button>' : '') +
+      (showHousekeepingLinks && isCleaningCapableLocation(loc) ? '<br><button class="neu-btn ghost" onclick="viewMyCleanings()">📋 My Completed Cleanings Today →</button>' : '') +
+      (showHousekeepingLinks ? '<br><button class="neu-btn ghost" onclick="viewMyCleaningAssignments()">🧺 My Cleaning Assignments →</button>' : '') +
       (isResidentRoom && canDoZoneRound() ? '<br><button class="neu-btn ghost" onclick="viewMyAssignedRooms()">🗂 My Assigned Rooms →</button>' : '') +
-      (isManagerOrAdmin() ? '<br><button class="neu-btn ghost" onclick="assignHousekeepersView()">🧹 Assign Housekeepers →</button>' : '') +
-      (isManagerOrAdmin() ? '<br><button class="neu-btn ghost" onclick="deepCleanCalendarView()">📅 Deep Clean Calendar →</button>' : '') +
+      (canManageHousekeepingStaff() ? '<br><button class="neu-btn ghost" onclick="assignHousekeepersView()">🧹 Assign Housekeepers →</button>' : '') +
+      (canManageHousekeepingStaff() ? '<br><button class="neu-btn ghost" onclick="deepCleanCalendarView()">📅 Deep Clean Calendar →</button>' : '') +
       (currentSurveyPrepDept ? '<br><button class="neu-btn ghost" onclick="openMySurveyPrep()">📋 My Survey Prep Assessment →</button>' : '') +
     '</div>';
 }
@@ -755,10 +759,17 @@ function canDoZoneRound() {
   return currentEmployee && (currentEmployee.zone_rounds_permission === 'manager' || currentEmployee.zone_rounds_permission === 'admin');
 }
 
-function isManagerOrAdmin() {
+// True for the plain "Manager" tier specifically — not Staff, not Housekeeping Manager, not Admin.
+// Used to strip housekeeping-related options down to just their four essentials.
+function isZoneRoundOnlyManager() {
+  return currentEmployee && currentEmployee.zone_rounds_permission === 'manager';
+}
+
+// Housekeeping Manager and Admin only — plain Manager no longer gets these.
+function canManageHousekeepingStaff() {
   if (!currentEmployee) return false;
   var perm = currentEmployee.zone_rounds_permission;
-  return perm === 'manager' || perm === 'housekeeping_manager' || perm === 'admin';
+  return perm === 'housekeeping_manager' || perm === 'admin';
 }
 
 function isCleaningCapableLocation(loc) {
@@ -790,6 +801,10 @@ function startRound() {
 }
 
 function startRoomCleaning() {
+  if (currentLoc.location_type === 'room' && isZoneRoundOnlyManager()) {
+    showToast('Managers handle Zone Rounds — cleaning tasks go to Housekeeping.', 'error');
+    return;
+  }
   currentChecklistMode = 'cleaning';
   roundValues = {}; issueDrafts = {};
   cleaningPurpose = null;
@@ -1595,6 +1610,7 @@ var hkSelectedEmployee = null;
 var lastAllEmployees = [];
 
 async function assignHousekeepersView() {
+  if (!canManageHousekeepingStaff()) { showToast('Only Housekeeping Managers can assign housekeepers.', 'error'); backToLanding(); return; }
   app.innerHTML = '<div class="center-msg">Loading…</div>';
   hkSelectedEmployee = null;
 
@@ -1736,6 +1752,7 @@ var dcCalendarDate = new Date();
 var dcCalendarData = {};
 
 async function deepCleanCalendarView() {
+  if (!canManageHousekeepingStaff()) { showToast('Only Housekeeping Managers can access the Deep Clean Calendar.', 'error'); backToLanding(); return; }
   app.innerHTML = '<div class="center-msg">Loading calendar…</div>';
   await renderDcCalendar();
 }
