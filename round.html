@@ -618,6 +618,7 @@ async function init() {
     renderEmployeeGate();
     return;
   }
+  if (currentSurveyPrepDept === null) await loadSurveyPrepAssignment();
   routeToContent();
 }
 
@@ -644,6 +645,8 @@ function renderEmployeeGate() {
     '</div>';
 }
 
+var currentSurveyPrepDept = null; // this employee's assigned Survey Prep department, if any
+
 async function submitEmployeeGate() {
   var employeeId = document.getElementById('gate-employee-id').value.trim();
   if (!employeeId) { showToast('Enter your Employee ID.', 'error'); return; }
@@ -656,8 +659,16 @@ async function submitEmployeeGate() {
 
   localStorage.setItem('agrhodes_last_employee_id', employeeId);
   setStoredEmployee(emp);
+  await loadSurveyPrepAssignment();
   document.body.classList.remove('login-mode');
   routeToContent();
+}
+
+async function loadSurveyPrepAssignment() {
+  if (!currentEmployee) { currentSurveyPrepDept = null; return; }
+  var { data } = await sb.from('survey_prep_dept_assignments').select('*')
+    .eq('facility_id', FACILITY_ID).eq('employee_id', currentEmployee.employee_number).maybeSingle();
+  currentSurveyPrepDept = data || null;
 }
 
 async function routeToContent() {
@@ -731,7 +742,13 @@ function renderLanding() {
       (isResidentRoom && canDoZoneRound() ? '<br><button class="neu-btn ghost" onclick="viewMyAssignedRooms()">🗂 My Assigned Rooms →</button>' : '') +
       (isManagerOrAdmin() ? '<br><button class="neu-btn ghost" onclick="assignHousekeepersView()">🧹 Assign Housekeepers →</button>' : '') +
       (isManagerOrAdmin() ? '<br><button class="neu-btn ghost" onclick="deepCleanCalendarView()">📅 Deep Clean Calendar →</button>' : '') +
+      (currentSurveyPrepDept ? '<br><button class="neu-btn ghost" onclick="openMySurveyPrep()">📋 My Survey Prep Assessment →</button>' : '') +
     '</div>';
+}
+
+function openMySurveyPrep() {
+  window.location.href = window.location.origin + '/zone_rounds.html?employee_id=' +
+    encodeURIComponent(currentEmployee.employee_number) + '#surveyprep=' + encodeURIComponent(currentSurveyPrepDept.department_key);
 }
 
 function canDoZoneRound() {
