@@ -4475,18 +4475,25 @@ function startSurveyPrepAssessment(deptKey, skipHashUpdate) {
   spItemStates = {};
   spCurrentDept.items.forEach(function(_, idx){ spItemStates[idx] = { correct:'', comments:'' }; });
   renderSurveyPrepForm();
-  document.getElementById('spAssessmentForm').scrollIntoView({behavior:'smooth', block:'start'});
+  var isRestricted = document.body.classList.contains('restricted-mode');
+  var scrollTarget = isRestricted ? document.getElementById('spItemsList') : document.getElementById('spAssessmentForm');
+  if (scrollTarget) scrollTarget.scrollIntoView({behavior:'smooth', block:'start'});
   if (!skipHashUpdate) window.location.hash = 'surveyprep=' + deptKey;
 }
 
 function renderSurveyPrepForm() {
   var dept = spCurrentDept;
+  var isRestricted = document.body.classList.contains('restricted-mode');
+  var restrictedEmp = isRestricted ? getAdminSession() : null;
+  var observedByDefault = restrictedEmp ? (restrictedEmp.first_name + ' ' + restrictedEmp.last_name) : (localStorage.getItem('agrhodes_sp_observer')||'');
+  var titleDefault = restrictedEmp ? (restrictedEmp.role || '') : (localStorage.getItem('agrhodes_sp_title')||'');
+
   var html = '<div class="card" style="margin-bottom:20px;">' +
     '<div class="card-title">' + dept.icon + ' ' + dept.label + ' — Self-Assessment</div>' +
     '<div class="card-sub">Purpose: determine if the facility is performing in accordance with the facility\'s standard of practice.</div>' +
     '<div class="bulk-form" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:10px;">' +
-      '<div class="field"><label>Observed By</label><input type="text" id="sp-observed-by" placeholder="Your name" value="' + (localStorage.getItem('agrhodes_sp_observer')||'').replace(/"/g,'&quot;') + '"></div>' +
-      '<div class="field"><label>Title</label><input type="text" id="sp-title" placeholder="e.g. Administrator" value="' + (localStorage.getItem('agrhodes_sp_title')||'').replace(/"/g,'&quot;') + '"></div>' +
+      '<div class="field"><label>Observed By</label><input type="text" id="sp-observed-by" placeholder="Your name" value="' + observedByDefault.replace(/"/g,'&quot;') + '"></div>' +
+      '<div class="field"><label>Title</label><input type="text" id="sp-title" placeholder="e.g. Administrator" value="' + titleDefault.replace(/"/g,'&quot;') + '"></div>' +
       '<div class="field"><label>Date</label><input type="date" id="sp-date" value="' + new Date().toISOString().split('T')[0] + '"></div>' +
     '</div>' +
   '</div>';
@@ -4506,7 +4513,7 @@ function renderSurveyPrepForm() {
   '</div>';
 
   html += '<button class="neu-btn primary block" onclick="saveSurveyPrepAssessment()">✓ Save Assessment</button>' +
-    '<button class="neu-btn block" style="margin-top:10px;" onclick="cancelSurveyPrepAssessment()">Cancel</button>' +
+    (isRestricted ? '' : '<button class="neu-btn block" style="margin-top:10px;" onclick="cancelSurveyPrepAssessment()">Cancel</button>') +
     '<div style="height:10px;"></div>';
 
   document.getElementById('spAssessmentForm').innerHTML = html;
