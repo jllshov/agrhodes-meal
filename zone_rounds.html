@@ -33,6 +33,30 @@ html, body { background: var(--frame); font-family: 'Inter', sans-serif; color: 
 body { min-height: 100vh; display: flex; padding: 18px; }
 h1,h2,.page-title,.stat-num,.rr-name,.room-hero-name { font-family: 'Outfit', 'Inter', sans-serif; }
 
+/* ── Admin login gate ── */
+.admin-gate-overlay {
+  display: none; position: fixed; inset: 0; z-index: 9999; background: var(--frame);
+  align-items: center; justify-content: center; padding: 20px;
+}
+.admin-gate-overlay.show { display: flex; }
+.admin-gate-card {
+  background: var(--bg); border-radius: 32px; padding: 40px 32px; width: 100%; max-width: 380px;
+  box-shadow: 0 30px 70px rgba(0,0,0,.4); text-align: center;
+}
+.admin-gate-icon {
+  width: 64px; height: 64px; border-radius: 18px; background: var(--black); color: var(--accent);
+  display: flex; align-items: center; justify-content: center; font-size: 26px; margin: 0 auto 18px;
+}
+.admin-gate-title { font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 800; }
+.admin-gate-sub { font-size: 12.5px; color: var(--gray); margin-top: 4px; }
+.admin-gate-card .field { text-align: left; }
+.admin-gate-card .field input {
+  width: 100%; padding: 12px 14px; border: none; border-radius: 12px;
+  background: var(--surface-dim); box-shadow: var(--shadow-in); font-family: inherit; font-size: 14px;
+  margin-top: 6px;
+}
+.admin-gate-card .neu-btn.primary { width: 100%; margin-top: 18px; padding: 13px; font-size: 14px; }
+
 /* ── App shell — the dark rounded outer frame from the reference ── */
 .app-shell {
   display: flex; width: 100%; background: var(--bg);
@@ -425,6 +449,13 @@ h1,h2,.page-title,.stat-num,.rr-name,.room-hero-name { font-family: 'Outfit', 'I
 .qr-tile { border-radius: 22px; cursor: pointer; transition: transform .15s, box-shadow .15s; position: relative; }
 .qr-tile:hover { transform: translateY(-3px); }
 .qr-tile:active { transform: scale(.97); }
+.qr-tile.bulk-selected { box-shadow: 0 0 0 3px var(--red), var(--shadow-card); }
+.qr-tile-select-badge {
+  position: absolute; top: 10px; left: 10px; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--surface); box-shadow: var(--shadow-out); display: flex; align-items: center;
+  justify-content: center; font-size: 13px; z-index: 3; border: 2px solid var(--bg);
+}
+.qr-tile.bulk-selected .qr-tile-select-badge { background: var(--red); color: white; border-color: var(--red); }
 .qr-tile-print-btn {
   position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border-radius: 10px;
   border: none; background: var(--surface); box-shadow: var(--shadow-out); cursor: pointer;
@@ -593,6 +624,25 @@ table.policy-table tr:last-child td { border-bottom: none; }
 }
 .inv-check-item.checked { background: var(--accent-dim); box-shadow: var(--shadow-in); }
 .inv-check-item input { width: 16px; height: 16px; accent-color: var(--black); flex-shrink: 0; }
+
+/* ── Employee search-and-select picker ── */
+.emp-picker-search {
+  width: 100%; padding: 11px 14px; border: none; border-radius: 12px;
+  background: var(--bg); box-shadow: var(--shadow-in); font-family: inherit; font-size: 13.5px;
+}
+.emp-picker-results { margin-top: 6px; max-height: 220px; overflow-y: auto; }
+.emp-picker-result {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: var(--bg); border-radius: 10px; padding: 10px 12px; margin-bottom: 5px;
+  cursor: pointer; font-size: 12.5px; font-weight: 600; box-shadow: var(--shadow-out);
+}
+.emp-picker-result:hover { background: var(--accent-dim); }
+.emp-picker-chip {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--accent-dim); border-radius: 12px; padding: 12px 14px; font-weight: 700; font-size: 13px;
+}
+.emp-picker-chip button { background: none; border: none; color: var(--black); font-size: 11.5px; font-weight: 700; cursor: pointer; text-decoration: underline; }
+
 .inv-expand-card {
   background: var(--bg); border-radius: 16px; padding: 14px 16px; margin-top: 12px; box-shadow: var(--shadow-in);
 }
@@ -636,6 +686,17 @@ table.policy-table tr:last-child td { border-bottom: none; }
 </head>
 <body>
 
+<div class="admin-gate-overlay" id="adminGateOverlay">
+  <div class="admin-gate-card">
+    <div class="admin-gate-icon">🔐</div>
+    <div class="admin-gate-title">Admin Login</div>
+    <div class="admin-gate-sub">A.G. Rhodes Zone Rounds — Atlanta</div>
+    <div class="field" style="margin-top:20px;"><label>Employee ID</label><input type="text" id="admin-gate-id" inputmode="numeric" placeholder="Enter your Employee ID"></div>
+    <button class="neu-btn primary block" onclick="submitAdminLogin()">Sign In</button>
+    <div id="adminGateError" style="color:var(--red);font-size:12px;text-align:center;margin-top:12px;display:none;"></div>
+  </div>
+</div>
+
 <!-- ════ SIDEBAR ════ -->
 
 <!-- ── Mobile Top Bar ── -->
@@ -675,6 +736,8 @@ table.policy-table tr:last-child td { border-bottom: none; }
         <button class="nav-item" id="drawer-eoc" onclick="drawerNav('eoc')"><span class="nav-icon">📋</span> EOC Areas</button>
         <button class="nav-item" id="drawer-facilities" onclick="drawerNav('facilities')"><span class="nav-icon">🧹</span> Offices & Bathrooms</button>
         <button class="nav-item" id="drawer-inventory" onclick="drawerNav('inventory')"><span class="nav-icon">🧳</span> Patient Inventory</button>
+        <button class="nav-item" id="drawer-hkassign" onclick="drawerNav('hkassign')"><span class="nav-icon">🧑‍🔧</span> Assign Housekeepers</button>
+        <button class="nav-item" id="drawer-dccalendar" onclick="drawerNav('dccalendar')"><span class="nav-icon">📅</span> Deep Clean Calendar</button>
       </div>
     </div>
   </div>
@@ -739,6 +802,8 @@ table.policy-table tr:last-child td { border-bottom: none; }
         <button onclick="navigateToSubtab('eoc')"><span class="nav-icon">📋</span> EOC Areas</button>
         <button onclick="navigateToSubtab('facilities')"><span class="nav-icon">🧹</span> Offices & Bathrooms</button>
         <button onclick="navigateToSubtab('inventory')"><span class="nav-icon">🧳</span> Patient Inventory</button>
+        <button onclick="navigateToSubtab('hkassign')"><span class="nav-icon">🧑‍🔧</span> Assign Housekeepers</button>
+        <button onclick="navigateToSubtab('dccalendar')"><span class="nav-icon">📅</span> Deep Clean Calendar</button>
       </div>
     </div>
 
@@ -766,6 +831,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
 
   <div class="topbar-right">
     <button class="neu-btn no-print" onclick="window.print()">🖨 Print</button>
+    <button class="neu-btn no-print" onclick="adminLogOut()">Log Out</button>
     <div class="user-avatar">N</div>
   </div>
 </div>
@@ -892,23 +958,72 @@ table.policy-table tr:last-child td { border-bottom: none; }
       </div>
     </div>
     <div class="card" style="margin-bottom:20px;">
-      <div class="card-title">🧑‍💼 Zone Round Assignments</div>
-      <div class="card-sub">Assign each manager a set of resident rooms to check</div>
-
-      <div class="bulk-form" style="grid-template-columns:1fr auto;margin-bottom:14px;">
-        <div class="field"><label>Manager Name</label>
-          <input type="text" id="assign-manager-name" list="assign-manager-list" placeholder="e.g. Lesly Gervil">
-          <datalist id="assign-manager-list"></datalist>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div class="card-title" style="margin-bottom:2px;">🪪 Employees</div>
+          <div class="card-sub" style="margin-bottom:0;">Search the shared employee list to set permissions</div>
         </div>
-        <button class="neu-btn primary" onclick="saveRoomAssignments()">✓ Save Assignments</button>
+        <button class="neu-btn" style="font-size:11.5px;padding:8px 14px;flex-shrink:0;" onclick="toggleAddEmployeeForm()">+ Add New Employee</button>
       </div>
-      <div class="card-sub" style="margin-bottom:8px;">Check every room this manager is responsible for — this replaces their previous assignment list</div>
+
+      <div style="margin-top:14px;">
+        <input type="text" id="emp-search" placeholder="🔍 Search by name or Employee ID…" style="width:100%;padding:11px 14px;border:none;border-radius:12px;background:var(--bg);box-shadow:var(--shadow-in);font-family:inherit;font-size:13.5px;">
+      </div>
+      <div id="employeeList" style="margin-top:12px;"></div>
+
+      <div id="addEmployeeForm" style="display:none;margin-top:18px;padding-top:18px;border-top:1px dashed rgba(0,0,0,.1);">
+        <div class="bulk-form" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr auto;">
+          <div class="field"><label>Employee ID</label><input type="text" id="emp-id"></div>
+          <div class="field"><label>First Name</label><input type="text" id="emp-first"></div>
+          <div class="field"><label>Last Name</label><input type="text" id="emp-last"></div>
+          <div class="field"><label>Role</label><input type="text" id="emp-role" placeholder="e.g. DON"></div>
+          <div class="field"><label>Unit</label><input type="text" id="emp-unit"></div>
+          <div class="field"><label>Permission</label>
+            <select id="emp-permission">
+              <option value="staff">Staff</option>
+              <option value="manager">Manager</option>
+              <option value="housekeeping_manager">Housekeeping Manager</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <button class="neu-btn primary" onclick="saveEmployee()">✓ Add</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title">🔀 Auto-Divide Rooms Among Managers</div>
+      <div class="card-sub">Splits your resident rooms into roughly-equal groups (kept spatially together by hall where possible) — you just assign a name to each</div>
+      <div class="bulk-form" style="grid-template-columns:1fr auto;margin-bottom:6px;">
+        <div class="field"><label># of Managers</label><input type="number" id="auto-zone-count" value="13" min="1" max="50"></div>
+        <button class="neu-btn primary" onclick="divideRoomsIntoZones()">🔀 Divide Rooms</button>
+      </div>
+      <div id="autoZonesResults"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title">🧑‍💼 Zone Round Assignments</div>
+      <div class="card-sub">Assign each employee a set of resident rooms to check</div>
+
+      <div class="field" style="margin-bottom:14px;">
+        <label>Employee</label>
+        <div id="assignEmployeePicker"></div>
+      </div>
+      <div class="card-sub" style="margin-bottom:8px;">Check every room this employee is responsible for — this replaces their previous assignment list</div>
       <div class="inv-check-grid" id="assignRoomGrid" style="grid-template-columns:repeat(4,1fr);max-height:260px;overflow-y:auto;padding-right:4px;"></div>
+      <button class="neu-btn primary block" style="margin-top:14px;" onclick="saveRoomAssignments()">✓ Save Assignments</button>
 
       <div class="card-sub" style="margin:18px 0 8px;font-weight:700;color:var(--black);">Today's Assignment Status</div>
       <div id="assignmentOverview"></div>
     </div>
 
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <button class="neu-btn" id="bulkSelectToggleBtn" onclick="toggleBulkSelectMode()">☑ Select Multiple</button>
+      <div id="bulkSelectActions" style="display:none;">
+        <span id="bulkSelectCount" style="font-size:12.5px;color:var(--gray);font-weight:700;margin-right:10px;"></span>
+        <button class="neu-btn" style="background:var(--red);color:white;font-size:12.5px;padding:9px 16px;" onclick="bulkRemoveSelectedRooms()">🗑 Remove Selected</button>
+      </div>
+    </div>
     <div id="roomsGrid"></div>
   </div>
 
@@ -1162,6 +1277,70 @@ table.policy-table tr:last-child td { border-bottom: none; }
       <div class="card-title">Saved Inventories</div>
       <div class="card-sub">Click any entry to view full detail, or use the share button for a QR/link to that record</div>
       <div id="invSavedList"></div>
+    </div>
+  </div>
+
+  <!-- ── Assign Housekeepers ── -->
+  <div class="panel" id="panel-hkassign" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Assign Housekeepers</div><div class="page-sub">Which rooms each housekeeper is responsible for cleaning</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title">Assign Rooms</div>
+      <div class="card-sub">Pick a housekeeper by name, check their rooms, save</div>
+      <div class="bulk-form" style="grid-template-columns:1fr auto;margin-bottom:14px;">
+        <div class="field"><label>Housekeeper</label>
+          <select id="hk-employee-select"><option value="">Select a housekeeper…</option></select>
+        </div>
+        <button class="neu-btn primary" onclick="saveHkAssignmentsAdmin()">✓ Save Assignments</button>
+      </div>
+      <div class="card-sub" style="margin-bottom:8px;">Check every room this person is responsible for — this replaces their previous list</div>
+      <div class="inv-check-grid" id="hkAssignRoomGrid" style="grid-template-columns:repeat(4,1fr);max-height:280px;overflow-y:auto;padding-right:4px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Current Housekeeping Assignments</div>
+      <div id="hkAssignmentOverview"></div>
+    </div>
+  </div>
+
+  <!-- ── Deep Clean Calendar ── -->
+  <div class="panel" id="panel-dccalendar" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Deep Clean Calendar</div><div class="page-sub">Schedule rooms for deep cleaning or stripping & waxing</div></div>
+    </div>
+
+    <div class="content-grid">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <button class="neu-btn" onclick="navigateDcCalendarAdmin(-1)">‹ Prev</button>
+          <div id="dcCalMonthLabel" style="font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;"></div>
+          <button class="neu-btn" onclick="navigateDcCalendarAdmin(1)">Next ›</button>
+        </div>
+        <div id="dcCalGrid"></div>
+        <div style="display:flex;gap:16px;margin-top:14px;font-size:11px;color:var(--gray);">
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--orange);margin-right:5px;"></span>Deep Clean</span>
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#8B5CF6;margin-right:5px;"></span>Strip & Wax</span>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card">
+          <div class="card-title">Schedule a Room</div>
+          <div class="field"><label>Room</label><select id="dc-admin-room"></select></div>
+          <div class="field"><label>Type</label>
+            <select id="dc-admin-type"><option value="deep_clean">Deep Clean</option><option value="strip_wax">Stripping & Waxing</option></select>
+          </div>
+          <div class="field"><label>Date</label><input type="date" id="dc-admin-date"></div>
+          <div class="field"><label>Notes (optional)</label><textarea id="dc-admin-notes" rows="2"></textarea></div>
+          <button class="neu-btn primary block" onclick="saveDcScheduleAdmin()">✓ Add to Calendar</button>
+        </div>
+        <div class="card" id="dcSelectedDayCard" style="display:none;">
+          <div class="card-title" id="dcSelectedDayTitle"></div>
+          <div id="dcSelectedDayList"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1745,6 +1924,48 @@ async function generateSingleRoom() {
   openRoomDetail(inserted);
 }
 
+/* ── Bulk select & remove (Rooms grid) ── */
+var bulkSelectMode = false;
+var bulkSelectedQrs = new Set();
+
+function toggleBulkSelectMode() {
+  bulkSelectMode = !bulkSelectMode;
+  bulkSelectedQrs.clear();
+  document.getElementById('bulkSelectToggleBtn').textContent = bulkSelectMode ? '✕ Cancel' : '☑ Select Multiple';
+  document.getElementById('bulkSelectActions').style.display = bulkSelectMode ? 'inline-block' : 'none';
+  updateBulkSelectCount();
+  loadRooms();
+}
+
+function toggleBulkSelectRoom(qrIdentifier, tileEl) {
+  if (bulkSelectedQrs.has(qrIdentifier)) { bulkSelectedQrs.delete(qrIdentifier); tileEl.classList.remove('bulk-selected'); }
+  else { bulkSelectedQrs.add(qrIdentifier); tileEl.classList.add('bulk-selected'); }
+  var badge = tileEl.querySelector('.qr-tile-select-badge');
+  if (badge) badge.textContent = bulkSelectedQrs.has(qrIdentifier) ? '✓' : '';
+  updateBulkSelectCount();
+}
+
+function updateBulkSelectCount() {
+  var el = document.getElementById('bulkSelectCount');
+  if (el) el.textContent = bulkSelectedQrs.size + ' selected';
+}
+
+async function bulkRemoveSelectedRooms() {
+  if (!bulkSelectedQrs.size) { alert('Select at least one room first.'); return; }
+  if (!confirm('Remove ' + bulkSelectedQrs.size + ' selected room(s)? This can be undone by an administrator directly in the database if needed, but not from this screen.')) return;
+
+  var { error } = await sb.from('room_qr_codes').update({ is_active: false })
+    .eq('facility_id', FACILITY_ID).in('qr_identifier', Array.from(bulkSelectedQrs));
+  if (error) { alert('Error: ' + error.message); return; }
+
+  alert('✓ Removed ' + bulkSelectedQrs.size + ' room(s).');
+  bulkSelectMode = false;
+  bulkSelectedQrs.clear();
+  document.getElementById('bulkSelectToggleBtn').textContent = '☑ Select Multiple';
+  document.getElementById('bulkSelectActions').style.display = 'none';
+  loadRooms();
+}
+
 async function loadRooms() {
   var grid = document.getElementById('roomsGrid');
   grid.innerHTML = '<div style="padding:20px;color:var(--gray)">Loading…</div>';
@@ -1835,28 +2056,307 @@ async function generateBulkRooms() {
   loadRooms();
 }
 
-/* ── Zone Round Assignments (manager → rooms) ── */
+/* ── Employees ── */
+var lastEmployees = [];
+
+async function loadEmployeesList() {
+  var { data } = await sb.from('employees').select('*')
+    .eq('facility_id', FACILITY_ID).eq('is_active', true).order('last_name');
+  lastEmployees = data || [];
+
+  var listEl = document.getElementById('employeeList');
+  if (listEl) {
+    listEl.innerHTML = '<div style="color:var(--gray-light);font-size:12px;text-align:center;padding:14px;">' +
+      lastEmployees.length + ' employee' + (lastEmployees.length!==1?'s':'') + ' available — search above to find someone</div>';
+  }
+}
+
+function renderEmployeeRow(e) {
+  var perm = e.zone_rounds_permission || 'staff';
+  var badgeColor = perm==='admin' ? 'rgba(239,68,68,.12);color:var(--red)'
+    : perm==='manager' ? 'var(--accent-dim);color:#5B5A0E'
+    : perm==='housekeeping_manager' ? 'rgba(139,92,246,.15);color:#6D28D9'
+    : 'rgba(107,114,128,.12);color:var(--gray)';
+  return '<div class="inv-saved-row" style="cursor:default;">' +
+    '<div style="flex:1;min-width:0;">' +
+      '<div style="font-weight:700;font-size:13px;">' + e.first_name + ' ' + e.last_name + ' <span style="color:var(--gray);font-weight:600;font-size:11.5px;">· ID ' + e.employee_number + '</span></div>' +
+      '<div style="font-size:11.5px;color:var(--gray);margin-top:2px;">' + (e.role||'') + (e.unit?' · '+e.unit:'') + '</div>' +
+    '</div>' +
+    '<select style="font-size:11px;padding:5px 8px;border:none;border-radius:8px;background:' + badgeColor + ';font-weight:700;margin-right:8px;" onchange="updateEmployeePermission(\''+e.id+'\',this.value)">' +
+      '<option value="staff"' + (perm==='staff'?' selected':'') + '>Staff</option>' +
+      '<option value="manager"' + (perm==='manager'?' selected':'') + '>Manager</option>' +
+      '<option value="housekeeping_manager"' + (perm==='housekeeping_manager'?' selected':'') + '>Housekeeping Manager</option>' +
+      '<option value="admin"' + (perm==='admin'?' selected':'') + '>Admin</option>' +
+    '</select>' +
+    '<button class="neu-btn" style="font-size:11px;padding:6px 12px;" onclick="removeEmployee(\''+e.id+'\')">Remove</button>' +
+  '</div>';
+}
+
+function searchEmployees() {
+  var term = document.getElementById('emp-search').value.trim().toLowerCase();
+  var listEl = document.getElementById('employeeList');
+  if (!term) {
+    listEl.innerHTML = '<div style="color:var(--gray-light);font-size:12px;text-align:center;padding:14px;">' +
+      lastEmployees.length + ' employee' + (lastEmployees.length!==1?'s':'') + ' available — search above to find someone</div>';
+    return;
+  }
+  var matches = lastEmployees.filter(function(e){
+    var haystack = (e.first_name + ' ' + e.last_name + ' ' + e.employee_number).toLowerCase();
+    return haystack.indexOf(term) > -1;
+  }).slice(0, 30);
+
+  if (!matches.length) {
+    listEl.innerHTML = '<div style="color:var(--gray-light);font-size:12px;text-align:center;padding:14px;">No matches for "' + term + '".</div>';
+    return;
+  }
+  listEl.innerHTML = matches.map(renderEmployeeRow).join('');
+}
+document.addEventListener('input', function(e){
+  if (e.target && e.target.id === 'emp-search') searchEmployees();
+});
+
+function toggleAddEmployeeForm() {
+  var form = document.getElementById('addEmployeeForm');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+async function updateEmployeePermission(id, permission) {
+  var { error } = await sb.from('employees').update({ zone_rounds_permission: permission }).eq('id', id);
+  if (error) { alert('Error: ' + error.message); return; }
+  await loadEmployeesList();
+  if (document.getElementById('emp-search').value.trim()) searchEmployees();
+}
+
+async function saveEmployee() {
+  var employeeId = document.getElementById('emp-id').value.trim();
+  var first = document.getElementById('emp-first').value.trim();
+  var last = document.getElementById('emp-last').value.trim();
+  var role = document.getElementById('emp-role').value.trim();
+  var unit = document.getElementById('emp-unit').value.trim();
+  var permission = document.getElementById('emp-permission').value;
+  if (!employeeId || !first || !last) { alert('Employee ID, First Name, and Last Name are required'); return; }
+
+  var { error } = await sb.from('employees').upsert({
+    facility_id: FACILITY_ID, employee_number: employeeId, first_name: first, last_name: last,
+    role: role || null, unit: unit || null, is_active: true, zone_rounds_permission: permission
+  }, { onConflict: 'employee_number' });
+  if (error) { alert('Error: ' + error.message); return; }
+
+  ['emp-id','emp-first','emp-last','emp-role','emp-unit'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('addEmployeeForm').style.display = 'none';
+  await loadEmployeesList();
+  if (document.getElementById('emp-search').value.trim()) searchEmployees();
+}
+
+async function removeEmployee(id) {
+  if (!confirm('Remove this employee? Their room assignments will remain but won\'t resolve to a name until reassigned. Note: this also affects their record in the meal tracking app, since both apps share this employee list.')) return;
+  await sb.from('employees').update({ is_active: false }).eq('id', id);
+  await loadEmployeesList();
+  if (document.getElementById('emp-search').value.trim()) searchEmployees();
+}
+
+/* ── Auto-Divide Rooms Among Managers ── */
+var autoZones = [];
+
+async function divideRoomsIntoZones() {
+  var count = parseInt(document.getElementById('auto-zone-count').value, 10);
+  if (!count || count < 1) { alert('Enter a valid number of managers'); return; }
+
+  var rooms = lastAssignableRooms.length ? lastAssignableRooms : (await sb.from('room_qr_codes').select('*')
+    .eq('facility_id', FACILITY_ID).eq('location_type','room').eq('is_active', true)).data || [];
+
+  // Sort by hall/unit, then room number — keeps each group spatially together
+  // rather than scattering rooms randomly across the building.
+  var sorted = rooms.slice().sort(function(a,b){
+    if (a.unit !== b.unit) return (a.unit||'').localeCompare(b.unit||'');
+    return (+a.room_number||0) - (+b.room_number||0);
+  });
+
+  if (count > sorted.length) { alert('You have ' + sorted.length + ' rooms, but asked for ' + count + ' groups — reduce the number.'); return; }
+
+  // Divide into as-equal-as-possible contiguous chunks
+  var base = Math.floor(sorted.length / count);
+  var remainder = sorted.length % count;
+  autoZones = [];
+  var idx = 0;
+  for (var i = 0; i < count; i++) {
+    var size = base + (i < remainder ? 1 : 0);
+    autoZones.push({ rooms: sorted.slice(idx, idx + size), selectedEmployee: null });
+    idx += size;
+  }
+
+  renderAutoZones();
+}
+
+function zoneRoomRangeLabel(rooms) {
+  if (!rooms.length) return 'No rooms';
+  var units = Array.from(new Set(rooms.map(function(r){ return r.unit || '—'; })));
+  var nums = rooms.map(function(r){ return +r.room_number || 0; }).filter(Boolean).sort(function(a,b){return a-b;});
+  var range = nums.length ? (nums.length>1 ? nums[0]+'–'+nums[nums.length-1] : ''+nums[0]) : '';
+  return (units.length===1 ? units[0] : units.join(', ')) + (range ? ' · Rooms '+range : '') + ' (' + rooms.length + ')';
+}
+
+function renderAutoZones() {
+  var el = document.getElementById('autoZonesResults');
+  el.innerHTML = autoZones.map(function(zone, i){
+    return '<div class="card" style="background:var(--bg);box-shadow:var(--shadow-out);margin-bottom:10px;">' +
+      '<div style="font-weight:800;font-size:13px;margin-bottom:2px;">Group ' + (i+1) + '</div>' +
+      '<div style="font-size:11.5px;color:var(--gray);margin-bottom:10px;">' + zoneRoomRangeLabel(zone.rooms) + '</div>' +
+      '<div id="autoZonePicker-' + i + '"></div>' +
+    '</div>';
+  }).join('') + '<button class="neu-btn primary block" style="margin-top:6px;" onclick="saveAllAutoZoneAssignments()">✓ Save All ' + autoZones.length + ' Group Assignments</button>';
+
+  autoZones.forEach(function(zone, i){ renderAutoZonePicker(i); });
+}
+
+function renderAutoZonePicker(i) {
+  var el = document.getElementById('autoZonePicker-' + i);
+  var zone = autoZones[i];
+  if (zone.selectedEmployee) {
+    el.innerHTML = '<div class="emp-picker-chip">' +
+      '<span>👤 ' + zone.selectedEmployee.first_name + ' ' + zone.selectedEmployee.last_name + ' (' + zone.selectedEmployee.employee_number + ')</span>' +
+      '<button onclick="clearAutoZoneEmployee(' + i + ')">Change</button>' +
+    '</div>';
+    return;
+  }
+  el.innerHTML =
+    '<input type="text" class="emp-picker-search" data-zone-idx="' + i + '" placeholder="🔍 Search by name…">' +
+    '<div class="emp-picker-results" id="autoZoneResults-' + i + '"></div>';
+}
+
+function clearAutoZoneEmployee(i) {
+  autoZones[i].selectedEmployee = null;
+  renderAutoZonePicker(i);
+}
+
+document.addEventListener('input', function(e){
+  if (e.target && e.target.classList && e.target.classList.contains('emp-picker-search') && e.target.hasAttribute('data-zone-idx')) {
+    var i = +e.target.getAttribute('data-zone-idx');
+    var term = e.target.value.trim().toLowerCase();
+    var resultsEl = document.getElementById('autoZoneResults-' + i);
+    if (!term) { resultsEl.innerHTML = ''; return; }
+    var matches = lastEmployees.filter(function(emp){
+      var haystack = (emp.first_name + ' ' + emp.last_name + ' ' + emp.employee_number).toLowerCase();
+      return haystack.indexOf(term) > -1;
+    }).slice(0, 10);
+    resultsEl.innerHTML = matches.length
+      ? matches.map(function(emp){
+          return '<div class="emp-picker-result" onclick=\'selectAutoZoneEmployee(' + i + ',' + JSON.stringify(emp) + ')\'>' +
+            '<span>' + emp.first_name + ' ' + emp.last_name + '</span>' +
+            '<span style="color:var(--gray);font-size:11px;">ID ' + emp.employee_number + '</span>' +
+          '</div>';
+        }).join('')
+      : '<div style="color:var(--gray-light);font-size:12px;text-align:center;padding:8px;">No matches.</div>';
+  }
+});
+
+function selectAutoZoneEmployee(i, emp) {
+  autoZones[i].selectedEmployee = emp;
+  renderAutoZonePicker(i);
+}
+
+async function saveAllAutoZoneAssignments() {
+  var unassigned = autoZones.filter(function(z){ return !z.selectedEmployee; }).length;
+  if (unassigned > 0) {
+    if (!confirm(unassigned + ' group(s) don\'t have anyone selected yet and will be skipped. Save the rest?')) return;
+  }
+
+  var allRows = [];
+  autoZones.forEach(function(zone){
+    if (!zone.selectedEmployee) return;
+    zone.rooms.forEach(function(r){
+      allRows.push({
+        facility_id: FACILITY_ID, qr_identifier: r.qr_identifier, employee_id: zone.selectedEmployee.employee_number,
+        manager_name: zone.selectedEmployee.first_name + ' ' + zone.selectedEmployee.last_name, assignment_type: 'zone_round'
+      });
+    });
+  });
+
+  if (!allRows.length) { alert('No groups have an assigned employee yet.'); return; }
+
+  var { error } = await sb.from('room_assignments').upsert(allRows, { onConflict: 'qr_identifier,assignment_type' });
+  if (error) { alert('Error: ' + error.message); return; }
+
+  alert('✓ Saved assignments for ' + allRows.length + ' room(s) across ' + (autoZones.length - unassigned) + ' group(s).');
+  autoZones = [];
+  document.getElementById('autoZonesResults').innerHTML = '';
+  loadRoomAssignmentsPanel(lastAssignableRooms);
+}
+
+/* ── Zone Round Assignments (employee → rooms) ── */
 var lastAssignableRooms = [];
 var lastRoomAssignments = [];
+var zrSelectedEmployee = null;
 
 async function loadRoomAssignmentsPanel(rooms) {
   lastAssignableRooms = rooms;
-  var { data: assignments } = await sb.from('room_assignments').select('*').eq('facility_id', FACILITY_ID);
+  await loadEmployeesList();
+  var { data: assignments } = await sb.from('room_assignments').select('*')
+    .eq('facility_id', FACILITY_ID).eq('assignment_type', 'zone_round');
   lastRoomAssignments = assignments || [];
 
-  // Populate the manager name autocomplete with everyone who already has assignments
-  var managers = Array.from(new Set(lastRoomAssignments.map(function(a){ return a.manager_name; }))).sort();
-  document.getElementById('assign-manager-list').innerHTML = managers.map(function(m){ return '<option value="'+m+'">'; }).join('');
-
+  renderAssignEmployeePicker();
   renderAssignRoomGrid();
   loadAssignmentOverview();
 }
 
+function empLabel(employeeId) {
+  var e = lastEmployees.find(function(x){ return x.employee_number === employeeId; });
+  return e ? e.first_name + ' ' + e.last_name + ' (' + employeeId + ')' : employeeId;
+}
+
+function renderAssignEmployeePicker() {
+  var el = document.getElementById('assignEmployeePicker');
+  if (!el) return;
+  if (zrSelectedEmployee) {
+    el.innerHTML = '<div class="emp-picker-chip">' +
+      '<span>👤 ' + zrSelectedEmployee.first_name + ' ' + zrSelectedEmployee.last_name + ' (' + zrSelectedEmployee.employee_number + ')</span>' +
+      '<button onclick="clearZrEmployeeSelection()">Change</button>' +
+    '</div>';
+    return;
+  }
+  el.innerHTML =
+    '<input type="text" class="emp-picker-search" id="zr-emp-search" placeholder="🔍 Search by name or Employee ID…">' +
+    '<div class="emp-picker-results" id="zrEmpSearchResults"></div>';
+}
+
+function clearZrEmployeeSelection() {
+  zrSelectedEmployee = null;
+  renderAssignEmployeePicker();
+  renderAssignRoomGrid();
+}
+
+document.addEventListener('input', function(e){
+  if (e.target && e.target.id === 'zr-emp-search') {
+    var term = e.target.value.trim().toLowerCase();
+    var resultsEl = document.getElementById('zrEmpSearchResults');
+    if (!term) { resultsEl.innerHTML = ''; return; }
+    var matches = lastEmployees.filter(function(emp){
+      var haystack = (emp.first_name + ' ' + emp.last_name + ' ' + emp.employee_number).toLowerCase();
+      return haystack.indexOf(term) > -1;
+    }).slice(0, 15);
+    resultsEl.innerHTML = matches.length
+      ? matches.map(function(emp){
+          return '<div class="emp-picker-result" onclick=\'selectZrEmployee(' + JSON.stringify(emp) + ')\'>' +
+            '<span>' + emp.first_name + ' ' + emp.last_name + '</span>' +
+            '<span style="color:var(--gray);font-size:11px;">ID ' + emp.employee_number + '</span>' +
+          '</div>';
+        }).join('')
+      : '<div style="color:var(--gray-light);font-size:12px;text-align:center;padding:8px;">No matches.</div>';
+  }
+});
+
+function selectZrEmployee(emp) {
+  zrSelectedEmployee = emp;
+  renderAssignEmployeePicker();
+  renderAssignRoomGrid();
+}
+
 function renderAssignRoomGrid() {
   var grid = document.getElementById('assignRoomGrid');
-  var typedName = document.getElementById('assign-manager-name').value.trim().toLowerCase();
-  var assignedQrsForManager = lastRoomAssignments
-    .filter(function(a){ return a.manager_name.trim().toLowerCase() === typedName; })
+  var typedId = zrSelectedEmployee ? zrSelectedEmployee.employee_number : '';
+  var assignedQrsForEmployee = lastRoomAssignments
+    .filter(function(a){ return a.employee_id === typedId; })
     .map(function(a){ return a.qr_identifier; });
 
   var sorted = lastAssignableRooms.slice().sort(function(a,b){
@@ -1865,10 +2365,10 @@ function renderAssignRoomGrid() {
   });
 
   grid.innerHTML = sorted.map(function(r){
-    var checked = assignedQrsForManager.indexOf(r.qr_identifier) > -1;
+    var checked = assignedQrsForEmployee.indexOf(r.qr_identifier) > -1;
     var existingOwner = lastRoomAssignments.find(function(a){ return a.qr_identifier === r.qr_identifier; });
-    var ownerNote = (existingOwner && existingOwner.manager_name.trim().toLowerCase() !== typedName && typedName)
-      ? '<span style="color:var(--red);font-size:9.5px;">→ ' + existingOwner.manager_name + '</span>' : '';
+    var ownerNote = (existingOwner && existingOwner.employee_id !== typedId && typedId)
+      ? '<span style="color:var(--red);font-size:9.5px;">→ ' + empLabel(existingOwner.employee_id) + '</span>' : '';
     return '<label class="inv-check-item' + (checked?' checked':'') + '" style="flex-direction:column;align-items:flex-start;gap:2px;" data-qr="' + r.qr_identifier + '">' +
       '<span style="display:flex;align-items:center;gap:8px;width:100%;"><input type="checkbox" ' + (checked?'checked':'') + '><span>' + r.display_name + '</span></span>' +
       '<span style="font-size:9.5px;color:var(--gray);padding-left:24px;">' + (r.unit||'') + (existingOwner && !checked ? ' · ' + ownerNote : '') + '</span>' +
@@ -1876,36 +2376,34 @@ function renderAssignRoomGrid() {
   }).join('');
 }
 
-// Re-render the grid whenever the manager name changes, so checkboxes reflect that specific person
-document.addEventListener('input', function(e){
-  if (e.target && e.target.id === 'assign-manager-name') renderAssignRoomGrid();
-});
-
 async function saveRoomAssignments() {
-  var managerName = document.getElementById('assign-manager-name').value.trim();
-  if (!managerName) { alert('Enter a manager name'); return; }
+  if (!zrSelectedEmployee) { alert('Search for and select an employee first'); return; }
+  var employeeId = zrSelectedEmployee.employee_number;
 
   var checkedQrs = Array.prototype.map.call(
     document.querySelectorAll('#assignRoomGrid .inv-check-item input:checked'),
     function(input){ return input.closest('.inv-check-item').getAttribute('data-qr'); }
   );
 
-  // Anything previously assigned to this manager but now unchecked gets unassigned
+  // Anything previously assigned to this employee but now unchecked gets unassigned
   var previouslyTheirs = lastRoomAssignments
-    .filter(function(a){ return a.manager_name.trim().toLowerCase() === managerName.toLowerCase(); })
+    .filter(function(a){ return a.employee_id === employeeId; })
     .map(function(a){ return a.qr_identifier; });
   var toUnassign = previouslyTheirs.filter(function(qr){ return checkedQrs.indexOf(qr) === -1; });
 
   if (toUnassign.length) {
-    await sb.from('room_assignments').delete().eq('facility_id', FACILITY_ID).in('qr_identifier', toUnassign);
+    await sb.from('room_assignments').delete().eq('facility_id', FACILITY_ID)
+      .eq('assignment_type', 'zone_round').in('qr_identifier', toUnassign);
   }
   if (checkedQrs.length) {
-    var rows = checkedQrs.map(function(qr){ return { facility_id: FACILITY_ID, qr_identifier: qr, manager_name: managerName }; });
-    var { error } = await sb.from('room_assignments').upsert(rows, {onConflict:'qr_identifier'});
+    var emp = lastEmployees.find(function(e){ return e.employee_number === employeeId; });
+    var displayName = emp ? emp.first_name + ' ' + emp.last_name : employeeId;
+    var rows = checkedQrs.map(function(qr){ return { facility_id: FACILITY_ID, qr_identifier: qr, employee_id: employeeId, manager_name: displayName, assignment_type: 'zone_round' }; });
+    var { error } = await sb.from('room_assignments').upsert(rows, {onConflict:'qr_identifier,assignment_type'});
     if (error) { alert('Error saving assignments: ' + error.message); return; }
   }
 
-  alert('✓ Saved ' + checkedQrs.length + ' room(s) for ' + managerName);
+  alert('✓ Saved ' + checkedQrs.length + ' room(s) for ' + empLabel(employeeId));
   loadRoomAssignmentsPanel(lastAssignableRooms);
 }
 
@@ -1921,16 +2419,17 @@ async function loadAssignmentOverview() {
     .eq('facility_id', FACILITY_ID).eq('round_type','room').gte('rounded_at', todayStart.toISOString());
   var roundedQrsToday = new Set((roundsToday||[]).map(function(r){ return r.qr_identifier; }));
 
-  var byManager = {};
+  var byEmployee = {};
   lastRoomAssignments.forEach(function(a){
-    (byManager[a.manager_name] = byManager[a.manager_name] || []).push(a.qr_identifier);
+    var key = a.employee_id || a.manager_name; // fall back for any legacy name-only rows
+    (byEmployee[key] = byEmployee[key] || []).push(a.qr_identifier);
   });
 
   var roomsByQr = {};
   lastAssignableRooms.forEach(function(r){ roomsByQr[r.qr_identifier] = r; });
 
-  el.innerHTML = Object.keys(byManager).sort().map(function(manager){
-    var qrs = byManager[manager];
+  el.innerHTML = Object.keys(byEmployee).sort().map(function(key){
+    var qrs = byEmployee[key];
     var doneCount = qrs.filter(function(qr){ return roundedQrsToday.has(qr); }).length;
     var pending = qrs.filter(function(qr){ return !roundedQrsToday.has(qr); })
       .map(function(qr){ return roomsByQr[qr] ? roomsByQr[qr].display_name : qr; });
@@ -1938,7 +2437,7 @@ async function loadAssignmentOverview() {
     var color = pct === 100 ? 'var(--green)' : pct === 0 ? 'var(--red)' : 'var(--amber)';
     return '<div class="inv-saved-row" style="cursor:default;">' +
       '<div style="flex:1;min-width:0;">' +
-        '<div style="font-weight:700;font-size:13px;">' + manager + '</div>' +
+        '<div style="font-weight:700;font-size:13px;">' + empLabel(key) + '</div>' +
         '<div style="font-size:11.5px;color:var(--gray);margin-top:2px;">' +
           (pending.length ? 'Not yet: ' + pending.slice(0,4).join(', ') + (pending.length>4?' +'+(pending.length-4)+' more':'') : '✓ All rooms checked today') +
         '</div>' +
@@ -1946,6 +2445,221 @@ async function loadAssignmentOverview() {
       '<span style="font-weight:800;color:'+color+';font-size:13px;flex-shrink:0;">' + doneCount + '/' + qrs.length + '</span>' +
     '</div>';
   }).join('');
+}
+
+/* ── Assign Housekeepers (admin tab) ── */
+var lastHkAdminRooms = [];
+var lastHkAdminAssignments = [];
+
+async function initHkAssignPanel() {
+  await loadEmployeesList();
+  document.getElementById('hk-employee-select').innerHTML = '<option value="">Select a housekeeper…</option>' +
+    lastEmployees.map(function(e){ return '<option value="'+e.employee_number+'">'+e.first_name+' '+e.last_name+' (' + e.employee_number + ')</option>'; }).join('');
+
+  var { data: rooms } = await sb.from('room_qr_codes').select('*')
+    .eq('facility_id', FACILITY_ID).eq('location_type','room').eq('is_active', true);
+  lastHkAdminRooms = (rooms||[]).sort(function(a,b){
+    if (a.unit !== b.unit) return (a.unit||'').localeCompare(b.unit||'');
+    return (+a.room_number||0) - (+b.room_number||0);
+  });
+
+  var { data: assignments } = await sb.from('room_assignments').select('*')
+    .eq('facility_id', FACILITY_ID).eq('assignment_type','housekeeping');
+  lastHkAdminAssignments = assignments || [];
+
+  document.getElementById('hk-employee-select').onchange = renderHkAdminRoomGrid;
+  renderHkAdminRoomGrid();
+  renderHkAdminOverview();
+}
+
+function renderHkAdminRoomGrid() {
+  var grid = document.getElementById('hkAssignRoomGrid');
+  var selectedId = document.getElementById('hk-employee-select').value;
+  var theirQrs = lastHkAdminAssignments.filter(function(a){ return a.employee_id === selectedId; }).map(function(a){ return a.qr_identifier; });
+
+  grid.innerHTML = lastHkAdminRooms.map(function(r){
+    var checked = theirQrs.indexOf(r.qr_identifier) > -1;
+    var existingOwner = lastHkAdminAssignments.find(function(a){ return a.qr_identifier === r.qr_identifier; });
+    var ownerNote = (existingOwner && existingOwner.employee_id !== selectedId && selectedId)
+      ? '<span style="color:var(--red);font-size:9.5px;">→ ' + empLabel(existingOwner.employee_id) + '</span>' : '';
+    return '<label class="inv-check-item' + (checked?' checked':'') + '" style="flex-direction:column;align-items:flex-start;gap:2px;" data-qr="' + r.qr_identifier + '">' +
+      '<span style="display:flex;align-items:center;gap:8px;width:100%;"><input type="checkbox" ' + (checked?'checked':'') + '><span>' + r.display_name + '</span></span>' +
+      '<span style="font-size:9.5px;color:var(--gray);padding-left:24px;">' + (r.unit||'') + (existingOwner && !checked ? ' · ' + ownerNote : '') + '</span>' +
+    '</label>';
+  }).join('');
+}
+
+async function saveHkAssignmentsAdmin() {
+  var employeeId = document.getElementById('hk-employee-select').value;
+  if (!employeeId) { alert('Select a housekeeper'); return; }
+
+  var checkedQrs = Array.prototype.map.call(
+    document.querySelectorAll('#hkAssignRoomGrid .inv-check-item input:checked'),
+    function(input){ return input.closest('.inv-check-item').getAttribute('data-qr'); }
+  );
+
+  var previouslyTheirs = lastHkAdminAssignments.filter(function(a){ return a.employee_id === employeeId; }).map(function(a){ return a.qr_identifier; });
+  var toUnassign = previouslyTheirs.filter(function(qr){ return checkedQrs.indexOf(qr) === -1; });
+
+  if (toUnassign.length) {
+    await sb.from('room_assignments').delete().eq('facility_id', FACILITY_ID)
+      .eq('assignment_type','housekeeping').in('qr_identifier', toUnassign);
+  }
+  if (checkedQrs.length) {
+    var emp = lastEmployees.find(function(e){ return e.employee_number === employeeId; });
+    var displayName = emp ? emp.first_name + ' ' + emp.last_name : employeeId;
+    var rows = checkedQrs.map(function(qr){
+      return { facility_id: FACILITY_ID, qr_identifier: qr, employee_id: employeeId, manager_name: displayName, assignment_type: 'housekeeping' };
+    });
+    var { error } = await sb.from('room_assignments').upsert(rows, {onConflict:'qr_identifier,assignment_type'});
+    if (error) { alert('Error: ' + error.message); return; }
+  }
+  alert('✓ Saved ' + checkedQrs.length + ' room(s) for ' + empLabel(employeeId));
+  initHkAssignPanel();
+}
+
+function renderHkAdminOverview() {
+  var el = document.getElementById('hkAssignmentOverview');
+  if (!lastHkAdminAssignments.length) {
+    el.innerHTML = '<div style="color:var(--gray-light);font-size:12px;text-align:center;padding:10px;">No housekeeping assignments yet.</div>';
+    return;
+  }
+  var byEmployee = {};
+  lastHkAdminAssignments.forEach(function(a){ (byEmployee[a.employee_id] = byEmployee[a.employee_id] || []).push(a); });
+  var roomsByQr = {};
+  lastHkAdminRooms.forEach(function(r){ roomsByQr[r.qr_identifier] = r; });
+
+  el.innerHTML = Object.keys(byEmployee).sort().map(function(empId){
+    var rows = byEmployee[empId];
+    var names = rows.map(function(r){ return roomsByQr[r.qr_identifier] ? roomsByQr[r.qr_identifier].display_name : r.qr_identifier; });
+    return '<div class="inv-saved-row" style="cursor:default;">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-weight:700;font-size:13px;">' + empLabel(empId) + '</div>' +
+        '<div style="font-size:11.5px;color:var(--gray);margin-top:2px;">' + names.slice(0,5).join(', ') + (names.length>5?' +'+(names.length-5)+' more':'') + '</div>' +
+      '</div>' +
+      '<span style="font-weight:800;color:var(--black);font-size:13px;flex-shrink:0;">' + rows.length + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+/* ── Deep Clean Calendar (admin tab) ── */
+var dcAdminCalDate = new Date();
+var dcAdminCalData = {};
+var dcAdminSelectedDate = null;
+
+async function initDcCalendarPanel() {
+  var { data: rooms } = await sb.from('room_qr_codes').select('*')
+    .eq('facility_id', FACILITY_ID).eq('location_type','room').eq('is_active', true);
+  var sorted = (rooms||[]).sort(function(a,b){ return (+a.room_number||0) - (+b.room_number||0); });
+  document.getElementById('dc-admin-room').innerHTML = sorted.map(function(r){
+    return '<option value="'+r.qr_identifier+'">'+r.display_name+' ('+(r.unit||'')+')</option>';
+  }).join('');
+  document.getElementById('dc-admin-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('dcSelectedDayCard').style.display = 'none';
+
+  await renderDcCalendarAdmin();
+}
+
+async function renderDcCalendarAdmin() {
+  var year = dcAdminCalDate.getFullYear();
+  var month = dcAdminCalDate.getMonth();
+  var monthStart = new Date(year, month, 1);
+  var monthEnd = new Date(year, month + 1, 0);
+
+  var { data: scheduled } = await sb.from('deep_clean_schedule').select('*')
+    .eq('facility_id', FACILITY_ID)
+    .gte('scheduled_date', monthStart.toISOString().split('T')[0])
+    .lte('scheduled_date', monthEnd.toISOString().split('T')[0]);
+
+  var qrIds = (scheduled||[]).map(function(s){ return s.qr_identifier; });
+  var locByQr = {};
+  if (qrIds.length) {
+    var { data: locs } = await sb.from('room_qr_codes').select('qr_identifier,display_name').in('qr_identifier', qrIds);
+    (locs||[]).forEach(function(l){ locByQr[l.qr_identifier] = l; });
+  }
+
+  dcAdminCalData = {};
+  (scheduled||[]).forEach(function(s){
+    (dcAdminCalData[s.scheduled_date] = dcAdminCalData[s.scheduled_date] || []).push({
+      id: s.id, roomName: locByQr[s.qr_identifier] ? locByQr[s.qr_identifier].display_name : s.qr_identifier,
+      cleanType: s.clean_type, status: s.status, notes: s.notes
+    });
+  });
+
+  document.getElementById('dcCalMonthLabel').textContent = dcAdminCalDate.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+
+  var startWeekday = monthStart.getDay();
+  var daysInMonth = monthEnd.getDate();
+  var todayStr = new Date().toISOString().split('T')[0];
+
+  var dow = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(d){ return '<div style="text-align:center;font-size:10px;font-weight:700;color:var(--gray);">'+d+'</div>'; }).join('');
+  var cells = '';
+  for (var i=0;i<startWeekday;i++) cells += '<div></div>';
+  for (var d=1; d<=daysInMonth; d++) {
+    var dateStr = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    var entries = dcAdminCalData[dateStr] || [];
+    var isToday = dateStr === todayStr;
+    cells += '<div onclick="selectDcAdminDay(\''+dateStr+'\')" style="min-height:64px;border-radius:12px;padding:7px;cursor:pointer;background:var(--surface);box-shadow:var(--shadow-card);' + (isToday?'box-shadow:0 0 0 2px var(--accent), var(--shadow-card);':'') + '">' +
+      '<div style="font-size:11.5px;font-weight:700;color:var(--gray);">' + d + '</div>' +
+      (entries.length ? '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:5px;">' + entries.slice(0,6).map(function(e){
+        return '<span style="width:7px;height:7px;border-radius:50%;background:' + (e.cleanType==='strip_wax'?'#8B5CF6':'var(--orange)') + ';"></span>';
+      }).join('') + '</div>' : '') +
+    '</div>';
+  }
+
+  document.getElementById('dcCalGrid').innerHTML =
+    '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;">' + dow + '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">' + cells + '</div>';
+}
+
+function navigateDcCalendarAdmin(delta) {
+  dcAdminCalDate = new Date(dcAdminCalDate.getFullYear(), dcAdminCalDate.getMonth() + delta, 1);
+  renderDcCalendarAdmin();
+}
+
+function selectDcAdminDay(dateStr) {
+  dcAdminSelectedDate = dateStr;
+  var entries = dcAdminCalData[dateStr] || [];
+  var dateLabel = new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+  document.getElementById('dc-admin-date').value = dateStr;
+
+  var card = document.getElementById('dcSelectedDayCard');
+  card.style.display = 'block';
+  document.getElementById('dcSelectedDayTitle').textContent = dateLabel;
+  var listEl = document.getElementById('dcSelectedDayList');
+  if (!entries.length) {
+    listEl.innerHTML = '<div style="color:var(--gray-light);font-size:12px;text-align:center;padding:10px;">Nothing scheduled this day.</div>';
+  } else {
+    listEl.innerHTML = entries.map(function(e){
+      return '<div class="inv-saved-row" style="cursor:default;">' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-weight:700;font-size:13px;">' + e.roomName + '</div>' +
+          '<div style="font-size:11px;color:var(--gray);margin-top:2px;">' + (e.cleanType==='strip_wax'?'Stripping & Waxing':'Deep Clean') + ' · ' + e.status + (e.notes?' · '+e.notes:'') + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+}
+
+async function saveDcScheduleAdmin() {
+  var qr = document.getElementById('dc-admin-room').value;
+  var type = document.getElementById('dc-admin-type').value;
+  var date = document.getElementById('dc-admin-date').value;
+  var notes = document.getElementById('dc-admin-notes').value.trim();
+  if (!date || !qr) { alert('Pick a room and a date'); return; }
+
+  var adminSession = getAdminSession();
+  var createdBy = adminSession ? (adminSession.first_name + ' ' + adminSession.last_name) : 'Admin';
+
+  var { error } = await sb.from('deep_clean_schedule').insert({
+    facility_id: FACILITY_ID, qr_identifier: qr, clean_type: type,
+    scheduled_date: date, notes: notes || null, created_by: createdBy
+  });
+  if (error) { alert('Error: ' + error.message); return; }
+
+  document.getElementById('dc-admin-notes').value = '';
+  dcAdminCalDate = new Date(date + 'T12:00:00');
+  renderDcCalendarAdmin();
 }
 
 
@@ -2123,7 +2837,19 @@ function toggleFacilityArea(area) {
 
 function renderQRTile(loc, container) {
   var tile = document.createElement('div'); tile.className = 'qr-tile';
-  tile.onclick = function() { openRoomDetail(loc); };
+  tile.setAttribute('data-qr', loc.qr_identifier);
+  if (bulkSelectedQrs.has(loc.qr_identifier)) tile.classList.add('bulk-selected');
+  tile.onclick = function() {
+    if (bulkSelectMode) { toggleBulkSelectRoom(loc.qr_identifier, tile); return; }
+    openRoomDetail(loc);
+  };
+
+  if (bulkSelectMode) {
+    var badge = document.createElement('div');
+    badge.className = 'qr-tile-select-badge';
+    badge.textContent = bulkSelectedQrs.has(loc.qr_identifier) ? '✓' : '';
+    tile.appendChild(badge);
+  }
 
   // QR code container — must be appended before QRCode renders into it
   var qrDiv = document.createElement('div');
@@ -2545,12 +3271,13 @@ function toggleDrawerGroup(group) {
 var NAV_GROUP_MAP = {
   dashboard: 'dashboard',
   rooms: 'housekeeping', eoc: 'housekeeping', facilities: 'housekeeping', inventory: 'housekeeping',
+  hkassign: 'housekeeping', dccalendar: 'housekeeping',
   compliance: 'maintenance', issues: 'maintenance',
   reports: 'reports', policies: 'reports', surveyprep: 'reports'
 };
 
 function switchTab_direct(tab) {
-  ['dashboard','rooms','eoc','facilities','issues','compliance','reports','policies','inventory','surveyprep'].forEach(function(p){
+  ['dashboard','rooms','eoc','facilities','issues','compliance','reports','policies','inventory','surveyprep','hkassign','dccalendar'].forEach(function(p){
     document.getElementById('panel-'+p).style.display = p===tab ? 'block' : 'none';
   });
   currentPanel = tab;
@@ -2564,6 +3291,8 @@ function switchTab_direct(tab) {
   if (tab==='reports') initReportsPanel();
   if (tab==='inventory') initInventoryPanel();
   if (tab==='surveyprep') initSurveyPrepPanel();
+  if (tab==='hkassign') initHkAssignPanel();
+  if (tab==='dccalendar') initDcCalendarPanel();
 }
 
 function updateNavActiveState(tab) {
@@ -4079,9 +4808,76 @@ function handleHashRoute() {
 }
 window.addEventListener('hashchange', handleHashRoute);
 
+/* ── Admin login gate ── */
+function getAdminSession() {
+  var raw = sessionStorage.getItem('agrhodes_admin_session');
+  return raw ? JSON.parse(raw) : null;
+}
+
+async function checkAdminGate() {
+  var existing = getAdminSession();
+  if (existing) {
+    document.getElementById('adminGateOverlay').classList.remove('show');
+    bootDashboard();
+    return;
+  }
+
+  // "Trust the link" auto-login — if the URL includes ?employee_id=..., this page was
+  // linked to from an already-authenticated app, so try that ID before showing the form.
+  // Not cryptographically verified — same practical trust model as the rest of this app.
+  var params = new URLSearchParams(window.location.search);
+  var linkedEmployeeId = params.get('employee_id');
+  if (linkedEmployeeId) {
+    var ok = await tryAdminLogin(linkedEmployeeId, true);
+    if (ok) return;
+  }
+
+  document.getElementById('adminGateOverlay').classList.add('show');
+}
+
+async function tryAdminLogin(employeeId, silent) {
+  var { data: emp, error } = await sb.from('employees').select('*')
+    .eq('facility_id', FACILITY_ID).eq('employee_number', employeeId)
+    .eq('is_active', true).eq('zone_rounds_permission', 'admin').maybeSingle();
+
+  if (error || !emp) {
+    if (!silent) {
+      var errEl = document.getElementById('adminGateError');
+      errEl.textContent = error ? ('Error: ' + error.message) : 'Employee ID not found or not authorized for admin access.';
+      errEl.style.display = 'block';
+    }
+    return false;
+  }
+
+  sessionStorage.setItem('agrhodes_admin_session', JSON.stringify(emp));
+  document.getElementById('adminGateOverlay').classList.remove('show');
+  bootDashboard();
+  return true;
+}
+
+function submitAdminLogin() {
+  var employeeId = document.getElementById('admin-gate-id').value.trim();
+  if (!employeeId) {
+    var errEl = document.getElementById('adminGateError');
+    errEl.textContent = 'Enter your Employee ID.';
+    errEl.style.display = 'block';
+    return;
+  }
+  tryAdminLogin(employeeId, false);
+}
+
+function adminLogOut() {
+  sessionStorage.removeItem('agrhodes_admin_session');
+  location.reload();
+}
+
+function bootDashboard() {
+  loadDashboard();
+  if (window.location.hash) handleHashRoute();
+}
+
 // Boot
-loadDashboard();
-if (window.location.hash) handleHashRoute();
+checkAdminGate();
 </script>
 </body>
 </html>
