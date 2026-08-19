@@ -992,6 +992,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
               <option value="staff">Staff</option>
               <option value="manager">Manager</option>
               <option value="housekeeping_manager">Housekeeping Manager</option>
+              <option value="maintenance_director">Maintenance Director</option>
               <option value="admin">Admin</option>
             </select>
           </div>
@@ -2098,6 +2099,7 @@ function renderEmployeeRow(e) {
   var badgeColor = perm==='admin' ? 'rgba(239,68,68,.12);color:var(--red)'
     : perm==='manager' ? 'var(--accent-dim);color:#5B5A0E'
     : perm==='housekeeping_manager' ? 'rgba(139,92,246,.15);color:#6D28D9'
+    : perm==='maintenance_director' ? 'rgba(59,130,246,.14);color:#1D4ED8'
     : 'rgba(107,114,128,.12);color:var(--gray)';
   return '<div class="inv-saved-row" style="cursor:default;">' +
     '<div style="flex:1;min-width:0;">' +
@@ -2108,6 +2110,7 @@ function renderEmployeeRow(e) {
       '<option value="staff"' + (perm==='staff'?' selected':'') + '>Staff</option>' +
       '<option value="manager"' + (perm==='manager'?' selected':'') + '>Manager</option>' +
       '<option value="housekeeping_manager"' + (perm==='housekeeping_manager'?' selected':'') + '>Housekeeping Manager</option>' +
+      '<option value="maintenance_director"' + (perm==='maintenance_director'?' selected':'') + '>Maintenance Director</option>' +
       '<option value="admin"' + (perm==='admin'?' selected':'') + '>Admin</option>' +
     '</select>' +
     '<button class="neu-btn" style="font-size:11px;padding:6px 12px;" onclick="removeEmployee(\''+e.id+'\')">Remove</button>' +
@@ -5032,6 +5035,7 @@ async function checkAdminGate() {
   if (existing) {
     document.getElementById('adminGateOverlay').classList.remove('show');
     if (existing.zone_rounds_permission === 'admin') { bootDashboard(); }
+    else if (existing.zone_rounds_permission === 'maintenance_director') { bootRestrictedMaintenance(existing); }
     else { bootRestrictedSurveyPrep(existing); }
     return;
   }
@@ -5066,6 +5070,15 @@ async function tryAdminLogin(employeeId, silent) {
     sessionStorage.setItem('agrhodes_admin_session', JSON.stringify(emp));
     document.getElementById('adminGateOverlay').classList.remove('show');
     bootDashboard();
+    return true;
+  }
+
+  // Maintenance Director gets a restricted, single-purpose session too —
+  // no per-person assignment needed, the role itself is the unlock.
+  if (emp.zone_rounds_permission === 'maintenance_director') {
+    sessionStorage.setItem('agrhodes_admin_session', JSON.stringify(emp));
+    document.getElementById('adminGateOverlay').classList.remove('show');
+    bootRestrictedMaintenance(emp);
     return true;
   }
 
@@ -5138,6 +5151,48 @@ async function bootRestrictedSurveyPrep(emp) {
     '</div>';
 
   startSurveyPrepAssessment(assignment.department_key, true);
+}
+
+async function bootRestrictedMaintenance(emp) {
+  document.body.classList.add('restricted-mode');
+  localStorage.setItem('agrhodes_round_staff', emp.first_name + ' ' + emp.last_name); // so resolveIssue() doesn't need to prompt
+
+  document.querySelector('.main').innerHTML =
+    '<div class="restricted-banner">' +
+      '<div><b>' + emp.first_name + ' ' + emp.last_name + '</b> — 🔧 Maintenance Concerns</div>' +
+      '<button class="neu-btn" style="font-size:12px;padding:8px 14px;" onclick="adminLogOut()">Log Out</button>' +
+    '</div>' +
+    '<div class="panel" style="display:block;padding:24px;max-width:760px;margin:0 auto;">' +
+      '<div class="card"><div id="restrictedMaintList"><div class="no-round-msg" style="padding:16px">Loading…</div></div></div>' +
+    '</div>';
+
+  await loadRestrictedMaintList();
+}
+
+async function loadRestrictedMaintList() {
+  var listEl = document.getElementById('restrictedMaintList');
+  var { data: issues, error } = await sb.from('zone_issues').select('*')
+    .eq('facility_id', FACILITY_ID).eq('status', 'Open').eq('issue_type', 'Maintenance')
+    .order('created_at', {ascending:false});
+
+  if (error) { listEl.innerHTML = '<div style="color:var(--red);font-size:13px;">Error: '+error.message+'</div>'; return; }
+  if (!issues || !issues.length) {
+    listEl.innerHTML = '<div class="no-round-msg" style="padding:30px;text-align:center;color:var(--green);font-size:14px;">✓ Nothing open right now — you\'re all caught up.</div>';
+    return;
+  }
+
+  listEl.innerHTML = '<div class="card-title" style="margin-bottom:14px;">' + issues.length + ' Open Concern' + (issues.length!==1?'s':'') + '</div>' +
+    issues.map(function(i){
+      var location = i.room_number ? 'Room ' + i.room_number : (i.eoc_section||'').replace(/_/g,' ');
+      return '<div class="issue-item" id="restricted-issue-'+i.id+'">' +
+        '<div class="issue-dot '+i.priority+'"></div>' +
+        '<div class="issue-info">' +
+          '<div class="issue-type-label">' + (location || 'Facility') + ' · ' + i.priority + '</div>' +
+          '<div class="issue-desc-label">' + (i.issue_description||'—') + '</div>' +
+        '</div>' +
+        '<button class="neu-btn primary" style="font-size:11px;padding:7px 12px;flex-shrink:0;" onclick="resolveIssue(\''+i.id+'\');setTimeout(loadRestrictedMaintList,400);">✓ Fixed</button>' +
+      '</div>';
+    }).join('');
 }
 
 // Boot
