@@ -1011,6 +1011,13 @@ table.policy-table tr:last-child td { border-bottom: none; }
     </div>
 
     <div class="card" style="margin-bottom:20px;">
+      <div class="card-title">🔄 Rebalance Rooms Evenly</div>
+      <div class="card-sub">For your existing assigned managers — keeps who's assigned to whom, just evens out the room counts. Use this after removing QR codes or making manual edits that threw the numbers off.</div>
+      <button class="neu-btn primary" onclick="previewRebalance()">🔄 Preview Rebalance</button>
+      <div id="rebalanceResults" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
       <div class="card-title">🧑‍💼 Zone Round Assignments</div>
       <div class="card-sub">Assign each employee a set of resident rooms to check</div>
 
@@ -2168,6 +2175,101 @@ async function removeEmployee(id) {
   await sb.from('employees').update({ is_active: false }).eq('id', id);
   await loadEmployeesList();
   if (document.getElementById('emp-search').value.trim()) searchEmployees();
+}
+
+/* ── Rebalance Existing Assignments (keeps who's assigned, evens out counts) ── */
+var lastRebalancePlan = null;
+
+async function previewRebalance() {
+  var el = document.getElementById('rebalanceResults');
+  el.innerHTML = '<div style="text-align:center;color:var(--gray);padding:10px;">Loading…</div>';
+
+  var { data: assignments } = await sb.from('room_assignments').select('*')
+    .eq('facility_id', FACILITY_ID).eq('assignment_type', 'zone_round');
+
+  var employeeIds = Array.from(new Set((assignments||[]).map(function(a){ return a.employee_id; })));
+
+  if (!employeeIds.length) {
+    el.innerHTML = '<div style="color:var(--gray-light);font-size:12.5px;text-align:center;padding:14px;">No managers currently have Zone Round assignments — use Auto-Divide or the tool below to assign your first ones.</div>';
+    return;
+  }
+
+  var { data: rooms } = await sb.from('room_qr_codes').select('*')
+    .eq('facility_id', FACILITY_ID).eq('location_type','room').eq('is_active', true);
+  var sorted = (rooms||[]).slice().sort(function(a,b){
+    if (a.unit !== b.unit) return (a.unit||'').localeCompare(b.unit||'');
+    return (+a.room_number||0) - (+b.room_number||0);
+  });
+
+  await loadEmployeesList(); // ensure lastEmployees is fresh for name lookups
+
+  // Old counts, per employee, before rebalancing
+  var oldCounts = {};
+  employeeIds.forEach(function(id){
+    oldCounts[id] = (assignments||[]).filter(function(a){ return a.employee_id === id; }).length;
+  });
+
+  // New even split across the SAME set of employees, in a stable order
+  // (sorted by employee_id so re-previewing gives consistent grouping)
+  var sortedEmployeeIds = employeeIds.slice().sort();
+  var base = Math.floor(sorted.length / sortedEmployeeIds.length);
+  var remainder = sorted.length % sortedEmployeeIds.length;
+
+  var plan = [];
+  var idx = 0;
+  sortedEmployeeIds.forEach(function(empId, i){
+    var size = base + (i < remainder ? 1 : 0);
+    var roomSlice = sorted.slice(idx, idx + size);
+    idx += size;
+    plan.push({ employeeId: empId, rooms: roomSlice, oldCount: oldCounts[empId] || 0 });
+  });
+  lastRebalancePlan = plan;
+
+  if (sorted.length < sortedEmployeeIds.length) {
+    el.innerHTML = '<div style="color:var(--red);font-size:12.5px;text-align:center;padding:14px;">Only ' + sorted.length + ' active rooms but ' + sortedEmployeeIds.length + ' managers — some would end up with 0 rooms. Reduce managers or check your room count.</div>';
+    return;
+  }
+
+  el.innerHTML = '<div class="card-sub" style="margin-bottom:10px;">' + sorted.length + ' rooms ÷ ' + sortedEmployeeIds.length + ' managers → ' + base + '–' + (base+(remainder?1:0)) + ' rooms each</div>' +
+    plan.map(function(p){
+      var diff = p.rooms.length - p.oldCount;
+      var diffLabel = diff === 0 ? 'no change' : (diff > 0 ? '+' + diff : diff);
+      var diffColor = diff === 0 ? 'var(--gray)' : (diff > 0 ? 'var(--green)' : 'var(--red)');
+      return '<div class="inv-saved-row" style="cursor:default;">' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-weight:700;font-size:13px;">' + empLabel(p.employeeId) + '</div>' +
+          '<div style="font-size:11.5px;color:var(--gray);margin-top:2px;">' + p.oldCount + ' → ' + p.rooms.length + ' rooms</div>' +
+        '</div>' +
+        '<span style="font-weight:800;color:'+diffColor+';font-size:13px;">' + diffLabel + '</span>' +
+      '</div>';
+    }).join('') +
+    '<button class="neu-btn primary block" style="margin-top:14px;" onclick="applyRebalance()">✓ Apply Rebalance</button>';
+}
+
+async function applyRebalance() {
+  if (!lastRebalancePlan) return;
+  if (!confirm('This will reassign rooms for ' + lastRebalancePlan.length + ' manager(s) to even out the counts shown. Continue?')) return;
+
+  var employeeIds = lastRebalancePlan.map(function(p){ return p.employeeId; });
+  await sb.from('room_assignments').delete().eq('facility_id', FACILITY_ID)
+    .eq('assignment_type', 'zone_round').in('employee_id', employeeIds);
+
+  var allRows = [];
+  lastRebalancePlan.forEach(function(p){
+    var emp = lastEmployees.find(function(e){ return e.employee_number === p.employeeId; });
+    var displayName = emp ? emp.first_name + ' ' + emp.last_name : p.employeeId;
+    p.rooms.forEach(function(r){
+      allRows.push({ facility_id: FACILITY_ID, qr_identifier: r.qr_identifier, employee_id: p.employeeId, manager_name: displayName, assignment_type: 'zone_round' });
+    });
+  });
+
+  var { error } = await sb.from('room_assignments').upsert(allRows, { onConflict: 'qr_identifier,assignment_type' });
+  if (error) { alert('Error: ' + error.message); return; }
+
+  alert('✓ Rebalanced ' + allRows.length + ' room(s) across ' + lastRebalancePlan.length + ' manager(s).');
+  document.getElementById('rebalanceResults').innerHTML = '';
+  lastRebalancePlan = null;
+  loadRoomAssignmentsPanel(lastAssignableRooms);
 }
 
 /* ── Auto-Divide Rooms Among Managers ── */
