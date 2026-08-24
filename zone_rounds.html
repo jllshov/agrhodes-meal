@@ -1812,7 +1812,7 @@ async function loadDashboard() {
     document.getElementById('maintAttentionViewAll').style.display = 'block';
     maintList.innerHTML = maintItems.slice(0,5).map(function(i){
       var location = i.room_number ? 'Room ' + i.room_number : (i.eoc_section||'').replace(/_/g,' ');
-      return '<div class="issue-item">' +
+      return '<div class="issue-item" style="cursor:pointer;" onclick="openMaintIssueDetail(\''+i.id+'\')">' +
         '<div class="issue-dot '+i.priority+'"></div>' +
         '<div class="issue-info">' +
           '<div class="issue-type-label">' + (location || 'Facility') + '</div>' +
@@ -3358,6 +3358,43 @@ document.getElementById('modalBody').addEventListener('click', function(e) {
   var btn = e.target.closest('.modal-resolve-btn');
   if (btn) resolveIssueFromModal(btn.dataset.issueId);
 });
+
+async function openMaintIssueDetail(issueId) {
+  var { data: i, error } = await sb.from('zone_issues').select('*').eq('id', issueId).maybeSingle();
+  if (error || !i) { alert('Could not load this issue.'); return; }
+
+  var location = i.room_number ? 'Room ' + i.room_number : (i.eoc_section||'').replace(/_/g,' ') || 'Facility';
+  var created = new Date(i.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  var dotColor = i.priority==='High' ? 'var(--red)' : i.priority==='Medium' ? 'var(--amber)' : 'var(--green)';
+
+  document.getElementById('modalTitle').textContent = location;
+  document.getElementById('modalMeta').textContent = i.priority + ' priority · Reported ' + created;
+
+  var body = '<div style="display:flex;align-items:flex-start;gap:12px;padding:4px 0 16px;">' +
+    '<div style="width:12px;height:12px;border-radius:50%;flex-shrink:0;margin-top:4px;background:'+dotColor+';"></div>' +
+    '<div style="font-size:14px;font-weight:600;line-height:1.5;">' + (i.issue_description || '—') + '</div>' +
+  '</div>';
+
+  if (i.photo_url) {
+    body += '<img src="'+i.photo_url+'" style="width:100%;max-width:320px;border-radius:12px;margin-bottom:16px;cursor:pointer;object-fit:cover;" onclick="window.open(this.src)">';
+  }
+
+  body += '<div id="issue-actions-' + i.id + '" style="display:flex;gap:8px;flex-wrap:wrap;">';
+  if (i.status === 'Resolved') {
+    body += '<div style="font-size:12.5px;color:var(--green);font-weight:700;">✓ Resolved' + (i.resolved_by ? ' by ' + i.resolved_by : '') + (i.resolved_at ? ' · ' + new Date(i.resolved_at).toLocaleDateString() : '') + '</div>';
+  } else {
+    if (i.status !== 'In Progress') {
+      body += '<button class="neu-btn" onclick="updateIssueStatus(\''+i.id+'\',\'In Progress\');closeModal();setTimeout(loadDashboard,400);">⏳ Mark In Progress</button>';
+    }
+    body += '<button class="neu-btn primary" onclick="resolveIssue(\''+i.id+'\');closeModal();setTimeout(loadDashboard,400);">✓ Mark Resolved</button>';
+  }
+  body += '</div>';
+
+  document.getElementById('modalBody').innerHTML = body;
+  document.getElementById('modalFooter').style.display = 'none';
+  document.getElementById('roundModal').dataset.roundId = '';
+  document.getElementById('roundModal').classList.add('open');
+}
 
 function closeModal() { document.getElementById('roundModal').classList.remove('open'); }
 document.getElementById('roundModal').addEventListener('click', function(e) { if (e.target===this) closeModal(); });
