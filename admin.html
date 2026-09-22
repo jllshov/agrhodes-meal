@@ -260,7 +260,7 @@
 <!-- PIN SCREEN -->
 <div class="pin-screen" id="pinScreen">
   <div class="pin-logo">🍽 Meal<span>Track</span></div>
-  <div class="pin-sub">Admin Panel · A.G. Rhodes Atlanta</div>
+  <div class="pin-sub" id="pinSub">Admin Panel · A.G. Rhodes Atlanta</div>
   <div class="pin-card">
     <h2>Enter Admin PIN</h2>
     <input type="password" class="pin-input" id="pinInput" placeholder="••••" maxlength="6" inputmode="numeric" autocomplete="off"/>
@@ -274,7 +274,7 @@
   <div class="topbar">
     <div>
       <div class="topbar-logo">🍽 Meal<span>Track</span></div>
-      <div class="topbar-facility">A.G. Rhodes Atlanta · Admin</div>
+      <div class="topbar-facility" id="topbarFacility">A.G. Rhodes Atlanta · Admin</div>
     </div>
     <button class="logout-btn" onclick="logout()">Lock</button>
   </div>
@@ -480,10 +480,11 @@
 // ─── Config ────────────────────────────────────────────────
 const SUPABASE_URL      = "https://gtbiatetqyuxwuehwilr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34";
-const FACILITY_SUBDOMAIN = "agrhodes";
+const DEFAULT_FACILITY_DOMAIN = "agrhodes-meal.vercel.app"; // fallback for localhost/preview URLs
 const ADMIN_PIN = "350";
 
 let facilityId   = null;
+let facilityName = null;
 let allEmployees = [];
 let allLogs      = [];
 let allReport    = [];
@@ -529,11 +530,32 @@ function logout() {
   document.getElementById('pinErr').style.display = 'none';
 }
 
+// ─── Facility resolution (runs immediately, before PIN entry) ──
+async function loadFacility() {
+  try {
+    const host = window.location.hostname;
+    let facilities = await sb(`facilities?domain=eq.${host}&select=id,display_name`);
+    if (!facilities.length) facilities = await sb(`facilities?domain=eq.${DEFAULT_FACILITY_DOMAIN}&select=id,display_name`);
+    facilityId = facilities[0]?.id;
+    facilityName = facilities[0]?.display_name;
+    applyBranding();
+  } catch(e) { console.error('Facility load error:', e); }
+}
+const facilityReady = loadFacility();
+
+function applyBranding() {
+  if (!facilityName) return;
+  const pinSub = document.getElementById('pinSub');
+  if (pinSub) pinSub.textContent = `Admin Panel · ${facilityName}`;
+  const topbarFacility = document.getElementById('topbarFacility');
+  if (topbarFacility) topbarFacility.textContent = `${facilityName} · Admin`;
+}
+
 // ─── Init ──────────────────────────────────────────────────
 async function init() {
   try {
-    const facilities = await sb(`facilities?subdomain=eq.${FACILITY_SUBDOMAIN}&select=id`);
-    facilityId = facilities[0]?.id;
+    if (!facilityId) await facilityReady;
+    if (!facilityId) { showToast('Facility not available for this site'); return; }
     await Promise.all([loadDashboard(), loadEmployees(), loadPayrollPeriods()]);
     // Set default dates
     const today = new Date().toISOString().split('T')[0];

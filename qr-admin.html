@@ -417,7 +417,7 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   <div class="mobile-drawer-header">
     <div class="mobile-logo">
       <div class="mobile-logo-icon">AG</div>
-      <div class="mobile-logo-name">A.G. Rhodes</div>
+      <div class="mobile-logo-name" id="drawerLogoName">A.G. Rhodes</div>
     </div>
     <button class="drawer-close" onclick="closeDrawer()">✕</button>
   </div>
@@ -445,7 +445,7 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   <div class="sidebar-logo">
     <div class="sidebar-logo-icon">AG</div>
     <div>
-      <div class="sidebar-logo-name">A.G. Rhodes</div>
+      <div class="sidebar-logo-name" id="sidebarLogoName">A.G. Rhodes</div>
       <div class="sidebar-logo-sub">Zone Rounding</div>
     </div>
   </div>
@@ -474,7 +474,7 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
       <div class="user-avatar">N</div>
       <div>
         <div class="user-name">Nursaio</div>
-        <div class="user-role">Atlanta · Admin</div>
+        <div class="user-role" id="userRoleLabel">Atlanta · Admin</div>
       </div>
     </div>
   </div>
@@ -666,9 +666,37 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
 <script>
 const SUPABASE_URL  = 'https://gtbiatetqyuxwuehwilr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34';
-const FACILITY_ID   = '30f74349-3ab8-483b-a587-f372c0fbd413';
+const DEFAULT_FACILITY_DOMAIN = 'agrhodes-meal.vercel.app'; // fallback for localhost/preview URLs
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const BASE_URL = window.location.origin + '/round.html#round=';
+
+let FACILITY_ID = null, FACILITY_NAME = null, FACILITY_QR_PREFIX = null;
+async function loadFacility() {
+  try {
+    const host = window.location.hostname;
+    let { data: facilities } = await sb.from('facilities').select('id,display_name,qr_prefix').eq('domain', host);
+    if (!facilities || !facilities.length) {
+      ({ data: facilities } = await sb.from('facilities').select('id,display_name,qr_prefix').eq('domain', DEFAULT_FACILITY_DOMAIN));
+    }
+    if (!facilities || !facilities.length) return;
+    FACILITY_ID = facilities[0].id;
+    FACILITY_NAME = facilities[0].display_name;
+    FACILITY_QR_PREFIX = facilities[0].qr_prefix;
+    applyBranding();
+  } catch(e) { console.error('Facility load error:', e); }
+}
+const facilityReady = loadFacility();
+
+function applyBranding() {
+  if (!FACILITY_NAME) return;
+  document.title = FACILITY_NAME + ' — QR Admin';
+  var drawerLogo = document.getElementById('drawerLogoName');
+  if (drawerLogo) drawerLogo.textContent = FACILITY_NAME.split(' — ')[0];
+  var sidebarLogo = document.getElementById('sidebarLogoName');
+  if (sidebarLogo) sidebarLogo.textContent = FACILITY_NAME.split(' — ')[0];
+  var userRole = document.getElementById('userRoleLabel');
+  if (userRole) userRole.textContent = FACILITY_NAME.split(' — ').pop() + ' · Admin';
+}
 
 var currentPanel = 'dashboard';
 
@@ -886,9 +914,9 @@ async function generateBulkRooms() {
   var rows = [];
   for (var n=start; n<=end; n++) {
     rows.push({ facility_id:FACILITY_ID, location_type:'room', room_number:String(n),
-      unit:unit, display_name:'Room '+n, qr_identifier:'agrhodes-atl-room-'+n });
+      unit:unit, display_name:'Room '+n, qr_identifier:FACILITY_QR_PREFIX+'-room-'+n });
   }
-  var { error } = await sb.from('room_qr_codes').upsert(rows, {onConflict:'qr_identifier'});
+  var { error } = await sb.from('room_qr_codes').upsert(rows, {onConflict:'facility_id,qr_identifier'});
   if (error) { alert('Error: '+error.message); return; }
   alert('✓ Generated '+rows.length+' QR codes for '+unit);
   loadRooms();
@@ -1393,7 +1421,7 @@ async function loadRoomAssets(qrIdentifier) {
   var list = document.getElementById('rdAssetList');
   list.innerHTML = '<div style="font-size:12px;color:var(--gray);padding:8px;">Loading…</div>';
   var { data: assets } = await sb.from('room_assets').select('*')
-    .eq('qr_identifier', qrIdentifier).eq('is_active', true)
+    .eq('facility_id', FACILITY_ID).eq('qr_identifier', qrIdentifier).eq('is_active', true)
     .order('created_at', {ascending: true});
 
   document.getElementById('rdAssetCount').textContent = (assets||[]).length;
@@ -1623,7 +1651,10 @@ async function markComplianceComplete(taskId) {
 }
 
 // Boot
-loadDashboard();
+facilityReady.then(function() {
+  if (!FACILITY_ID) { alert('Facility not available for this site.'); return; }
+  loadDashboard();
+});
 </script>
 </body>
 </html>

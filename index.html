@@ -280,7 +280,7 @@
 <body>
 
 <div class="home-bar">
-  <a href="https://agrhodes-meal.vercel.app" class="home-btn">
+  <a href="/" class="home-btn">
     <span class="hicon">🏠</span> Home
   </a>
   <span class="page-label">Meal Check-In</span>
@@ -288,7 +288,7 @@
 
 <div class="header">
   <div class="logo">🍽 Meal<span>Track</span></div>
-  <div class="tagline">A.G. Rhodes Atlanta</div>
+  <div class="tagline" id="tagline">A.G. Rhodes Atlanta</div>
   <div class="clock" id="clk"></div>
 </div>
 
@@ -431,11 +431,11 @@
 // ─── Supabase config ────────────────────────────────────────
 const SUPABASE_URL      = "https://gtbiatetqyuxwuehwilr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34";
-const FACILITY_SUBDOMAIN = "agrhodes";
+const DEFAULT_FACILITY_DOMAIN = "agrhodes-meal.vercel.app"; // fallback for localhost/preview URLs
 const FEEDBACK_URL = "/feedback";
 
 let emp = null, selOpt = null, selPay = null;
-let facilityId = null, facilityConfig = null;
+let facilityId = null, facilityConfig = null, facilityName = null;
 
 // ─── Supabase REST helper ───────────────────────────────────
 async function sbFetch(path, options = {}) {
@@ -459,14 +459,25 @@ async function sbFetch(path, options = {}) {
 // ─── Load facility + config once on page load ───────────────
 async function loadFacility() {
   try {
-    const facilities = await sbFetch(`facilities?subdomain=eq.${FACILITY_SUBDOMAIN}&select=id`);
+    const host = window.location.hostname;
+    let facilities = await sbFetch(`facilities?domain=eq.${host}&select=id,display_name`);
+    if (!facilities.length) facilities = await sbFetch(`facilities?domain=eq.${DEFAULT_FACILITY_DOMAIN}&select=id,display_name`);
     if (!facilities.length) return;
     facilityId = facilities[0].id;
+    facilityName = facilities[0].display_name;
+    applyBranding();
     const configs = await sbFetch(`facility_config?facility_id=eq.${facilityId}&select=*`);
     if (configs.length) facilityConfig = configs[0];
   } catch(e) { console.error('Facility load error:', e); }
 }
 loadFacility();
+
+function applyBranding() {
+  if (!facilityName) return;
+  document.title = `${facilityName} — Meal Check-In`;
+  const tagline = document.getElementById('tagline');
+  if (tagline) tagline.textContent = facilityName;
+}
 
 // ─── Clock ──────────────────────────────────────────────────
 function updateClock() {
@@ -589,7 +600,7 @@ async function lookup() {
       document.getElementById('regularFlow').style.display = 'block';
       document.getElementById('freeFlow').style.display = 'none';
       document.getElementById('bannerName').textContent = emp.first_name + ' ' + emp.last_name;
-      document.getElementById('bannerDept').textContent = emp.unit || 'A.G. Rhodes Atlanta';
+      document.getElementById('bannerDept').textContent = emp.unit || facilityName;
       document.getElementById('mealChoiceArea').style.display = 'none';
       document.getElementById('creditArea').style.display = 'block';
       document.getElementById('creditCount').textContent = bundleCredits;
@@ -602,7 +613,7 @@ async function lookup() {
       document.getElementById('regularFlow').style.display = 'block';
       document.getElementById('freeFlow').style.display = 'none';
       document.getElementById('bannerName').textContent = emp.first_name + ' ' + emp.last_name;
-      document.getElementById('bannerDept').textContent = emp.unit || 'A.G. Rhodes Atlanta';
+      document.getElementById('bannerDept').textContent = emp.unit || facilityName;
       document.getElementById('mealChoiceArea').style.display = 'flex';
       document.getElementById('creditArea').style.display = 'none';
       document.getElementById('opt-single').className = 'meal-opt';
@@ -743,7 +754,7 @@ function showDone(d) {
   // Store ticket info
   lastTicket = {
     name: d.employee_name,
-    dept: d.department || 'A.G. Rhodes Atlanta',
+    dept: d.department || facilityName,
     type: isFree ? 'Free Meal' : isBundle ? 'Bundle (5 meals)' : isCredit ? 'Bundle Credit' : 'Single Meal',
     date: d.date,
     time: d.time,
