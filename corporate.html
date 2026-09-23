@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#E8EAFF"/>
+<title>A.G. Rhodes — Corporate Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:       #E8EAFF;
+    --bg2:      #F2F3FF;
+    --surface:  #FFFFFF;
+    --border:   #D5D8F0;
+    --accent:   #6B73FF;
+    --accent-d: #5B5FC7;
+    --accent-l: #EEF0FF;
+    --gold:     #F59E0B;
+    --danger:   #EF4444;
+    --success:  #10B981;
+    --text:     #1A1A3E;
+    --text2:    #8A8FAD;
+    --text3:    #B0B5D0;
+    --shadow:   0 4px 24px rgba(107,115,255,0.10);
+    --shadow-sm:0 2px 12px rgba(107,115,255,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+  }
+  .mono { font-family: 'DM Mono', monospace; }
+
+  /* ── PIN screen ── */
+  .pin-screen {
+    min-height: 100dvh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .pin-logo { font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; }
+  .pin-logo span { color: var(--accent); }
+  .pin-sub { color: var(--text2); font-size: 0.85rem; margin-bottom: 24px; }
+  .pin-card {
+    background: var(--surface); border-radius: 24px; padding: 28px 24px;
+    width: 100%; max-width: 340px; box-shadow: var(--shadow);
+  }
+  .pin-card h2 { font-size: 1.05rem; font-weight: 800; text-align: center; margin-bottom: 18px; }
+  .pin-input {
+    width: 100%; padding: 14px; border-radius: 14px; border: 1px solid var(--border);
+    background: var(--accent-l); font-size: 1.4rem; text-align: center; letter-spacing: 0.4em;
+    font-family: 'DM Mono', monospace; color: var(--text); margin-bottom: 14px;
+  }
+  .pin-input:focus { outline: none; border-color: var(--accent); }
+  .btn-primary {
+    width: 100%; padding: 14px; border: none; border-radius: 14px; background: var(--accent);
+    color: #fff; font-weight: 800; font-size: 0.95rem; cursor: pointer;
+  }
+  .btn-primary:active { background: var(--accent-d); }
+  .pin-err { color: var(--danger); font-size: 0.8rem; text-align: center; margin-top: 10px; display: none; }
+
+  /* ── App ── */
+  .app { display: none; }
+  .app.active { display: block; }
+  .topbar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 16px 24px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 5;
+  }
+  .topbar-logo { font-size: 1.15rem; font-weight: 800; }
+  .topbar-logo span { color: var(--accent); }
+  .topbar-sub { font-size: 0.78rem; color: var(--text2); margin-top: 1px; }
+  .logout-btn {
+    border: 1px solid var(--border); background: var(--surface); color: var(--text2);
+    padding: 8px 16px; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer;
+  }
+
+  main { max-width: 1080px; margin: 0 auto; padding: 28px 24px 60px; }
+  .as-of { color: var(--text2); font-size: 0.82rem; margin-bottom: 22px; }
+  .refresh-btn {
+    border: 1px solid var(--border); background: var(--surface); color: var(--accent-d);
+    padding: 6px 14px; border-radius: 10px; font-weight: 700; font-size: 0.78rem; cursor: pointer;
+    margin-left: 10px;
+  }
+
+  .totals-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+  @media (max-width: 760px) { .totals-row { grid-template-columns: repeat(2, 1fr); } }
+  .total-card {
+    background: var(--surface); border-radius: 16px; padding: 18px 20px; box-shadow: var(--shadow-sm);
+  }
+  .total-card .label { font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text2); margin-bottom: 6px; }
+  .total-card .value { font-size: 1.6rem; font-weight: 800; font-family: 'DM Mono', monospace; }
+
+  .table-wrap {
+    background: var(--surface); border-radius: 20px; box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  table { width: 100%; border-collapse: collapse; min-width: 640px; }
+  th, td { padding: 16px 18px; text-align: left; }
+  th {
+    font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--text2); border-bottom: 1px solid var(--border);
+  }
+  td { border-bottom: 1px solid var(--bg2); font-size: 0.92rem; }
+  tr:last-child td { border-bottom: none; }
+  .facility-cell { font-weight: 800; }
+  .facility-domain { font-size: 0.72rem; color: var(--text3); font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .num-cell { font-family: 'DM Mono', monospace; font-weight: 600; }
+  .pct-pill {
+    display: inline-block; margin-left: 8px; font-size: 0.72rem; font-weight: 700;
+    padding: 2px 8px; border-radius: 999px; background: var(--accent-l); color: var(--accent-d);
+  }
+  .rating-good { color: var(--success); }
+  .rating-warn { color: var(--gold); }
+  .rating-bad { color: var(--danger); }
+  .low-stock-flag { color: var(--danger); font-weight: 800; }
+  .low-stock-ok { color: var(--text3); }
+
+  .empty-msg { padding: 60px 20px; text-align: center; color: var(--text2); }
+</style>
+</head>
+<body>
+
+<div class="pin-screen" id="pinScreen">
+  <div class="pin-logo">🏢 Meal<span>Track</span> Corporate</div>
+  <div class="pin-sub">Roll-up across A.G. Rhodes facilities</div>
+  <div class="pin-card">
+    <h2>Enter Corporate PIN</h2>
+    <input type="password" class="pin-input" id="pinInput" placeholder="&bull;&bull;&bull;&bull;" maxlength="6" inputmode="numeric" autocomplete="off"/>
+    <button class="btn-primary" id="pinBtn">Unlock &rarr;</button>
+    <div class="pin-err" id="pinErr">Incorrect PIN. Try again.</div>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <div class="topbar">
+    <div>
+      <div class="topbar-logo">🏢 Meal<span>Track</span> Corporate</div>
+      <div class="topbar-sub">All facilities &middot; read-only roll-up</div>
+    </div>
+    <button class="logout-btn" onclick="logout()">Lock</button>
+  </div>
+
+  <main>
+    <div class="as-of" id="asOf">Loading&hellip;<button class="refresh-btn" onclick="loadAll()">Refresh</button></div>
+
+    <div class="totals-row" id="totalsRow"></div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Facility</th>
+            <th>Meals today</th>
+            <th>Rounds today</th>
+            <th>Avg. meal rating (7d)</th>
+            <th>Low-stock dietary items</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="5" class="empty-msg">Loading facilities&hellip;</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script>
+// ─── Supabase config ────────────────────────────────────────
+const SUPABASE_URL      = "https://gtbiatetqyuxwuehwilr.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34";
+// TEMP PIN — change this before sharing this page with anyone.
+const CORPORATE_PIN = "8420";
+
+// ─── Supabase REST helper ───────────────────────────────────
+async function sb(path) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": `Bearer ${SUPABASE_ANON_KEY}` }
+  });
+  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.message || `HTTP ${res.status}`); }
+  return res.json();
+}
+
+// ─── PIN ──────────────────────────────────────────────────
+document.getElementById('pinBtn').addEventListener('click', tryPin);
+document.getElementById('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') tryPin(); });
+
+function tryPin() {
+  const pin = document.getElementById('pinInput').value.trim();
+  if (pin !== CORPORATE_PIN) {
+    document.getElementById('pinErr').style.display = 'block';
+    document.getElementById('pinInput').value = '';
+    return;
+  }
+  document.getElementById('pinScreen').style.display = 'none';
+  document.getElementById('app').classList.add('active');
+  loadAll();
+}
+
+function logout() {
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('pinScreen').style.display = 'flex';
+  document.getElementById('pinInput').value = '';
+  document.getElementById('pinErr').style.display = 'none';
+}
+
+// ─── Data ─────────────────────────────────────────────────
+function groupCount(rows, key) {
+  const out = {};
+  rows.forEach(r => { const k = r[key]; out[k] = (out[k] || 0) + 1; });
+  return out;
+}
+
+async function loadAll() {
+  document.getElementById('asOf').innerHTML = 'Loading&hellip;';
+  try {
+    const now = new Date();
+    const todayStart = new Date(now); todayStart.setHours(0,0,0,0);
+    const todayEnd   = new Date(now); todayEnd.setHours(23,59,59,999);
+    const weekAgo    = new Date(now.getTime() - 7*24*60*60*1000);
+
+    const [facilities, mealLogs, zoneRounds, activeRooms, feedback, dietary] = await Promise.all([
+      sb(`facilities?select=id,name,display_name,domain&order=display_name.asc`),
+      sb(`meal_logs?is_voided=eq.false&checked_in_at=gte.${todayStart.toISOString()}&checked_in_at=lte.${todayEnd.toISOString()}&select=facility_id`),
+      sb(`zone_rounds?rounded_at=gte.${todayStart.toISOString()}&rounded_at=lte.${todayEnd.toISOString()}&select=facility_id`),
+      sb(`room_qr_codes?is_active=eq.true&select=facility_id`),
+      sb(`feedback?submitted_at=gte.${weekAgo.toISOString()}&select=facility_id,overall_meal`),
+      sb(`dietary_inventory?select=facility_id,current_quantity,minimum_level`),
+    ]);
+
+    const mealsByFacility  = groupCount(mealLogs, 'facility_id');
+    const roundsByFacility = groupCount(zoneRounds, 'facility_id');
+    const roomsByFacility  = groupCount(activeRooms, 'facility_id');
+
+    const ratingSums = {}, ratingCounts = {};
+    feedback.forEach(f => {
+      ratingSums[f.facility_id]   = (ratingSums[f.facility_id] || 0) + (f.overall_meal || 0);
+      ratingCounts[f.facility_id] = (ratingCounts[f.facility_id] || 0) + 1;
+    });
+
+    const lowStockByFacility = {};
+    dietary.forEach(d => {
+      if (d.minimum_level != null && d.current_quantity <= d.minimum_level) {
+        lowStockByFacility[d.facility_id] = (lowStockByFacility[d.facility_id] || 0) + 1;
+      }
+    });
+
+    renderTotals(facilities, mealsByFacility, roundsByFacility, lowStockByFacility);
+    renderTable(facilities, mealsByFacility, roundsByFacility, roomsByFacility, ratingSums, ratingCounts, lowStockByFacility);
+
+    document.getElementById('asOf').innerHTML =
+      `As of ${now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})} &middot; ${facilities.length} facilities` +
+      `<button class="refresh-btn" onclick="loadAll()">Refresh</button>`;
+  } catch (e) {
+    document.getElementById('tbody').innerHTML =
+      `<tr><td colspan="5" class="empty-msg">Error loading data: ${e.message}</td></tr>`;
+    document.getElementById('asOf').innerHTML = `<button class="refresh-btn" onclick="loadAll()">Retry</button>`;
+  }
+}
+
+function renderTotals(facilities, meals, rounds, lowStock) {
+  const sum = obj => Object.values(obj).reduce((a,b) => a+b, 0);
+  const totals = [
+    { label: 'Facilities',        value: facilities.length },
+    { label: 'Meals today',       value: sum(meals) },
+    { label: 'Rounds today',      value: sum(rounds) },
+    { label: 'Low-stock items',   value: sum(lowStock) },
+  ];
+  document.getElementById('totalsRow').innerHTML = totals.map(t =>
+    `<div class="total-card"><div class="label">${t.label}</div><div class="value">${t.value}</div></div>`
+  ).join('');
+}
+
+function renderTable(facilities, meals, rounds, rooms, ratingSums, ratingCounts, lowStock) {
+  if (!facilities.length) {
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="5" class="empty-msg">No facilities found.</td></tr>`;
+    return;
+  }
+  document.getElementById('tbody').innerHTML = facilities.map(f => {
+    const mealCount  = meals[f.id] || 0;
+    const roundCount = rounds[f.id] || 0;
+    const roomCount  = rooms[f.id] || 0;
+    const pct        = roomCount ? Math.round((roundCount / roomCount) * 100) : null;
+    const rCount     = ratingCounts[f.id] || 0;
+    const avgRating  = rCount ? (ratingSums[f.id] / rCount) : null;
+    const ratingCls  = avgRating == null ? '' : avgRating >= 4 ? 'rating-good' : avgRating >= 3 ? 'rating-warn' : 'rating-bad';
+    const low        = lowStock[f.id] || 0;
+
+    return `<tr>
+      <td>
+        <div class="facility-cell">${f.display_name || f.name}</div>
+        <div class="facility-domain">${f.domain || ''}</div>
+      </td>
+      <td class="num-cell">${mealCount}</td>
+      <td class="num-cell">${roundCount}${pct != null ? `<span class="pct-pill">${pct}% of ${roomCount}</span>` : ''}</td>
+      <td class="num-cell ${ratingCls}">${avgRating != null ? avgRating.toFixed(1) + ' / 5' : '—'}</td>
+      <td class="${low > 0 ? 'low-stock-flag' : 'low-stock-ok'}">${low > 0 ? low + ' item' + (low===1?'':'s') : 'none'}</td>
+    </tr>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
