@@ -423,10 +423,26 @@ body.login-mode { min-height: 100vh; padding-bottom: 0; display: flex; align-ite
 <script>
 const SUPABASE_URL  = 'https://gtbiatetqyuxwuehwilr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34';
-const FACILITY_ID   = '30f74349-3ab8-483b-a587-f372c0fbd413';
+const DEFAULT_FACILITY_DOMAIN = 'agrhodes-meal.vercel.app'; // fallback for localhost/preview URLs
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const app = document.getElementById('app');
 const ASSET_URL_BASE = window.location.origin + '/round.html#asset=';
+
+let FACILITY_ID = null, FACILITY_NAME = null, FACILITY_QR_PREFIX = null;
+async function loadFacility() {
+  try {
+    const host = window.location.hostname;
+    let { data: facilities } = await sb.from('facilities').select('id,display_name,qr_prefix').eq('domain', host);
+    if (!facilities || !facilities.length) {
+      ({ data: facilities } = await sb.from('facilities').select('id,display_name,qr_prefix').eq('domain', DEFAULT_FACILITY_DOMAIN));
+    }
+    if (!facilities || !facilities.length) return;
+    FACILITY_ID = facilities[0].id;
+    FACILITY_NAME = facilities[0].display_name;
+    FACILITY_QR_PREFIX = facilities[0].qr_prefix;
+  } catch(e) { console.error('Facility load error:', e); }
+}
+const facilityReady = loadFacility();
 
 var currentLoc = null;
 var roundValues = {};   // key -> 'pass'|'fail'|'yes'|'no'|'n/a'
@@ -695,6 +711,9 @@ function setStoredEmployee(emp) {
 }
 
 async function init() {
+  if (!FACILITY_ID) await facilityReady;
+  if (!FACILITY_ID) { app.innerHTML = '<div class="center-msg">⚠ Facility not available for this site.</div>'; return; }
+  document.title = FACILITY_NAME + ' — Zone Round';
   currentEmployee = getStoredEmployee();
   if (!currentEmployee) {
     renderEmployeeGate();
@@ -712,7 +731,7 @@ function renderEmployeeGate() {
     '<div class="login-bg-navy"></div>' +
     '<div class="login-bg-orange"></div>' +
     '<div class="login-content">' +
-      '<div class="login-title">A.G. Rhodes</div>' +
+      '<div class="login-title">' + (FACILITY_NAME || 'A.G. Rhodes').split(' — ')[0] + '</div>' +
       '<div class="login-avatar">' +
         '<svg viewBox="0 0 24 24"><path d="M12 12.5c2.9 0 5.2-2.3 5.2-5.2S14.9 2.1 12 2.1 6.8 4.4 6.8 7.3s2.3 5.2 5.2 5.2zm0 2.6c-3.5 0-10.4 1.7-10.4 5.2v2.6h20.8v-2.6c0-3.5-6.9-5.2-10.4-5.2z"/></svg>' +
       '</div>' +
@@ -722,7 +741,7 @@ function renderEmployeeGate() {
           '<input type="text" id="gate-employee-id" inputmode="numeric" placeholder="Employee ID" value="'+lastId.replace(/"/g,'&quot;')+'">' +
         '</div>' +
         '<button class="login-signin-btn" onclick="submitEmployeeGate()">Sign In</button>' +
-        '<div class="login-facility">A.G. Rhodes — Atlanta</div>' +
+        '<div class="login-facility">' + (FACILITY_NAME || 'A.G. Rhodes') + '</div>' +
       '</div>' +
     '</div>';
 }
@@ -1879,7 +1898,7 @@ async function saveHousekeeperAssignments() {
       return { facility_id: FACILITY_ID, qr_identifier: qr, employee_id: employeeId,
         manager_name: hkEmp.first_name + ' ' + hkEmp.last_name, assignment_type: 'housekeeping' };
     });
-    var { error } = await sb.from('room_assignments').upsert(rows, { onConflict: 'qr_identifier,assignment_type' });
+    var { error } = await sb.from('room_assignments').upsert(rows, { onConflict: 'facility_id,qr_identifier,assignment_type' });
     if (error) { showToast('Error: ' + error.message, 'error'); return; }
   }
   showToast('✓ Saved ' + checkedQrs.length + ' room(s) for ' + hkEmp.first_name + ' ' + hkEmp.last_name, 'success');

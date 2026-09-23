@@ -699,7 +699,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
   <div class="admin-gate-card">
     <div class="admin-gate-icon">🔐</div>
     <div class="admin-gate-title">Admin Login</div>
-    <div class="admin-gate-sub">A.G. Rhodes Zone Rounds — Atlanta</div>
+    <div class="admin-gate-sub" id="adminGateSub">A.G. Rhodes Zone Rounds — Atlanta</div>
     <div class="field" style="margin-top:20px;"><label>Employee ID</label><input type="text" id="admin-gate-id" inputmode="numeric" placeholder="Enter your Employee ID"></div>
     <button class="neu-btn primary block" onclick="submitAdminLogin()">Sign In</button>
     <div id="adminGateError" style="color:var(--red);font-size:12px;text-align:center;margin-top:12px;display:none;"></div>
@@ -725,7 +725,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
   <div class="mobile-drawer-header">
     <div class="mobile-logo">
       <div class="mobile-logo-icon">AG</div>
-      <div class="mobile-logo-name">A.G. Rhodes</div>
+      <div class="mobile-logo-name" id="drawerLogoName">A.G. Rhodes</div>
     </div>
     <button class="drawer-close" onclick="closeDrawer()">✕</button>
   </div>
@@ -792,7 +792,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
   <div class="topbar-left">
     <div class="sidebar-logo-icon">AG</div>
     <div>
-      <div class="sidebar-logo-name">A.G. Rhodes</div>
+      <div class="sidebar-logo-name" id="sidebarLogoName">A.G. Rhodes</div>
       <div class="sidebar-logo-sub">Zone Rounding</div>
     </div>
   </div>
@@ -1482,9 +1482,37 @@ table.policy-table tr:last-child td { border-bottom: none; }
 <script>
 const SUPABASE_URL  = 'https://gtbiatetqyuxwuehwilr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34';
-const FACILITY_ID   = '30f74349-3ab8-483b-a587-f372c0fbd413';
+const DEFAULT_FACILITY_DOMAIN = 'agrhodes-meal.vercel.app'; // fallback for localhost/preview URLs
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const BASE_URL = window.location.origin + '/round.html#round=';
+
+let FACILITY_ID = null, FACILITY_NAME = null, FACILITY_QR_PREFIX = null;
+async function loadFacility() {
+  try {
+    const host = window.location.hostname;
+    let { data: facilities } = await sb.from('facilities').select('id,display_name,qr_prefix').eq('domain', host);
+    if (!facilities || !facilities.length) {
+      ({ data: facilities } = await sb.from('facilities').select('id,display_name,qr_prefix').eq('domain', DEFAULT_FACILITY_DOMAIN));
+    }
+    if (!facilities || !facilities.length) return;
+    FACILITY_ID = facilities[0].id;
+    FACILITY_NAME = facilities[0].display_name;
+    FACILITY_QR_PREFIX = facilities[0].qr_prefix;
+    applyBranding();
+  } catch(e) { console.error('Facility load error:', e); }
+}
+const facilityReady = loadFacility();
+
+function applyBranding() {
+  if (!FACILITY_NAME) return;
+  document.title = FACILITY_NAME + ' — Zone Rounds';
+  var gateSub = document.getElementById('adminGateSub');
+  if (gateSub) gateSub.textContent = FACILITY_NAME.replace(' — ', ' Zone Rounds — ');
+  var drawerLogo = document.getElementById('drawerLogoName');
+  if (drawerLogo) drawerLogo.textContent = FACILITY_NAME.split(' — ')[0];
+  var sidebarLogo = document.getElementById('sidebarLogoName');
+  if (sidebarLogo) sidebarLogo.textContent = FACILITY_NAME.split(' — ')[0];
+}
 
 // Shared label mapping for room cleaning purpose — used in both the round detail
 // modal badge and the Reports type label. plainText=true omits the emoji (for table text).
@@ -1777,7 +1805,7 @@ async function loadDashboard() {
   document.getElementById('dashHero').innerHTML =
     '<div class="facility-card">' +
       '<div class="facility-avatar">AG</div>' +
-      '<div><div class="facility-name">A.G. Rhodes — Atlanta</div>' +
+      '<div><div class="facility-name">' + (FACILITY_NAME || 'A.G. Rhodes') + '</div>' +
       '<div class="facility-sub">Skilled Nursing Facility</div></div>' +
     '</div>' +
     '<div class="stat-strip">' +
@@ -1926,7 +1954,7 @@ async function generateSingleRoom() {
   var roomNum = document.getElementById('single-room-num').value.trim();
   if (!roomNum) { alert('Enter a room number'); return; }
 
-  var qrId = 'agrhodes-atl-' + slugifyUnit(unit) + '-room-' + roomNum;
+  var qrId = (FACILITY_QR_PREFIX+'-') + slugifyUnit(unit) + '-room-' + roomNum;
 
   var { data: existing } = await sb.from('room_qr_codes').select('qr_identifier,unit')
     .eq('facility_id', FACILITY_ID).eq('qr_identifier', qrId).maybeSingle();
@@ -1938,7 +1966,7 @@ async function generateSingleRoom() {
     unit:unit, display_name:'Room '+roomNum, qr_identifier: qrId };
 
   var { data: inserted, error } = await sb.from('room_qr_codes')
-    .upsert([row], {onConflict:'qr_identifier'}).select().single();
+    .upsert([row], {onConflict:'facility_id,qr_identifier'}).select().single();
   if (error) { alert('Error: '+error.message); return; }
 
   document.getElementById('single-room-num').value = '';
@@ -2062,7 +2090,7 @@ async function generateBulkRooms() {
   var rows = [];
   for (var n=start; n<=end; n++) {
     rows.push({ facility_id:FACILITY_ID, location_type:'room', room_number:String(n),
-      unit:unit, display_name:'Room '+n, qr_identifier:'agrhodes-atl-'+unitSlug+'-room-'+n });
+      unit:unit, display_name:'Room '+n, qr_identifier:(FACILITY_QR_PREFIX+'-')+unitSlug+'-room-'+n });
   }
   // Guard: warn if any of these identifiers already exist under a DIFFERENT unit,
   // which would mean two halls share a room-number range and are about to collide.
@@ -2073,7 +2101,7 @@ async function generateBulkRooms() {
     var roomList = conflicts.map(function(c){ return c.room_number; }).join(', ');
     if (!confirm('Warning: Room(s) ' + roomList + ' already exist under a different unit and will be reassigned to ' + unit + '. Continue?')) return;
   }
-  var { error } = await sb.from('room_qr_codes').upsert(rows, {onConflict:'qr_identifier'});
+  var { error } = await sb.from('room_qr_codes').upsert(rows, {onConflict:'facility_id,qr_identifier'});
   if (error) { alert('Error: '+error.message); return; }
   alert('✓ Generated '+rows.length+' QR codes for '+unit);
   loadRooms();
@@ -2164,7 +2192,7 @@ async function saveEmployee() {
   var { error } = await sb.from('employees').upsert({
     facility_id: FACILITY_ID, employee_number: employeeId, first_name: first, last_name: last,
     role: role || null, unit: unit || null, is_active: true, zone_rounds_permission: permission
-  }, { onConflict: 'employee_number' });
+  }, { onConflict: 'facility_id,employee_number' });
   if (error) { alert('Error: ' + error.message); return; }
 
   ['emp-id','emp-first','emp-last','emp-role','emp-unit'].forEach(function(id){ document.getElementById(id).value = ''; });
@@ -2266,7 +2294,7 @@ async function applyRebalance() {
     });
   });
 
-  var { error } = await sb.from('room_assignments').upsert(allRows, { onConflict: 'qr_identifier,assignment_type' });
+  var { error } = await sb.from('room_assignments').upsert(allRows, { onConflict: 'facility_id,qr_identifier,assignment_type' });
   if (error) { alert('Error: ' + error.message); return; }
 
   alert('✓ Rebalanced ' + allRows.length + ' room(s) across ' + lastRebalancePlan.length + ' manager(s).');
@@ -2394,7 +2422,7 @@ async function saveAllAutoZoneAssignments() {
 
   if (!allRows.length) { alert('No groups have an assigned employee yet.'); return; }
 
-  var { error } = await sb.from('room_assignments').upsert(allRows, { onConflict: 'qr_identifier,assignment_type' });
+  var { error } = await sb.from('room_assignments').upsert(allRows, { onConflict: 'facility_id,qr_identifier,assignment_type' });
   if (error) { alert('Error: ' + error.message); return; }
 
   alert('✓ Saved assignments for ' + allRows.length + ' room(s) across ' + (autoZones.length - unassigned) + ' group(s).');
@@ -2519,7 +2547,7 @@ async function saveRoomAssignments() {
     var emp = lastEmployees.find(function(e){ return e.employee_number === employeeId; });
     var displayName = emp ? emp.first_name + ' ' + emp.last_name : employeeId;
     var rows = checkedQrs.map(function(qr){ return { facility_id: FACILITY_ID, qr_identifier: qr, employee_id: employeeId, manager_name: displayName, assignment_type: 'zone_round' }; });
-    var { error } = await sb.from('room_assignments').upsert(rows, {onConflict:'qr_identifier,assignment_type'});
+    var { error } = await sb.from('room_assignments').upsert(rows, {onConflict:'facility_id,qr_identifier,assignment_type'});
     if (error) { alert('Error saving assignments: ' + error.message); return; }
   }
 
@@ -2631,7 +2659,7 @@ async function saveHkAssignmentsAdmin() {
     var rows = checkedQrs.map(function(qr){
       return { facility_id: FACILITY_ID, qr_identifier: qr, employee_id: employeeId, manager_name: displayName, assignment_type: 'housekeeping' };
     });
-    var { error } = await sb.from('room_assignments').upsert(rows, {onConflict:'qr_identifier,assignment_type'});
+    var { error } = await sb.from('room_assignments').upsert(rows, {onConflict:'facility_id,qr_identifier,assignment_type'});
     if (error) { alert('Error: ' + error.message); return; }
   }
   alert('✓ Saved ' + checkedQrs.length + ' room(s) for ' + empLabel(employeeId));
@@ -2846,7 +2874,7 @@ async function generateSingleFacility() {
   var label = document.getElementById('fac-single-label').value.trim();
   if (!area || !label) { alert('Enter both an area and a name/label'); return; }
 
-  var qrId = 'agrhodes-atl-' + type + '-' + slugifyUnit(area) + '-' + slugifyUnit(label);
+  var qrId = (FACILITY_QR_PREFIX+'-') + type + '-' + slugifyUnit(area) + '-' + slugifyUnit(label);
 
   var { data: existing } = await sb.from('room_qr_codes').select('qr_identifier,unit')
     .eq('facility_id', FACILITY_ID).eq('qr_identifier', qrId).maybeSingle();
@@ -2856,7 +2884,7 @@ async function generateSingleFacility() {
 
   var row = { facility_id:FACILITY_ID, location_type:type, unit:area, display_name:label, qr_identifier:qrId };
   var { data: inserted, error } = await sb.from('room_qr_codes')
-    .upsert([row], {onConflict:'qr_identifier'}).select().single();
+    .upsert([row], {onConflict:'facility_id,qr_identifier'}).select().single();
   if (error) { alert('Error: '+error.message); return; }
 
   document.getElementById('fac-single-label').value = '';
@@ -2878,7 +2906,7 @@ async function generateBulkFacility() {
   var rows = [];
   for (var n=start; n<=end; n++) {
     rows.push({ facility_id:FACILITY_ID, location_type:type, unit:area, room_number:String(n),
-      display_name: prefix + ' ' + n, qr_identifier: 'agrhodes-atl-'+type+'-'+areaSlug+'-'+prefixSlug+'-'+n });
+      display_name: prefix + ' ' + n, qr_identifier: (FACILITY_QR_PREFIX+'-')+type+'-'+areaSlug+'-'+prefixSlug+'-'+n });
   }
   var { data: existing } = await sb.from('room_qr_codes').select('qr_identifier,unit')
     .eq('facility_id', FACILITY_ID).in('qr_identifier', rows.map(function(r){return r.qr_identifier;}));
@@ -2886,7 +2914,7 @@ async function generateBulkFacility() {
   if (conflicts.length) {
     if (!confirm('Some of these already exist under a different area and will be reassigned to ' + area + '. Continue?')) return;
   }
-  var { error } = await sb.from('room_qr_codes').upsert(rows, {onConflict:'qr_identifier'});
+  var { error } = await sb.from('room_qr_codes').upsert(rows, {onConflict:'facility_id,qr_identifier'});
   if (error) { alert('Error: '+error.message); return; }
   alert('✓ Generated '+rows.length+' QR codes for '+area);
   loadFacilities();
@@ -4597,7 +4625,7 @@ document.addEventListener('input', function(e){
 
 async function assignSpDepartment(deptKey, employeeId) {
   var { error } = await sb.from('survey_prep_dept_assignments')
-    .upsert({ facility_id: FACILITY_ID, department_key: deptKey, employee_id: employeeId }, { onConflict: 'department_key' });
+    .upsert({ facility_id: FACILITY_ID, department_key: deptKey, employee_id: employeeId }, { onConflict: 'facility_id,department_key' });
   if (error) { alert('Error: ' + error.message); return; }
   loadSpDeptAssignments();
 }
@@ -5068,6 +5096,8 @@ function getAdminSession() {
 }
 
 async function checkAdminGate() {
+  if (!FACILITY_ID) await facilityReady;
+  if (!FACILITY_ID) { document.getElementById('adminGateSub').textContent = 'Facility not available for this site.'; document.getElementById('adminGateOverlay').classList.add('show'); return; }
   var existing = getAdminSession();
   if (existing) {
     document.getElementById('adminGateOverlay').classList.remove('show');

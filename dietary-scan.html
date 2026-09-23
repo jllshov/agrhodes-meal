@@ -199,8 +199,24 @@ body{padding-bottom:max(24px,env(safe-area-inset-bottom));}
 <script>
 const SUPABASE_URL = 'https://gtbiatetqyuxwuehwilr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34';
-const FACILITY_ID = '30f74349-3ab8-483b-a587-f372c0fbd413';
+const DEFAULT_FACILITY_DOMAIN = 'agrhodes-meal.vercel.app'; // fallback for localhost/preview URLs
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let FACILITY_ID = null, FACILITY_NAME = null;
+async function loadFacility() {
+  try {
+    const host = window.location.hostname;
+    let { data: facilities } = await sb.from('facilities').select('id,display_name').eq('domain', host);
+    if (!facilities || !facilities.length) {
+      ({ data: facilities } = await sb.from('facilities').select('id,display_name').eq('domain', DEFAULT_FACILITY_DOMAIN));
+    }
+    if (!facilities || !facilities.length) return;
+    FACILITY_ID = facilities[0].id;
+    FACILITY_NAME = facilities[0].display_name;
+    if (FACILITY_NAME) document.title = FACILITY_NAME + ' — Dietary Scan';
+  } catch(e) { console.error('Facility load error:', e); }
+}
+const facilityReady = loadFacility();
 
 var currentItem = null;
 var html5QrCode = null;
@@ -242,7 +258,8 @@ function showManualEntry() {
 async function loadItem(qrIdentifier) {
   showToast('Loading…', '');
   try {
-    var { data: inv, error } = await sb.from('dietary_inventory').select('*').eq('qr_identifier', qrIdentifier).single();
+    if (!FACILITY_ID) await facilityReady;
+    var { data: inv, error } = await sb.from('dietary_inventory').select('*').eq('facility_id', FACILITY_ID).eq('qr_identifier', qrIdentifier).single();
     if (error || !inv) throw new Error('Item not found');
     var { data: cat } = await sb.from('dietary_item_catalog').select('*').eq('id', inv.catalog_item_id).single();
     currentItem = Object.assign({}, inv, {
@@ -440,7 +457,9 @@ function applyScanPermissions() {
   if (adjustBtn) adjustBtn.classList.toggle('disabled-role', !canScan('adjust'));
 }
 
-window.addEventListener('DOMContentLoaded', function() {
+window.addEventListener('DOMContentLoaded', async function() {
+  if (!FACILITY_ID) await facilityReady;
+  if (!FACILITY_ID) { showToast('Facility not available for this site', 'error'); return; }
   if (!currentScanRole) {
     document.getElementById('roleScreen').style.display = 'flex';
     return;

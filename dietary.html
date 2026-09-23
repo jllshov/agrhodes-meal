@@ -427,7 +427,7 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
 <aside class="sidebar">
   <div class="sb2-profile">
     <div class="sb2-avatar">AG</div>
-    <div><div class="sb2-profile-name">A.G. Rhodes</div><div class="sb2-profile-sub">Dietary Inventory</div></div>
+    <div><div class="sb2-profile-name" id="sb2ProfileName">A.G. Rhodes</div><div class="sb2-profile-sub">Dietary Inventory</div></div>
     <button class="sb2-refresh" onclick="loadDashboard()" title="Refresh">↻</button>
   </div>
   <div class="sb2-search">
@@ -1107,9 +1107,33 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
 <script>
 const SUPABASE_URL  = 'https://gtbiatetqyuxwuehwilr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34';
-const FACILITY_ID = '30f74349-3ab8-483b-a587-f372c0fbd413';
+const DEFAULT_FACILITY_DOMAIN = 'agrhodes-meal.vercel.app'; // fallback for localhost/preview URLs
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const SCAN_BASE_URL = window.location.origin + '/dietary-scan.html#item=';
+
+let FACILITY_ID = null, FACILITY_NAME = null, FACILITY_QR_PREFIX = null;
+async function loadFacility() {
+  try {
+    const host = window.location.hostname;
+    let { data: facilities } = await sb.from('facilities').select('id,display_name,qr_prefix').eq('domain', host);
+    if (!facilities || !facilities.length) {
+      ({ data: facilities } = await sb.from('facilities').select('id,display_name,qr_prefix').eq('domain', DEFAULT_FACILITY_DOMAIN));
+    }
+    if (!facilities || !facilities.length) return;
+    FACILITY_ID = facilities[0].id;
+    FACILITY_NAME = facilities[0].display_name;
+    FACILITY_QR_PREFIX = facilities[0].qr_prefix;
+    applyBranding();
+  } catch(e) { console.error('Facility load error:', e); }
+}
+const facilityReady = loadFacility();
+
+function applyBranding() {
+  if (!FACILITY_NAME) return;
+  document.title = FACILITY_NAME + ' — Dietary Inventory';
+  var profileName = document.getElementById('sb2ProfileName');
+  if (profileName) profileName.textContent = FACILITY_NAME.split(' — ')[0];
+}
 
 var currentPanel = 'dashboard';
 var cachedItems = [], cachedCategories = [], cachedStorage = [], cachedVendors = [], cachedCatalog = [];
@@ -1625,7 +1649,7 @@ async function saveNewItem() {
 
   // Only create an inventory record (with QR code) if a starting quantity was entered
   if (startQty > 0) {
-    var qrId = 'agrhodes-atl-diet-' + Date.now();
+    var qrId = (FACILITY_QR_PREFIX+'-diet-') + Date.now();
     var invPayload = {
       facility_id: FACILITY_ID, catalog_item_id: catItem.id, qr_identifier: qrId,
       current_quantity: startQty,
@@ -2549,7 +2573,7 @@ async function confirmBulkImport() {
       invPayloads.push({
         facility_id: FACILITY_ID,
         catalog_item_id: insertedCatalog[i].id,
-        qr_identifier: 'agrhodes-atl-diet-' + Date.now() + '-' + i,
+        qr_identifier: (FACILITY_QR_PREFIX+'-diet-') + Date.now() + '-' + i,
         current_quantity: r.quantity,
         storage_location_id: r.storage_location ? storMap[r.storage_location.toLowerCase()] || null : null,
         par_level: r.par_level, minimum_level: r.minimum_level,
@@ -2882,7 +2906,7 @@ async function confirmManifest() {
         updatedCount++;
       } else {
         // Catalog item exists but has no stock record yet — create one
-        var qrId = 'agrhodes-atl-diet-' + Date.now() + '-' + i;
+        var qrId = (FACILITY_QR_PREFIX+'-diet-') + Date.now() + '-' + i;
         var { data: newInv } = await sb.from('dietary_inventory').insert({
           facility_id: FACILITY_ID, catalog_item_id: r.matched_catalog.id, qr_identifier: qrId,
           current_quantity: r.quantity, lot_number: r.lot_number, expiration_date: r.expiration_date,
@@ -2902,7 +2926,7 @@ async function confirmManifest() {
         facility_id: FACILITY_ID, item_name: r.item_name, sku: r.sku || null, cost_per_unit: r.cost_per_unit,
       }).select().single();
       if (newCat) {
-        var qrId2 = 'agrhodes-atl-diet-' + Date.now() + '-new-' + i;
+        var qrId2 = (FACILITY_QR_PREFIX+'-diet-') + Date.now() + '-new-' + i;
         var { data: newInv2 } = await sb.from('dietary_inventory').insert({
           facility_id: FACILITY_ID, catalog_item_id: newCat.id, qr_identifier: qrId2,
           current_quantity: r.quantity, lot_number: r.lot_number, expiration_date: r.expiration_date,
@@ -3006,7 +3030,7 @@ async function submitReceiveStock() {
   if (!qty || qty <= 0) { alert('Enter a quantity greater than 0'); return; }
 
   var staff = getStaffName();
-  var qrId = 'agrhodes-atl-diet-' + Date.now();
+  var qrId = (FACILITY_QR_PREFIX+'-diet-') + Date.now();
 
   var payload = {
     facility_id: FACILITY_ID, catalog_item_id: currentReceiveCatalogItem.id, qr_identifier: qrId,
@@ -3035,13 +3059,15 @@ async function submitReceiveStock() {
 
 
 // Boot
-if (currentRole) {
-  document.getElementById('roleBadge').textContent = currentRole;
-  
-loadRefData().then(function(){ loadDashboard(); applyRolePermissions(); loadNotifications(); });
-} else {
-  openRolePicker(false);
-}
+facilityReady.then(function() {
+  if (!FACILITY_ID) { alert('Facility not available for this site.'); return; }
+  if (currentRole) {
+    document.getElementById('roleBadge').textContent = currentRole;
+    loadRefData().then(function(){ loadDashboard(); applyRolePermissions(); loadNotifications(); });
+  } else {
+    openRolePicker(false);
+  }
+});
 </script>
 </body>
 </html>

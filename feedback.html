@@ -171,7 +171,7 @@
 <body>
 
 <div class="home-bar">
-  <a href="https://agrhodes-meal.vercel.app" class="home-btn">
+  <a href="/" class="home-btn">
     <span>🏠</span> Home
   </a>
   <span class="page-label">Meal Feedback</span>
@@ -179,14 +179,14 @@
 
 <div class="header">
   <div class="logo">🍽 Meal<span>Track</span></div>
-  <div class="tagline">A.G. Rhodes Atlanta</div>
+  <div class="tagline" id="tagline">A.G. Rhodes Atlanta</div>
 </div>
 
 <!-- SUCCESS SCREEN -->
 <div class="success-screen" id="successScreen">
   <div class="success-icon">🎉</div>
   <div class="success-title">Thank you!</div>
-  <div class="success-sub">Your feedback helps us improve meals<br>for everyone at A.G. Rhodes.</div>
+  <div class="success-sub" id="successSub">Your feedback helps us improve meals<br>for everyone at A.G. Rhodes.</div>
   <button class="btn-another" onclick="resetForm()">Submit Another</button>
 </div>
 
@@ -264,9 +264,10 @@
 <script defer>
 const SUPABASE_URL      = "https://gtbiatetqyuxwuehwilr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34";
-const FACILITY_SUBDOMAIN = "agrhodes";
+const DEFAULT_FACILITY_DOMAIN = "agrhodes-meal.vercel.app"; // fallback for localhost/preview URLs
 
-let facilityId  = null;
+let facilityId   = null;
+let facilityName = null;
 let selWho      = null;
 let ratings     = { overall: 0, taste: 0, temp: 0 };
 let selPortion  = null;
@@ -291,12 +292,27 @@ async function sb(path, options = {}) {
 }
 
 // Load facility
-(async () => {
+async function loadFacility() {
   try {
-    const f = await sb(`facilities?subdomain=eq.${FACILITY_SUBDOMAIN}&select=id`);
-    if (f.length) facilityId = f[0].id;
+    const host = window.location.hostname;
+    let f = await sb(`facilities?domain=eq.${host}&select=id,display_name`);
+    if (!f.length) f = await sb(`facilities?domain=eq.${DEFAULT_FACILITY_DOMAIN}&select=id,display_name`);
+    if (!f.length) return;
+    facilityId = f[0].id;
+    facilityName = f[0].display_name;
+    applyBranding();
   } catch(e) { console.error(e); }
-})();
+}
+const facilityReady = loadFacility();
+
+function applyBranding() {
+  if (!facilityName) return;
+  document.title = `${facilityName} — Meal Feedback`;
+  const tagline = document.getElementById('tagline');
+  if (tagline) tagline.textContent = facilityName;
+  const successSub = document.getElementById('successSub');
+  if (successSub) successSub.innerHTML = `Your feedback helps us improve meals<br>for everyone at ${facilityName}.`;
+}
 
 // Build star rows
 ['overall','taste','temp'].forEach(key => {
@@ -378,6 +394,9 @@ async function submitFeedback() {
     document.getElementById('comment').scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
+
+  if (!facilityId) await facilityReady;
+  if (!facilityId) { errEl.textContent = 'Facility not available — please reload and try again.'; errEl.style.display='block'; return; }
 
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;

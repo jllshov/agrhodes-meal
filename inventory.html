@@ -105,11 +105,27 @@ body { min-height: 100vh; padding-bottom: 100px; }
 <script>
 const SUPABASE_URL  = 'https://gtbiatetqyuxwuehwilr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34';
-const FACILITY_ID   = '30f74349-3ab8-483b-a587-f372c0fbd413';
+const DEFAULT_FACILITY_DOMAIN = 'agrhodes-meal.vercel.app'; // fallback for localhost/preview URLs
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const VIEW_BASE_URL = window.location.origin + '/inventory.html#view=';
 const NEW_URL = window.location.origin + '/inventory.html#new';
 const app = document.getElementById('app');
+
+let FACILITY_ID = null, FACILITY_NAME = null;
+async function loadFacility() {
+  try {
+    const host = window.location.hostname;
+    let { data: facilities } = await sb.from('facilities').select('id,display_name').eq('domain', host);
+    if (!facilities || !facilities.length) {
+      ({ data: facilities } = await sb.from('facilities').select('id,display_name').eq('domain', DEFAULT_FACILITY_DOMAIN));
+    }
+    if (!facilities || !facilities.length) return;
+    FACILITY_ID = facilities[0].id;
+    FACILITY_NAME = facilities[0].display_name;
+    if (FACILITY_NAME) document.title = FACILITY_NAME + ' — Patient Inventory';
+  } catch(e) { console.error('Facility load error:', e); }
+}
+const facilityReady = loadFacility();
 
 /* ── Toast (in-page, no native alert/confirm dependency) ── */
 function showToast(msg, type) {
@@ -152,7 +168,9 @@ function getMode() {
   return { mode:'new' };
 }
 
-function init() {
+async function init() {
+  if (!FACILITY_ID) await facilityReady;
+  if (!FACILITY_ID) { app.innerHTML = '<div class="center-msg">⚠ Facility not available for this site.</div>'; return; }
   var m = getMode();
   if (m.mode === 'view') loadAndRenderView(m.id);
   else renderNewIntakeForm();
@@ -165,7 +183,7 @@ function renderNewIntakeForm() {
     '<div class="rr-header">' +
       '<div class="rr-icon">🧳</div>' +
       '<div class="rr-name">Patient Inventory Intake</div>' +
-      '<div class="rr-meta">A.G. Rhodes — Atlanta</div>' +
+      '<div class="rr-meta">' + (FACILITY_NAME || 'A.G. Rhodes') + '</div>' +
     '</div>' +
     '<div class="card">' +
       '<div class="section-title">Resident Info</div>' +
