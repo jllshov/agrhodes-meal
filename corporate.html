@@ -120,6 +120,41 @@
   .low-stock-ok { color: var(--text3); }
 
   .empty-msg { padding: 60px 20px; text-align: center; color: var(--text2); }
+
+  .clickable-cell { cursor: pointer; }
+  .clickable-cell:hover { text-decoration: underline; text-decoration-color: var(--accent); }
+
+  /* ── Meal detail modal ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(26,26,62,0.45);
+    z-index: 20; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-card {
+    background: var(--surface); border-radius: 20px; max-width: 640px; width: 100%;
+    max-height: 80vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--shadow);
+  }
+  .modal-header {
+    padding: 18px 22px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+  }
+  .modal-header h3 { font-size: 1rem; font-weight: 800; }
+  .modal-header .sub { font-size: 0.78rem; color: var(--text2); margin-top: 2px; }
+  .modal-close {
+    border: none; background: var(--bg2); color: var(--text2); width: 30px; height: 30px;
+    border-radius: 9px; font-size: 0.95rem; cursor: pointer; flex-shrink: 0;
+  }
+  .modal-body { overflow-y: auto; }
+  .modal-body table { width: 100%; border-collapse: collapse; min-width: 0; }
+  .modal-body th, .modal-body td { padding: 10px 22px; text-align: left; font-size: 0.85rem; }
+  .modal-body th {
+    font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text2);
+    position: sticky; top: 0; background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .modal-body td { border-bottom: 1px solid var(--bg2); }
+  .modal-body tr:last-child td { border-bottom: none; }
+  .status-valid { color: var(--success); font-weight: 700; font-size: 0.78rem; }
+  .status-voided { color: var(--text3); font-size: 0.78rem; }
 </style>
 </head>
 <body>
@@ -166,6 +201,19 @@
       </table>
     </div>
   </main>
+</div>
+
+<div class="modal-overlay" id="mealModal" onclick="if(event.target===this) closeMealModal()">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div>
+        <h3>Meals today</h3>
+        <div class="sub" id="mealModalSub"></div>
+      </div>
+      <button class="modal-close" onclick="closeMealModal()">&#10005;</button>
+    </div>
+    <div class="modal-body" id="mealModalBody"></div>
+  </div>
 </div>
 
 <script>
@@ -274,6 +322,49 @@ function renderTotals(facilities, meals, rounds, lowStock) {
   ).join('');
 }
 
+function closeMealModal() {
+  document.getElementById('mealModal').classList.remove('open');
+}
+
+async function showMealDetail(facilityId, facilityName) {
+  document.getElementById('mealModalSub').textContent = facilityName;
+  document.getElementById('mealModalBody').innerHTML = '<div class="empty-msg">Loading&hellip;</div>';
+  document.getElementById('mealModal').classList.add('open');
+
+  const now = new Date();
+  const todayStart = new Date(now); todayStart.setHours(0,0,0,0);
+  const todayEnd   = new Date(now); todayEnd.setHours(23,59,59,999);
+
+  try {
+    const logs = await sb(`meal_logs?facility_id=eq.${facilityId}&checked_in_at=gte.${todayStart.toISOString()}&checked_in_at=lte.${todayEnd.toISOString()}&select=*,employees(first_name,last_name,unit)&order=checked_in_at.desc`);
+    if (!logs.length) {
+      document.getElementById('mealModalBody').innerHTML = '<div class="empty-msg">No meals checked in yet today.</div>';
+      return;
+    }
+    document.getElementById('mealModalBody').innerHTML = `<table>
+      <thead><tr><th>Employee</th><th>Time</th><th>Type</th><th>Amount</th><th>Status</th></tr></thead>
+      <tbody>${logs.map(l => {
+        const name = l.employees ? `${l.employees.first_name} ${l.employees.last_name}` : '&mdash;';
+        const unit = l.employees && l.employees.unit ? `<div class="facility-domain">${l.employees.unit}</div>` : '';
+        const time = new Date(l.checked_in_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+        const amount = l.is_free_meal ? 'Free' : '$' + parseFloat(l.amount_charged || 0).toFixed(2);
+        const status = l.is_voided ? '<span class="status-voided">Voided</span>' : '<span class="status-valid">Valid</span>';
+        return `<tr${l.is_voided ? ' style="opacity:.5"' : ''}>
+          <td><strong>${name}</strong>${unit}</td>
+          <td class="num-cell">${time}</td>
+          <td>${l.meal_type || '&mdash;'}</td>
+          <td class="num-cell">${amount}</td>
+          <td>${status}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+  } catch (e) {
+    document.getElementById('mealModalBody').innerHTML = `<div class="empty-msg">Error: ${e.message}</div>`;
+  }
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMealModal(); });
+
 function renderTable(facilities, meals, rounds, rooms, ratingSums, ratingCounts, lowStock) {
   if (!facilities.length) {
     document.getElementById('tbody').innerHTML = `<tr><td colspan="5" class="empty-msg">No facilities found.</td></tr>`;
@@ -294,7 +385,7 @@ function renderTable(facilities, meals, rounds, rooms, ratingSums, ratingCounts,
         <div class="facility-cell">${f.display_name || f.name}</div>
         <div class="facility-domain">${f.domain || ''}</div>
       </td>
-      <td class="num-cell">${mealCount}</td>
+      <td class="num-cell clickable-cell" data-facility-id="${f.id}" data-facility-name="${(f.display_name || f.name || '').replace(/"/g,'&quot;')}" onclick="showMealDetail(this.dataset.facilityId, this.dataset.facilityName)">${mealCount}</td>
       <td class="num-cell">${roundCount}${pct != null ? `<span class="pct-pill">${pct}% of ${roomCount}</span>` : ''}</td>
       <td class="num-cell ${ratingCls}">${avgRating != null ? avgRating.toFixed(1) + ' / 5' : '—'}</td>
       <td class="${low > 0 ? 'low-stock-flag' : 'low-stock-ok'}">${low > 0 ? low + ' item' + (low===1?'':'s') : 'none'}</td>
