@@ -934,14 +934,22 @@ function exportCSV() {
     return !q || name.includes(q);
   });
   if (!rows.length) { showToast('No data to export'); return; }
-  const header = 'Employee,Employee ID,Unit,Date,Time,Type,Amount,Ticket #\n';
+  rows = rows.slice().sort((a, b) => {
+    const aLast  = (a.employees?.last_name  || '').toLowerCase();
+    const bLast  = (b.employees?.last_name  || '').toLowerCase();
+    const aFirst = (a.employees?.first_name || '').toLowerCase();
+    const bFirst = (b.employees?.first_name || '').toLowerCase();
+    return aLast.localeCompare(bLast) || aFirst.localeCompare(bFirst);
+  });
+  const header = 'Last Name,First Name,Employee ID,Unit,Date,Time,Type,Amount,Ticket #\n';
   const csv = header + rows.map(l => {
-    const name = l.employees ? l.employees.first_name+' '+l.employees.last_name : 'Unknown';
+    const lastName  = l.employees?.last_name  || 'Unknown';
+    const firstName = l.employees?.first_name || '';
     const dt = new Date(l.checked_in_at);
     const date = dt.toLocaleDateString('en-US');
     const time = dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
     const amount = l.is_free_meal ? 'Free' : '$'+parseFloat(l.amount_charged).toFixed(2);
-    return `"${name}",${l.employees?.employee_number||''},${l.employees?.unit||''},${date},${time},${l.meal_type},${amount},${l.ticket_number||''}`;
+    return `"${lastName}","${firstName}",${l.employees?.employee_number||''},${l.employees?.unit||''},${date},${time},${l.meal_type},${amount},${l.ticket_number||''}`;
   }).join('\n');
   const blob = new Blob([csv], {type:'text/csv'});
   const url  = URL.createObjectURL(blob);
