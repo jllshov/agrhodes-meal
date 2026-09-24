@@ -121,6 +121,22 @@
 
   .empty-msg { padding: 60px 20px; text-align: center; color: var(--text2); }
 
+  .section-title { font-size: 1.05rem; font-weight: 800; margin: 40px 0 14px; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+  .btn-sm {
+    padding: 8px 14px; border-radius: 10px; font-size: 0.78rem; font-weight: 700;
+    cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--text2);
+  }
+  .btn-sm.active { border-color: var(--accent); color: var(--accent-d); background: var(--accent-l); }
+  .btn-sm.btn-accent { border: none; background: var(--accent); color: #fff; }
+  .filter-input {
+    padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface); font-size: 0.82rem; font-family: 'Nunito', sans-serif; color: var(--text);
+  }
+  .custom-range-wrap { display: none; gap: 8px; align-items: center; }
+  .custom-range-wrap.open { display: flex; }
+  .report-summary { color: var(--text2); font-size: 0.82rem; margin-bottom: 14px; }
+
   .clickable-cell { cursor: pointer; }
   .clickable-cell:hover { text-decoration: underline; text-decoration-color: var(--accent); }
 
@@ -200,6 +216,32 @@
         </tbody>
       </table>
     </div>
+    <div class="section-title">Meal report &mdash; all facilities</div>
+    <div class="toolbar">
+      <button class="btn-sm active" onclick="setCorpReportRange('today', this)">Today</button>
+      <button class="btn-sm" onclick="setCorpReportRange('7days', this)">Last 7 days</button>
+      <button class="btn-sm" onclick="setCorpReportRange('30days', this)">Last 30 days</button>
+      <button class="btn-sm" onclick="setCorpReportRange('month', this)">This month</button>
+      <button class="btn-sm" onclick="setCorpReportRange('custom', this)">Custom</button>
+      <div class="custom-range-wrap" id="corpCustomRangeWrap">
+        <input type="date" class="filter-input" id="corpReportFrom" onchange="loadCorpReport()"/>
+        <span style="font-size:.8rem;color:var(--text2);font-weight:600">to</span>
+        <input type="date" class="filter-input" id="corpReportTo" onchange="loadCorpReport()"/>
+      </div>
+      <input type="text" class="filter-input" id="corpReportSearch" placeholder="Search employee&hellip;" oninput="filterCorpReport()" style="min-width:160px"/>
+      <button class="btn-sm btn-accent" onclick="exportCorpReportCSV()">Export CSV</button>
+    </div>
+    <div class="report-summary" id="corpReportSummary"></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Facility</th><th>Employee</th><th>Date</th><th>Time</th><th>Type</th><th>Amount</th></tr>
+        </thead>
+        <tbody id="corpReportTbody">
+          <tr><td colspan="6" class="empty-msg">Unlock to load the report.</td></tr>
+        </tbody>
+      </table>
+    </div>
   </main>
 </div>
 
@@ -256,6 +298,8 @@ function logout() {
 }
 
 // ─── Data ─────────────────────────────────────────────────
+let allFacilities = [];
+
 function groupCount(rows, key) {
   const out = {};
   rows.forEach(r => { const k = r[key]; out[k] = (out[k] || 0) + 1; });
@@ -278,6 +322,9 @@ async function loadAll() {
       sb(`feedback?submitted_at=gte.${weekAgo.toISOString()}&select=facility_id,overall_meal`),
       sb(`dietary_inventory?select=facility_id,current_quantity,minimum_level`),
     ]);
+
+    allFacilities = facilities;
+    if (!corpReportDateFrom) setCorpReportRange('today', document.querySelector('.toolbar .btn-sm'));
 
     const mealsByFacility  = groupCount(mealLogs, 'facility_id');
     const roundsByFacility = groupCount(zoneRounds, 'facility_id');
@@ -391,6 +438,139 @@ function renderTable(facilities, meals, rounds, rooms, ratingSums, ratingCounts,
       <td class="${low > 0 ? 'low-stock-flag' : 'low-stock-ok'}">${low > 0 ? low + ' item' + (low===1?'':'s') : 'none'}</td>
     </tr>`;
   }).join('');
+}
+
+// ─── Meal report (all facilities) ──────────────────────────
+let corpReportRows = [];
+let corpReportDateFrom = null;
+let corpReportDateTo   = null;
+
+function facilityNameById(id) {
+  const f = allFacilities.find(x => x.id === id);
+  return f ? (f.display_name || f.name) : 'Unknown facility';
+}
+
+function setCorpReportRange(range, el) {
+  const today = new Date();
+  let from, to;
+
+  document.querySelectorAll('.toolbar .btn-sm').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  const customWrap = document.getElementById('corpCustomRangeWrap');
+
+  if (range === 'custom') {
+    customWrap.classList.add('open');
+    return;
+  }
+  customWrap.classList.remove('open');
+
+  switch (range) {
+    case 'today':  from = to = today; break;
+    case '7days':  from = new Date(today - 6*86400000); to = today; break;
+    case '30days': from = new Date(today - 29*86400000); to = today; break;
+    case 'month':  from = new Date(today.getFullYear(), today.getMonth(), 1); to = today; break;
+  }
+
+  corpReportDateFrom = from.toISOString().split('T')[0];
+  corpReportDateTo   = to.toISOString().split('T')[0];
+  loadCorpReport();
+}
+
+async function loadCorpReport() {
+  const customFrom = document.getElementById('corpReportFrom').value;
+  const customTo   = document.getElementById('corpReportTo').value;
+  if (document.getElementById('corpCustomRangeWrap').classList.contains('open')) {
+    if (!customFrom || !customTo) return;
+    corpReportDateFrom = customFrom;
+    corpReportDateTo   = customTo;
+  }
+  if (!corpReportDateFrom || !corpReportDateTo) return;
+
+  const start = corpReportDateFrom + 'T00:00:00';
+  const end   = corpReportDateTo   + 'T23:59:59';
+
+  document.getElementById('corpReportTbody').innerHTML = '<tr><td colspan="6" class="empty-msg">Loading&hellip;</td></tr>';
+
+  try {
+    corpReportRows = await sb(
+      `meal_logs?is_voided=eq.false` +
+      `&checked_in_at=gte.${new Date(start).toISOString()}` +
+      `&checked_in_at=lte.${new Date(end).toISOString()}` +
+      `&select=*,employees(employee_number,first_name,last_name,unit)`
+    );
+    const grandTotal = corpReportRows.reduce((s, l) => s + parseFloat(l.amount_charged || 0), 0);
+    const rangeLabel = corpReportDateFrom === corpReportDateTo
+      ? corpReportDateFrom
+      : `${corpReportDateFrom} to ${corpReportDateTo}`;
+    document.getElementById('corpReportSummary').textContent =
+      `${rangeLabel} · ${corpReportRows.length} transactions · $${grandTotal.toFixed(2)} total · ${allFacilities.length} facilities`;
+    filterCorpReport();
+  } catch (e) {
+    document.getElementById('corpReportTbody').innerHTML = `<tr><td colspan="6" class="empty-msg">Error: ${e.message}</td></tr>`;
+  }
+}
+
+function filterCorpReport() {
+  const q = document.getElementById('corpReportSearch').value.toLowerCase();
+  const rows = corpReportRows.filter(l => {
+    const name = l.employees ? (l.employees.first_name + ' ' + l.employees.last_name).toLowerCase() : '';
+    return !q || name.includes(q);
+  });
+  const tbody = document.getElementById('corpReportTbody');
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">No transactions found.</td></tr>'; return; }
+  tbody.innerHTML = rows.map(l => {
+    const name = l.employees ? `${l.employees.first_name} ${l.employees.last_name}` : '&mdash;';
+    const dt = new Date(l.checked_in_at);
+    const date = dt.toLocaleDateString('en-US');
+    const time = dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    const amount = l.is_free_meal ? 'Free' : '$' + parseFloat(l.amount_charged || 0).toFixed(2);
+    return `<tr>
+      <td>${facilityNameById(l.facility_id)}</td>
+      <td><strong>${name}</strong></td>
+      <td class="num-cell">${date}</td>
+      <td class="num-cell">${time}</td>
+      <td>${l.meal_type || '&mdash;'}</td>
+      <td class="num-cell">${amount}</td>
+    </tr>`;
+  }).join('');
+}
+
+function exportCorpReportCSV() {
+  const q = document.getElementById('corpReportSearch').value.toLowerCase();
+  let rows = corpReportRows.filter(l => {
+    const name = l.employees ? (l.employees.first_name + ' ' + l.employees.last_name).toLowerCase() : '';
+    return !q || name.includes(q);
+  });
+  if (!rows.length) return;
+
+  rows = rows.slice().sort((a, b) => {
+    const aFac = facilityNameById(a.facility_id).toLowerCase();
+    const bFac = facilityNameById(b.facility_id).toLowerCase();
+    const aLast  = (a.employees?.last_name  || '').toLowerCase();
+    const bLast  = (b.employees?.last_name  || '').toLowerCase();
+    const aFirst = (a.employees?.first_name || '').toLowerCase();
+    const bFirst = (b.employees?.first_name || '').toLowerCase();
+    return aFac.localeCompare(bFac) || aLast.localeCompare(bLast) || aFirst.localeCompare(bFirst);
+  });
+
+  const header = 'Facility,Last Name,First Name,Employee ID,Unit,Date,Time,Type,Amount,Ticket #\n';
+  const csv = header + rows.map(l => {
+    const facility  = facilityNameById(l.facility_id);
+    const lastName  = l.employees?.last_name  || 'Unknown';
+    const firstName = l.employees?.first_name || '';
+    const dt = new Date(l.checked_in_at);
+    const date = dt.toLocaleDateString('en-US');
+    const time = dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    const amount = l.is_free_meal ? 'Free' : '$' + parseFloat(l.amount_charged || 0).toFixed(2);
+    return `"${facility}","${lastName}","${firstName}",${l.employees?.employee_number||''},${l.employees?.unit||''},${date},${time},${l.meal_type},${amount},${l.ticket_number||''}`;
+  }).join('\n');
+
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `corporate-meal-report-${corpReportDateFrom}-${corpReportDateTo}.csv`; a.click();
+  URL.revokeObjectURL(url);
 }
 </script>
 </body>
