@@ -660,7 +660,7 @@ async function toggleFreeMeal(id, val) {
 
 async function toggleActive(id, val) {
   try {
-    await sb(`employees?id=eq.${id}`, { method:'PATCH', body: JSON.stringify({ is_active: val }) });
+    await sb('rpc/set_employee_active', { method:'POST', body: JSON.stringify({ emp_id: id, active: val }) });
     await loadEmployees();
     showToast(val ? 'Employee activated' : 'Employee deactivated');
   } catch(e) { showToast('Error updating employee'); console.error(e); }
