@@ -2203,7 +2203,7 @@ async function saveEmployee() {
 
 async function removeEmployee(id) {
   if (!confirm('Remove this employee? Their room assignments will remain but won\'t resolve to a name until reassigned. Note: this also affects their record in the meal tracking app, since both apps share this employee list.')) return;
-  await sb.from('employees').update({ is_active: false }).eq('id', id);
+  await sb.rpc('set_employee_active', { emp_id: id, active: false });
   await loadEmployeesList();
   if (document.getElementById('emp-search').value.trim()) searchEmployees();
 }
