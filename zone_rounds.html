@@ -309,6 +309,12 @@ body.restricted-mode .app-shell { display: block; }
 .issue-type-label { font-size: 12px; font-weight: 700; }
 .issue-desc-label { font-size: 11.5px; color: var(--gray); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .issue-badge { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: var(--r-pill); flex-shrink: 0; }
+.ftag-chip { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; padding: 3px 8px; border-radius: var(--r-pill); background: var(--surface-dim); color: var(--black); box-shadow: var(--shadow-in); flex-shrink: 0; }
+.ftag-summary { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.ftag-summary-item { background: var(--surface); border-radius: var(--r-sm); box-shadow: var(--shadow-out); padding: 10px 14px; min-width: 0; }
+.ftag-summary-code { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; }
+.ftag-summary-count { font-size: 11px; font-weight: 700; color: var(--red); margin-left: 6px; }
+.ftag-summary-title { font-size: 11px; color: var(--gray); margin-top: 2px; }
 .badge-High { background: rgba(239,68,68,.12); color: var(--red); }
 .badge-Medium { background: rgba(245,158,11,.12); color: var(--amber); }
 .badge-Low { background: rgba(34,197,94,.12); color: var(--green); }
@@ -1106,6 +1112,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
       <button class="tab-pill" id="filter-In Progress" onclick="setIssueFilter(this,'In Progress')">In Progress</button>
       <button class="tab-pill" id="filter-Resolved" onclick="setIssueFilter(this,'Resolved')">Resolved</button>
     </div>
+    <div id="ftagSummary"></div>
     <div id="issuesList"></div>
   </div>
 
@@ -1479,6 +1486,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/ftags.js"></script>
 <script>
 const SUPABASE_URL  = 'https://gtbiatetqyuxwuehwilr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34';
@@ -1861,7 +1869,7 @@ async function loadDashboard() {
       return '<div class="issue-item">' +
         '<div class="issue-dot '+i.priority+'"></div>' +
         '<div class="issue-info">' +
-          '<div class="issue-type-label">'+i.issue_type+'</div>' +
+          '<div class="issue-type-label">'+i.issue_type+(i.ftag ? ' · <span title="'+((ftagInfo(i.ftag)||{}).title||'')+'">'+i.ftag+'</span>' : '')+'</div>' +
           '<div class="issue-desc-label">'+(i.issue_description||'—')+'</div>' +
         '</div>' +
         '<span class="issue-badge badge-'+i.priority+'">'+i.priority+'</span>' +
@@ -3055,6 +3063,26 @@ function toggleIssueDept(dept) {
   localStorage.setItem('agrhodes_issue_dept_open', JSON.stringify(state));
 }
 
+// Unresolved issues grouped by the F-Tag a surveyor would likely cite — the
+// facility's survey exposure at a glance. Hidden when nothing is tagged.
+function renderFtagSummary(issues) {
+  var el = document.getElementById('ftagSummary');
+  if (!el) return;
+  var counts = {};
+  issues.forEach(function(i){ if (i.ftag) counts[i.ftag] = (counts[i.ftag] || 0) + 1; });
+  var codes = Object.keys(counts).sort(function(a,b){ return counts[b] - counts[a] || a.localeCompare(b); });
+  if (!codes.length) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="card-title" style="margin-bottom:10px;">Survey Exposure by F-Tag</div>' +
+    '<div class="ftag-summary">' + codes.map(function(c){
+      var info = ftagInfo(c) || {};
+      return '<div class="ftag-summary-item" title="' + (info.plain || '') + '">' +
+        '<span class="ftag-summary-code">' + c + '</span>' +
+        '<span class="ftag-summary-count">' + counts[c] + (counts[c] === 1 ? ' issue' : ' issues') + '</span>' +
+        '<div class="ftag-summary-title">' + (info.title || '') + '</div>' +
+      '</div>';
+    }).join('') + '</div>';
+}
+
 async function loadIssues() {
   var list = document.getElementById('issuesList');
   list.innerHTML = '<div style="padding:20px;color:var(--gray)">Loading…</div>';
@@ -3064,6 +3092,7 @@ async function loadIssues() {
   var { data: issues } = await sb.from('zone_issues').select('*')
     .eq('facility_id', FACILITY_ID).eq('status', statusFilter)
     .order('created_at',{ascending:false});
+  renderFtagSummary(statusFilter === 'Resolved' ? [] : (issues || []));
   if (!issues||!issues.length) {
     var emptyMsg = statusFilter==='Resolved'?'No resolved issues yet':statusFilter==='In Progress'?'Nothing in progress':'✓ No open issues';
     var emptyColor = statusFilter==='Open'?'var(--green)':'var(--gray)';
@@ -3134,6 +3163,13 @@ async function loadIssues() {
       badge.className = 'issue-badge badge-' + i.priority;
       badge.textContent = i.priority;
       topRow.appendChild(desc);
+      if (i.ftag) {
+        var ftagEl = document.createElement('span');
+        ftagEl.className = 'ftag-chip';
+        ftagEl.textContent = i.ftag;
+        ftagEl.title = (ftagInfo(i.ftag) || {}).title || '';
+        topRow.appendChild(ftagEl);
+      }
       topRow.appendChild(badge);
       info.appendChild(topRow);
 

@@ -102,6 +102,13 @@ body { min-height: 100vh; padding-bottom: 100px; }
 .check-row { margin-bottom: 18px; }
 .check-row:last-child { margin-bottom: 0; }
 .check-label { font-size: 14.5px; font-weight: 700; margin-bottom: 10px; }
+.ftag-chip {
+  display: inline-block; margin-left: 6px; padding: 2px 7px; border-radius: var(--r-pill);
+  font-family: 'DM Mono', monospace; font-size: 10.5px; font-weight: 500; vertical-align: 1px;
+  color: var(--gray); background: var(--bg); box-shadow: var(--shadow-in);
+}
+.ftag-cite { font-size: 12px; color: var(--gray); margin: -4px 0 10px; line-height: 1.45; }
+.ftag-cite b { color: #DC2626; font-family: 'DM Mono', monospace; font-weight: 500; }
 .check-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
 .check-btn {
   padding: 13px 8px; border-radius: 14px; border: none; cursor: pointer;
@@ -420,6 +427,7 @@ body.login-mode { min-height: 100vh; padding-bottom: 0; display: flex; align-ite
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/ftags.js"></script>
 <script>
 const SUPABASE_URL  = 'https://gtbiatetqyuxwuehwilr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34';
@@ -458,28 +466,28 @@ var ADDITIONAL_CLEANING_ITEMS = [
 ];
 var OFFICE_SECTIONS = [
   { title:'Cleaning Tasks', dept:'Housekeeping', type:'passfail', items:[
-    { key:'trash_emptied', label:'Trash Emptied & Liner Replaced' },
-    { key:'surfaces_wiped', label:'Desk / Surfaces Wiped Down' },
-    { key:'floor_cleaned', label:'Floor Vacuumed or Mopped' },
+    { key:'trash_emptied', label:'Trash Emptied & Liner Replaced', ftag:'F584' },
+    { key:'surfaces_wiped', label:'Desk / Surfaces Wiped Down', ftag:'F880' },
+    { key:'floor_cleaned', label:'Floor Vacuumed or Mopped', ftag:'F584' },
     { key:'glass_cleaned', label:'Windows / Glass Cleaned' },
-    { key:'odor_free', label:'No Odors' }
+    { key:'odor_free', label:'No Odors', ftag:'F584' }
   ]},
   { title:'Additional Tasks', dept:'Housekeeping', type:'passfail', items: ADDITIONAL_CLEANING_ITEMS }
 ];
 var BATHROOM_SECTIONS = [
   { title:'Restroom Cleaning', dept:'Housekeeping', type:'passfail', items:[
-    { key:'toilet_disinfected', label:'Toilet / Urinal Cleaned & Disinfected' },
-    { key:'sink_cleaned', label:'Sink & Countertop Cleaned' },
+    { key:'toilet_disinfected', label:'Toilet / Urinal Cleaned & Disinfected', ftag:'F880' },
+    { key:'sink_cleaned', label:'Sink & Countertop Cleaned', ftag:'F880' },
     { key:'mirror_cleaned', label:'Mirror Cleaned' },
-    { key:'floor_mopped', label:'Floor Mopped' },
-    { key:'trash_emptied', label:'Trash Emptied & Liner Replaced' },
-    { key:'fixtures_wiped', label:'Grab Bars / Fixtures Wiped Down' },
-    { key:'odor_free', label:'No Odors' }
+    { key:'floor_mopped', label:'Floor Mopped', ftag:'F584' },
+    { key:'trash_emptied', label:'Trash Emptied & Liner Replaced', ftag:'F584' },
+    { key:'fixtures_wiped', label:'Grab Bars / Fixtures Wiped Down', ftag:'F880' },
+    { key:'odor_free', label:'No Odors', ftag:'F584' }
   ]},
   { title:'Supplies', dept:'Housekeeping', type:'passfail', items:[
-    { key:'soap_stocked', label:'Soap Dispenser Stocked' },
-    { key:'paper_stocked', label:'Paper Towels / Toilet Paper Stocked' },
-    { key:'sanitizer_stocked', label:'Hand Sanitizer Stocked' }
+    { key:'soap_stocked', label:'Soap Dispenser Stocked', ftag:'F880' },
+    { key:'paper_stocked', label:'Paper Towels / Toilet Paper Stocked', ftag:'F584' },
+    { key:'sanitizer_stocked', label:'Hand Sanitizer Stocked', ftag:'F880' }
   ]},
   { title:'Additional Tasks', dept:'Housekeeping', type:'passfail', items: ADDITIONAL_CLEANING_ITEMS }
 ];
@@ -489,30 +497,30 @@ var BATHROOM_SECTIONS = [
 // in-room bathroom, floors, curtain, restock), plus the same Additional Tasks.
 var ROOM_CLEANING_SECTIONS = [
   { title:'Bed & High-Touch Surfaces', dept:'Housekeeping', type:'passfail', items:[
-    { key:'bed_mattress_cleaned', label:'Bed & Mattress Cleaned (Terminal Clean)' },
-    { key:'bed_rails_wiped', label:'Bed Rails / Controls Wiped' },
-    { key:'light_switch_wiped', label:'Light Switch Wiped' },
-    { key:'doorknobs_wiped', label:'Door Knobs Wiped' },
-    { key:'iv_pole_wiped', label:'IV / G-Tube Pole (Grab Area) Wiped' },
-    { key:'call_box_wiped', label:'Call Box / Button / Remotes Wiped' },
-    { key:'tray_table_wiped', label:'Bedside / Tray Table Wiped' },
-    { key:'chairs_wiped', label:'Chair(s) Wiped' }
+    { key:'bed_mattress_cleaned', label:'Bed & Mattress Cleaned (Terminal Clean)', ftag:'F880' },
+    { key:'bed_rails_wiped', label:'Bed Rails / Controls Wiped', ftag:'F880' },
+    { key:'light_switch_wiped', label:'Light Switch Wiped', ftag:'F880' },
+    { key:'doorknobs_wiped', label:'Door Knobs Wiped', ftag:'F880' },
+    { key:'iv_pole_wiped', label:'IV / G-Tube Pole (Grab Area) Wiped', ftag:'F880' },
+    { key:'call_box_wiped', label:'Call Box / Button / Remotes Wiped', ftag:'F880' },
+    { key:'tray_table_wiped', label:'Bedside / Tray Table Wiped', ftag:'F880' },
+    { key:'chairs_wiped', label:'Chair(s) Wiped', ftag:'F880' }
   ]},
   { title:'Bathroom', dept:'Housekeeping', type:'passfail', items:[
     { key:'oversink_light_cleaned', label:'Over-Sink Light Cleaned (Terminal Clean)' },
-    { key:'room_sink_cleaned', label:'Room Sink Cleaned' },
-    { key:'bathroom_doorknob_cleaned', label:'Bathroom Doorknob / Plate & Light Switch Cleaned' },
-    { key:'handrails_wiped', label:'Handrails By Toilet Wiped' },
-    { key:'toilet_cleaned', label:'Toilet Seat, Flush Handle & Bedpan Cleaner Cleaned' }
+    { key:'room_sink_cleaned', label:'Room Sink Cleaned', ftag:'F880' },
+    { key:'bathroom_doorknob_cleaned', label:'Bathroom Doorknob / Plate & Light Switch Cleaned', ftag:'F880' },
+    { key:'handrails_wiped', label:'Handrails By Toilet Wiped', ftag:'F880' },
+    { key:'toilet_cleaned', label:'Toilet Seat, Flush Handle & Bedpan Cleaner Cleaned', ftag:'F880' }
   ]},
   { title:'Floors & Curtain', dept:'Housekeeping', type:'passfail', items:[
-    { key:'room_floor_mopped', label:'Room Floor Swept & Mopped' },
-    { key:'restroom_floor_mopped', label:'Restroom Floor Mopped' },
-    { key:'privacy_curtain_checked', label:'Privacy Curtain Inspected / Cleaned / Replaced' }
+    { key:'room_floor_mopped', label:'Room Floor Swept & Mopped', ftag:'F584' },
+    { key:'restroom_floor_mopped', label:'Restroom Floor Mopped', ftag:'F584' },
+    { key:'privacy_curtain_checked', label:'Privacy Curtain Inspected / Cleaned / Replaced', ftag:'F880' }
   ]},
   { title:'Trash & Supplies', dept:'Housekeeping', type:'passfail', items:[
-    { key:'trash_clean_before_liner', label:'Trash Cans Clean Inside/Out Before New Liner' },
-    { key:'supplies_stocked', label:'PPE, Hand Sanitizer, Soap, Paper Products Stocked' }
+    { key:'trash_clean_before_liner', label:'Trash Cans Clean Inside/Out Before New Liner', ftag:'F584' },
+    { key:'supplies_stocked', label:'PPE, Hand Sanitizer, Soap, Paper Products Stocked', ftag:'F880' }
   ]},
   { title:'Additional Tasks', dept:'Housekeeping', type:'passfail', items: ADDITIONAL_CLEANING_ITEMS }
 ];
@@ -540,30 +548,30 @@ function getLocConfig(loc) {
 var ROOM_SECTIONS = [
   { title:'Resident Status', dept:'Nursing', type:'yesno', items:[
     { key:'resident_contacted', label:'Resident Contacted' },
-    { key:'satisfaction', label:'Satisfied With Care' },
-    { key:'no_concerns', label:'No Concerns' }
+    { key:'satisfaction', label:'Satisfied With Care', ftag:'F585' },
+    { key:'no_concerns', label:'No Concerns', ftag:'F585' }
   ]},
   { title:'Safety', dept:'Safety', type:'passfail', items:[
-    { key:'call_light', label:'Call Light Working & Within Reach' },
-    { key:'bed_low_locked', label:'Bed Low & Locked' },
-    { key:'room_clutter', label:'Room Free of Clutter' },
-    { key:'no_chemicals', label:'No Signs of Chemicals Present', dept:'Infection Control' },
-    { key:'cords_safe', label:'Power Cords Not Daisy-Chained or Improperly Placed', dept:'Maintenance' }
+    { key:'call_light', label:'Call Light Working & Within Reach', ftag:'F919' },
+    { key:'bed_low_locked', label:'Bed Low & Locked', ftag:'F689' },
+    { key:'room_clutter', label:'Room Free of Clutter', ftag:'F689' },
+    { key:'no_chemicals', label:'No Signs of Chemicals Present', dept:'Infection Control', ftag:'F689' },
+    { key:'cords_safe', label:'Power Cords Not Daisy-Chained or Improperly Placed', dept:'Maintenance', ftag:'K920' }
   ]},
   { title:'Cleanliness', dept:'Housekeeping', type:'passfail', items:[
-    { key:'floor_clean', label:'Floor Clean' },
-    { key:'bathroom_clean', label:'Bathroom Clean' },
-    { key:'trash_removed', label:'Trash Removed' }
+    { key:'floor_clean', label:'Floor Clean', ftag:'F584' },
+    { key:'bathroom_clean', label:'Bathroom Clean', ftag:'F584' },
+    { key:'trash_removed', label:'Trash Removed', ftag:'F584' }
   ]},
   { title:'Environment', dept:'Housekeeping', type:'passfail', items:[
-    { key:'curtains_clean', label:'Curtains Clean' },
-    { key:'odor_free', label:'No Odors' },
-    { key:'lighting', label:'Lighting Adequate' }
+    { key:'curtains_clean', label:'Curtains Clean', ftag:'F584' },
+    { key:'odor_free', label:'No Odors', ftag:'F584' },
+    { key:'lighting', label:'Lighting Adequate', ftag:'F584' }
   ]},
   { title:'Equipment', dept:'Maintenance', type:'passfail', items:[
-    { key:'furniture_intact', label:'Furniture Intact' },
-    { key:'equipment_functioning', label:'Equipment Functioning' },
-    { key:'no_maintenance', label:'No Maintenance Issues' }
+    { key:'furniture_intact', label:'Furniture Intact', ftag:'F584' },
+    { key:'equipment_functioning', label:'Equipment Functioning', ftag:'F908' },
+    { key:'no_maintenance', label:'No Maintenance Issues', ftag:'F584' }
   ]}
 ];
 
@@ -571,11 +579,11 @@ var ROOM_SECTIONS = [
 // for eoc_scores. Stored as JSON in zone_rounds.eoc_scores. Adjust freely later.
 var EOC_SECTIONS = [
   { title:'Environment of Care', dept:'Nursing', type:'passfail', items:[
-    { key:'cleanliness', label:'Area Clean & Organized' },
+    { key:'cleanliness', label:'Area Clean & Organized', ftag:'F584' },
     { key:'supplies_stocked', label:'Supplies Adequately Stocked' },
     { key:'signage_visible', label:'Required Signage Visible' },
-    { key:'equipment_functioning', label:'Equipment Functioning' },
-    { key:'safety_compliant', label:'Safety Requirements Met' },
+    { key:'equipment_functioning', label:'Equipment Functioning', ftag:'F908' },
+    { key:'safety_compliant', label:'Safety Requirements Met', ftag:'F689' },
     { key:'documentation_current', label:'Documentation Current' }
   ]}
 ];
@@ -953,9 +961,9 @@ var STRIP_WAX_SECTIONS = [
     { key:'floor_stripped', label:'Old Wax/Finish Fully Stripped' },
     { key:'floor_neutralized', label:'Floor Neutralized & Rinsed' },
     { key:'wax_applied', label:'New Wax/Finish Applied (Multiple Coats)' },
-    { key:'floor_dried', label:'Floor Fully Dried Before Resuming Use' },
+    { key:'floor_dried', label:'Floor Fully Dried Before Resuming Use', ftag:'F689' },
     { key:'furniture_protected', label:'Furniture & Baseboards Protected During Process' },
-    { key:'wet_floor_signs', label:'Wet Floor Warning Signs Posted' }
+    { key:'wet_floor_signs', label:'Wet Floor Warning Signs Posted', ftag:'F689' }
   ]}
 ];
 
@@ -998,7 +1006,7 @@ function renderChecklist() {
       var negVal = section.type === 'yesno' ? 'no' : 'fail';
       html +=
         '<div class="check-row">' +
-          '<div class="check-label">' + item.label + '</div>' +
+          '<div class="check-label">' + item.label + (item.ftag ? '<span class="ftag-chip" title="' + ((ftagInfo(item.ftag)||{}).title||'') + '">' + item.ftag + '</span>' : '') + '</div>' +
           '<div class="check-btns">' +
             '<button class="check-btn' + (val===posVal?' sel-pass':'') + '" onclick="setCheckValue(\''+item.key+'\',\''+posVal+'\',\''+itemDept+'\',\''+item.label.replace(/'/g,"\\'")+'\')">✓ ' + posLabel + '</button>' +
             '<button class="check-btn' + (val===negVal?' sel-fail':'') + '" onclick="setCheckValue(\''+item.key+'\',\''+negVal+'\',\''+itemDept+'\',\''+item.label.replace(/'/g,"\\'")+'\')">✕ ' + negLabel + '</button>' +
@@ -1060,11 +1068,21 @@ function removeAdmissionPhoto() {
   renderPhotoPreview();
 }
 
+function findItem(key) {
+  var sections = getSections();
+  for (var i = 0; i < sections.length; i++) {
+    var hit = sections[i].items.find(function(it){ return it.key === key; });
+    if (hit) return hit;
+  }
+  return null;
+}
+
 function setCheckValue(key, val, dept, label) {
   roundValues[key] = val;
   var isNegative = (val === 'fail' || val === 'no');
   if (isNegative && !issueDrafts[key]) {
-    issueDrafts[key] = { dept: dept, description: label + ' needs attention', priority: 'Medium' };
+    var item = findItem(key);
+    issueDrafts[key] = { dept: dept, description: label + ' needs attention', priority: 'Medium', ftag: item ? item.ftag || null : null };
   } else if (!isNegative) {
     delete issueDrafts[key];
   }
@@ -1079,6 +1097,7 @@ function renderIssueSlot(key) {
   slot.innerHTML =
     '<div class="issue-card" style="margin-top:10px;">' +
       '<div class="issue-card-title">⚠ Issue detected</div>' +
+      ftagCiteHTML(draft.ftag) +
       '<textarea rows="2" onchange="updateIssueDraft(\''+key+'\',\'description\',this.value)">' + draft.description + '</textarea>' +
       '<div class="priority-row">' +
         '<button class="priority-btn' + (draft.priority==='Low'?' sel-Low':'') + '" onclick="updateIssueDraft(\''+key+'\',\'priority\',\'Low\')">Low</button>' +
@@ -1086,6 +1105,12 @@ function renderIssueSlot(key) {
         '<button class="priority-btn' + (draft.priority==='High'?' sel-High':'') + '" onclick="updateIssueDraft(\''+key+'\',\'priority\',\'High\')">High</button>' +
       '</div>' +
     '</div>';
+}
+
+function ftagCiteHTML(code) {
+  var info = ftagInfo(code);
+  if (!info) return '';
+  return '<div class="ftag-cite">Surveyors could cite <b>' + code + '</b> — ' + info.title + '</div>';
 }
 
 function updateIssueDraft(key, field, value) {
@@ -1236,6 +1261,7 @@ async function submitRound() {
         facility_id: FACILITY_ID, round_id: insertedRound.id,
         room_number: loc.room_number || null, eoc_section: loc.eoc_section || null,
         issue_type: d.dept, issue_description: d.description, priority: d.priority,
+        ftag: d.ftag || null,
         status: 'Open', created_at: new Date().toISOString()
       });
     }
@@ -1246,6 +1272,7 @@ async function submitRound() {
         facility_id: FACILITY_ID, round_id: insertedRound.id,
         room_number: loc.room_number || null, eoc_section: loc.eoc_section || null,
         issue_type: iss.dept, issue_description: iss.description, priority: iss.priority,
+        ftag: null,
         status: 'Open', created_at: new Date().toISOString()
       });
     }
@@ -1253,6 +1280,12 @@ async function submitRound() {
 
   if (allIssues.length) {
     var { error: issueErr } = await sb.from('zone_issues').insert(allIssues);
+    // Until the zone_issues.ftag migration has run, retry without the column
+    // so issues are never lost over the F-Tag field.
+    if (issueErr && /ftag/.test(issueErr.message || '')) {
+      allIssues.forEach(function(i){ delete i.ftag; });
+      ({ error: issueErr } = await sb.from('zone_issues').insert(allIssues));
+    }
     if (issueErr) {
       showToast('Round was saved, but there was an error logging issues: ' + issueErr.message, 'error');
     }
