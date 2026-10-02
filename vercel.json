@@ -1,17 +1,15 @@
 {
   "cleanUrls": true,
-  "rewrites": [
+  "redirects": [
     {
-      "source": "/admin",
-      "destination": "/admin.html"
+      "source": "/",
+      "destination": "https://nursiao.com/meal/",
+      "permanent": false
     },
     {
-      "source": "/feedback",
-      "destination": "/feedback.html"
-    },
-    {
-      "source": "/ticket",
-      "destination": "/ticket.html"
+      "source": "/:path*",
+      "destination": "https://nursiao.com/meal/:path*",
+      "permanent": false
     }
   ],
   "headers": [
