@@ -1285,8 +1285,8 @@ table.policy-table tr:last-child td { border-bottom: none; }
       <div class="card-sub">Check what the resident brought in, then fill in quick details only for what's checked. No photo capture from this form — use the phone link above for that.</div>
 
       <div class="bulk-form" style="grid-template-columns:1fr 1fr 1fr 1fr;margin-bottom:18px;">
-        <div class="field"><label>Resident Name</label><input type="text" id="inv-resident-name" placeholder="Jane Doe"></div>
-        <div class="field"><label>Room</label><input type="text" id="inv-room" placeholder="Room 112"></div>
+        <div class="field"><label>Resident Initials</label><input type="text" id="inv-resident-name" placeholder="J.D." maxlength="8" autocomplete="off" title="Initials and room only — never a full name"></div>
+        <div class="field"><label>Room</label><input type="text" id="inv-room" placeholder="112"></div>
         <div class="field"><label>Admission Date</label><input type="date" id="inv-date"></div>
         <div class="field"><label>Completed By</label><input type="text" id="inv-completed-by" placeholder="Your name"></div>
       </div>
@@ -1633,8 +1633,8 @@ async function loadLeadCardsRow2() {
         '<div class="lead-card-avatar">🧳</div>' +
         '<button class="lead-card-action" onclick="navigateToSubtab(\'inventory\')" title="View in Patient Inventory">↗</button>' +
       '</div>' +
-      '<div class="lead-card-name">' + latestIntake.resident_name + '</div>' +
-      '<div class="lead-card-sub">' + (latestIntake.room_number||'') + ' · ' + latestIntake.completed_by + '</div>' +
+      '<div class="lead-card-name">' + escHtml(latestIntake.resident_name) + '</div>' +
+      '<div class="lead-card-sub">' + escHtml(latestIntake.room_number||'') + ' · ' + escHtml(latestIntake.completed_by) + '</div>' +
       '<div class="lead-card-tags"><span class="lead-card-tag">Latest Intake</span></div>' +
       '<div class="lead-card-dots">' +
         '<span class="lead-card-dot" style="background:var(--accent)"></span>' +
@@ -4275,13 +4275,29 @@ function updateInvField(key, field, value) {
   }
 }
 
+/* Residents are recorded by initials + room only (HIPAA minimum necessary). */
+function residentInitials(raw) {
+  var s = String(raw || '').trim();
+  if (!/^[A-Za-z. ]+$/.test(s)) return null;
+  var letters = s.toUpperCase().replace(/[^A-Z]/g, '');
+  if (letters.length < 1 || letters.length > 3) return null;
+  return letters.split('').join('.') + '.';
+}
+
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 async function saveInventory() {
-  var residentName = document.getElementById('inv-resident-name').value.trim();
+  var residentName = residentInitials(document.getElementById('inv-resident-name').value);
   var room = document.getElementById('inv-room').value.trim();
   var admissionDate = document.getElementById('inv-date').value;
   var completedBy = document.getElementById('inv-completed-by').value.trim();
 
-  if (!residentName) { alert('Enter the resident\'s name'); return; }
+  if (!residentName) { alert('Enter initials only, up to 3 letters (e.g. J.D.). No full names.'); return; }
+  if (!room) { alert('Enter the room number'); return; }
   if (!completedBy) { alert('Enter who completed this intake'); return; }
   if (!Object.keys(invSelected).length) { alert('Check at least one item, or select "Other" if the resident brought nothing listed'); return; }
 
@@ -4327,8 +4343,8 @@ async function loadSavedInventories() {
     var dt = new Date(row.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
     return '<div class="inv-saved-row">' +
       '<div style="flex:1;min-width:0;cursor:pointer;" onclick="openInventoryDetail('+idx+')">' +
-        '<div style="font-weight:700;font-size:13px;">' + row.resident_name + '</div>' +
-        '<div style="font-size:11.5px;color:var(--gray);margin-top:2px;">' + (row.room_number||'—') + ' · ' + itemCount + ' item' + (itemCount!==1?'s':'') + ' · ' + row.completed_by + ' · ' + dt + '</div>' +
+        '<div style="font-weight:700;font-size:13px;">' + escHtml(row.resident_name) + '</div>' +
+        '<div style="font-size:11.5px;color:var(--gray);margin-top:2px;">' + escHtml(row.room_number||'—') + ' · ' + itemCount + ' item' + (itemCount!==1?'s':'') + ' · ' + escHtml(row.completed_by) + ' · ' + dt + '</div>' +
       '</div>' +
       '<button class="neu-btn" style="font-size:11px;padding:7px 12px;flex-shrink:0;" onclick="event.stopPropagation();shareInventoryLink('+idx+')">🔗 Share</button>' +
       '<span style="color:var(--gray-light);cursor:pointer;" onclick="openInventoryDetail('+idx+')">View →</span>' +
