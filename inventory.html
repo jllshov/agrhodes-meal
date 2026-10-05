@@ -187,8 +187,9 @@ function renderNewIntakeForm() {
     '</div>' +
     '<div class="card">' +
       '<div class="section-title">Resident Info</div>' +
-      '<div class="field"><label>Resident Name</label><input type="text" id="inv-resident-name" placeholder="Jane Doe"></div>' +
-      '<div class="field"><label>Room</label><input type="text" id="inv-room" placeholder="Room 112"></div>' +
+      '<div class="field"><label>Resident Initials</label><input type="text" id="inv-resident-name" placeholder="J.D." maxlength="8" autocomplete="off" autocapitalize="characters"></div>' +
+      '<div class="field"><label>Room</label><input type="text" id="inv-room" placeholder="112"></div>' +
+      '<div class="rr-meta" style="margin-top:-4px">Initials and room only — never a full name.</div>' +
       '<div class="field"><label>Completed By</label><input type="text" id="inv-completed-by" placeholder="Your name" value="' + (localStorage.getItem('agrhodes_inv_staff')||'').replace(/"/g,'&quot;') + '"></div>' +
     '</div>' +
     '<div class="card">' +
@@ -287,12 +288,28 @@ function removeItemPhoto(key) {
   renderInvExpandList();
 }
 
+/* Residents are recorded by initials + room only (HIPAA minimum necessary). */
+function residentInitials(raw) {
+  var s = String(raw || '').trim();
+  if (!/^[A-Za-z. ]+$/.test(s)) return null;
+  var letters = s.toUpperCase().replace(/[^A-Z]/g, '');
+  if (letters.length < 1 || letters.length > 3) return null;
+  return letters.split('').join('.') + '.';
+}
+
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 async function saveInventory() {
-  var residentName = document.getElementById('inv-resident-name').value.trim();
+  var residentName = residentInitials(document.getElementById('inv-resident-name').value);
   var room = document.getElementById('inv-room').value.trim();
   var completedBy = document.getElementById('inv-completed-by').value.trim();
 
-  if (!residentName) { showToast('Enter the resident\'s name.', 'error'); return; }
+  if (!residentName) { showToast('Enter initials only, up to 3 letters (e.g. J.D.). No full names.', 'error'); return; }
+  if (!room) { showToast('Enter the room number.', 'error'); return; }
   if (!completedBy) { showToast('Enter who completed this intake.', 'error'); return; }
   if (!Object.keys(invSelected).length) { showToast('Check at least one item.', 'error'); return; }
   localStorage.setItem('agrhodes_inv_staff', completedBy);
@@ -341,7 +358,7 @@ function renderSaveSuccess(id, residentName) {
     '<div class="card success-wrap">' +
       '<div class="success-icon">✅</div>' +
       '<div class="success-title">Inventory Saved</div>' +
-      '<div class="success-sub">' + residentName + '\'s belongings have been logged.</div>' +
+      '<div class="success-sub">' + escHtml(residentName) + '\'s belongings have been logged.</div>' +
       '<div class="share-box">' +
         '<div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:10px;">Scan or share to view this record later</div>' +
         '<div class="share-qr" id="successQr"></div>' +
@@ -372,8 +389,8 @@ async function loadAndRenderView(id) {
 
   var html = '<div class="rr-header">' +
     '<div class="rr-icon">🧳</div>' +
-    '<div class="rr-name">' + row.resident_name + '</div>' +
-    '<div class="rr-meta">' + (row.room_number||'') + ' · Admitted ' + row.admission_date + ' · Logged by ' + row.completed_by + ' · ' + dt + '</div>' +
+    '<div class="rr-name">' + escHtml(row.resident_name) + '</div>' +
+    '<div class="rr-meta">' + escHtml(row.room_number||'') + ' · Admitted ' + escHtml(row.admission_date) + ' · Logged by ' + escHtml(row.completed_by) + ' · ' + dt + '</div>' +
   '</div>';
 
   html += '<div class="card"><div class="section-title">Belongings (' + items.length + ')</div>';
