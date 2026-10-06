@@ -1,5 +1,18 @@
 {
   "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "agrhodes-meal.vercel.app"
+        }
+      ],
+      "destination": "https://nursiao.com/meal/:path*",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/admin",
