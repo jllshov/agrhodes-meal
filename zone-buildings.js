@@ -90,7 +90,44 @@
     }).join('');
   }
 
+  /**
+   * Print only the room QR codes currently listed (respects the building filter).
+   * Folded halls don't print, so every listed hall is opened first; everything
+   * else on the Rooms screen is hidden for the printout and restored afterwards.
+   */
+  function printRoomCodes() {
+    var grid = document.getElementById('roomsGrid');
+    var panel = document.getElementById('panel-rooms');
+    if (!grid || !panel) { window.print(); return; }
+    if (!grid.querySelector('.qr-tile')) { alert('No QR codes are listed to print.'); return; }
+    var opened = Array.prototype.slice.call(grid.querySelectorAll('.hall-section:not(.open)'));
+    opened.forEach(function(s) { s.classList.add('open'); });
+    var hidden = [];
+    (function hideAround(el) {
+      var parent = el.parentElement;
+      if (!parent) return;
+      Array.prototype.forEach.call(parent.children, function(c) {
+        if (c !== el) { hidden.push([c, c.style.display]); c.style.display = 'none'; }
+      });
+      if (parent !== panel) hideAround(parent);
+    })(grid);
+    var restored = false;
+    function restore() {
+      if (restored) return;
+      restored = true;
+      opened.forEach(function(s) { s.classList.remove('open'); });
+      hidden.forEach(function(h) { h[0].style.display = h[1]; });
+      window.removeEventListener('afterprint', restore);
+    }
+    window.addEventListener('afterprint', restore);
+    setTimeout(function() {
+      window.print();
+      setTimeout(restore, 1000);  // browsers without afterprint
+    }, 250);  // let opened halls lay out
+  }
+
   window.ZoneBuildings = {
+    printRoomCodes: printRoomCodes,
     halls: halls,
     buildingOfHall: buildingOfHall,
     buildings: buildings,
