@@ -1035,7 +1035,11 @@ table.policy-table tr:last-child td { border-bottom: none; }
   <div id="panel-rooms" style="display:none;">
     <div class="page-header">
       <div><div class="page-title">Rooms</div><div class="page-sub">Room board, QR codes, employees &amp; zone assignments</div></div>
-      <button class="neu-btn no-print" onclick="ZoneBuildings.printRoomCodes()" title="Prints the room codes listed below — pick a building first to print just that building">🖨 Print these codes</button>
+      <span class="no-print" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <select id="zlSize" title="Brother DK label roll" onchange="ZoneLabels.setPreset(this.value)" style="padding:9px 12px;border:none;border-radius:10px;background:var(--bg);box-shadow:var(--shadow-in);font-family:inherit;font-size:12px;color:var(--black);"></select>
+        <button class="neu-btn primary" onclick="ZoneLabels.printListed(window._zoneRooms, FACILITY_QR_PREFIX, BASE_URL, document.getElementById('zlSize').value)" title="One label per room on the Brother QL printer — pick a building first to print just that building">🏷 Print labels</button>
+        <button class="neu-btn" onclick="ZoneBuildings.printRoomCodes()" title="Prints the room codes listed below on regular paper — pick a building first to print just that building">🖨 Print sheet</button>
+      </span>
     </div>
 
     <div class="card" style="margin-bottom:20px;">
@@ -1508,12 +1512,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
         <div class="room-hero-name" id="rdName">—</div>
         <div class="room-hero-unit" id="rdUnit"></div>
         <div style="display:flex;gap:8px;margin-top:14px;justify-content:center;flex-wrap:wrap;">
-          <select id="rdLabelSize" style="padding:9px 12px;border:none;border-radius:10px;background:var(--bg);box-shadow:var(--shadow-in);font-family:inherit;font-size:12px;color:var(--black);">
-            <option value="dk1201">DK-1201 Address (29×90mm)</option>
-            <option value="dk1241">DK-1241 Large Shipping (102×51mm)</option>
-            <option value="dk2210">DK-2210 Continuous (29mm)</option>
-            <option value="dk2205">DK-2205 Continuous (62mm)</option>
-          </select>
+          <select id="rdLabelSize" style="padding:9px 12px;border:none;border-radius:10px;background:var(--bg);box-shadow:var(--shadow-in);font-family:inherit;font-size:12px;color:var(--black);"></select>
           <button class="neu-btn primary" style="font-size:12px;" onclick="printCurrentRoomLabel()">🖨 Print This Label</button>
         </div>
       </div>
@@ -1579,6 +1578,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/zone-buildings.js"></script>
+<script src="/zone-labels.js"></script>
 <script src="/ftags.js"></script>
 <script>if (typeof ftagInfo !== 'function') { function ftagInfo() { return null; } }</script>
 <script>
@@ -2399,6 +2399,8 @@ function setRoomsBuilding(b) {
 
 /** Unit pickers list this facility's halls, grouped by building. */
 function fillHallPickers(rooms) {
+  var zl = document.getElementById('zlSize');
+  if (zl && !zl.options.length) zl.innerHTML = ZoneLabels.presetOptionsHtml();
   ['bulk-unit', 'single-unit'].forEach(function(id) {
     var sel = document.getElementById(id);
     if (!sel) return;
@@ -3346,7 +3348,7 @@ function renderQRTile(loc, container) {
 
   // Quick print icon — prints this one label without opening the full detail modal
   var printBtn = document.createElement('button');
-  printBtn.className = 'qr-tile-print-btn';
+  printBtn.className = 'qr-tile-print-btn no-print';
   printBtn.textContent = '🖨';
   printBtn.title = 'Print this label';
   printBtn.onclick = function(e) { printLabelForLoc(loc, qrDiv, e); };
@@ -3904,6 +3906,7 @@ document.addEventListener('click', function(e){
 var currentRoomLoc = null;
 
 async function openRoomDetail(loc) {
+  fillRoomLabelSize();
   currentRoomLoc = loc;
   var modal = document.getElementById('roomDetailModal');
   modal.style.display = 'flex';
@@ -4046,65 +4049,29 @@ async function removeRoomQR() {
 }
 
 
-// ── Brother QL-800 label printing ──
-// Common DK label roll dimensions in mm. Browsers can't talk to the printer directly,
-// but sizing the print job's @page to match the label lets you pick "Brother QL-800"
-// in the print dialog and have it line up instead of printing on a full sheet.
-var LABEL_PRESETS = {
-  'dk1201': { name:'DK-1201 Address (29\u00d790mm)', w:90, h:29 },
-  'dk1241': { name:'DK-1241 Large Shipping (102\u00d751mm)', w:102, h:51 },
-  'dk2210': { name:'DK-2210 Continuous (29mm)', w:60, h:29 },
-  'dk2205': { name:'DK-2205 Continuous (62mm)', w:62, h:62 }
-};
-
-function doPrintLabel(loc, presetKey, qrHolderEl) {
-  var preset = LABEL_PRESETS[presetKey] || LABEL_PRESETS['dk1201'];
-  var qrEl = qrHolderEl ? (qrHolderEl.querySelector('canvas') || qrHolderEl.querySelector('img')) : null;
-  var imgSrc = qrEl ? (qrEl.tagName === 'CANVAS' ? qrEl.toDataURL('image/png') : qrEl.src) : '';
-  if (!imgSrc) { alert('QR image isn\'t ready yet \u2014 try again in a moment.'); return; }
-
-  var win = window.open('', '_blank', 'width=480,height=380');
-  if (!win) { alert('Please allow pop-ups for this site to print labels.'); return; }
-
-  var subLabel = loc.unit || loc.eoc_department || '';
-  var big = preset.h > 40;
-
-  win.document.write(
-    '<!DOCTYPE html><html><head><title>Label \u2014 ' + loc.display_name + '</title><style>' +
-    '@page { size: ' + preset.w + 'mm ' + preset.h + 'mm; margin: 0; }' +
-    '*{box-sizing:border-box;}' +
-    'html,body{margin:0;padding:0;width:' + preset.w + 'mm;height:' + preset.h + 'mm;}' +
-    '.label{width:' + preset.w + 'mm;height:' + preset.h + 'mm;display:flex;align-items:center;justify-content:center;' +
-      'gap:2.5mm;padding:1.5mm;font-family:Arial,Helvetica,sans-serif;overflow:hidden;}' +
-    '.label img{height:100%;max-height:' + (preset.h - 3) + 'mm;width:auto;flex-shrink:0;}' +
-    '.txt{min-width:0;}' +
-    '.txt .name{font-size:' + (big ? '11pt' : '8pt') + ';font-weight:700;line-height:1.15;word-break:break-word;}' +
-    '.txt .sub{font-size:' + (big ? '8pt' : '6pt') + ';color:#444;margin-top:0.8mm;}' +
-    '</style></head><body>' +
-    '<div class="label">' +
-      '<img src="' + imgSrc + '" alt="QR">' +
-      '<div class="txt"><div class="name">' + loc.display_name + '</div>' +
-        (subLabel ? '<div class="sub">' + subLabel + '</div>' : '') + '</div>' +
-    '</div>' +
-    '<script>window.onload=function(){ setTimeout(function(){ window.print(); }, 150); };<\/script>' +
-    '</body></html>'
-  );
-  win.document.close();
+// ── Brother QL label printing (QL-700 / QL-800): see zone-labels.js ──
+function doPrintLabel(loc, presetKey) {
+  // Shared Brother label printer: black-on-white code, hall · building on the label
+  ZoneLabels.print([loc], BASE_URL, presetKey);
 }
 
 // Quick-print icon on each grid tile — uses the last size you picked in the modal
 function printLabelForLoc(loc, qrHolderEl, e) {
   if (e) e.stopPropagation();
-  var presetKey = localStorage.getItem('agrhodes_label_preset') || 'dk1201';
-  doPrintLabel(loc, presetKey, qrHolderEl);
+  doPrintLabel(loc, ZoneLabels.getPreset());
 }
 
 // Print button inside the room/area detail modal — respects the dropdown, remembers choice
+function fillRoomLabelSize() {
+  var sel = document.getElementById('rdLabelSize');
+  if (sel) sel.innerHTML = ZoneLabels.presetOptionsHtml();
+}
+
 function printCurrentRoomLabel() {
   if (!currentRoomLoc) return;
   var presetKey = document.getElementById('rdLabelSize').value;
-  localStorage.setItem('agrhodes_label_preset', presetKey);
-  doPrintLabel(currentRoomLoc, presetKey, document.getElementById('rdQrHolder'));
+  ZoneLabels.setPreset(presetKey);
+  doPrintLabel(currentRoomLoc, presetKey);
 }
 
 
