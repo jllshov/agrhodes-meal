@@ -376,6 +376,15 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
 
 /* ── Collapsible hall sections ── */
 .hall-section { margin-bottom: 16px; width: 100%; display: block; }
+/* Buildings (multi-building campus) — public/zone-buildings.js */
+.zb-filter { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+.zb-pill { border: none; border-radius: 999px; padding: 8px 14px; font: inherit; font-size: 12.5px; font-weight: 600;
+  background: var(--bg); color: var(--black); box-shadow: var(--shadow-out); cursor: pointer; }
+.zb-pill.active { background: var(--black); color: #fff; box-shadow: none; }
+.zb-building-title { font-size: 15px; font-weight: 800; margin: 22px 0 10px; letter-spacing: -.01em; }
+.zb-building-title:first-child { margin-top: 0; }
+.zb-building-title span { font-size: 12px; font-weight: 600; color: var(--gray); margin-left: 6px; }
+
 #roomsGrid, #eocGrid { display: flex; flex-direction: column; gap: 4px; width: 100%; }
 .hall-header {
   display: flex; align-items: center; gap: 12px; cursor: pointer;
@@ -545,16 +554,14 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
       <div class="card-sub">Enter a unit and room number range to create QR codes at once</div>
       <div class="bulk-form">
         <div class="field"><label>Unit</label>
-          <select id="bulk-unit">
-            <option>Taylor Hall</option><option>ICF Hall</option>
-            <option>Garden Hall</option><option>Victoria Court</option>
-          </select>
+          <select id="bulk-unit"></select>
         </div>
         <div class="field"><label>Start Room #</label><input type="number" id="bulk-start" placeholder="101"></div>
         <div class="field"><label>End Room #</label><input type="number" id="bulk-end" placeholder="140"></div>
         <button class="neu-btn primary" onclick="generateBulkRooms()">Generate</button>
       </div>
     </div>
+    <div id="roomsBuildingBar"></div>
     <div id="roomsGrid"></div>
   </div>
 
@@ -663,10 +670,11 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/zone-buildings.js"></script>
 <script>
 const SUPABASE_URL  = 'https://gtbiatetqyuxwuehwilr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34';
-const DEFAULT_FACILITY_DOMAIN = 'agrhodes-meal.vercel.app'; // fallback for localhost/preview URLs
+const DEFAULT_FACILITY_DOMAIN = "agrhodes-meal.vercel.app"; // fallback for localhost/preview URLs
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const BASE_URL = window.location.origin + '/round.html#round=';
 
@@ -851,13 +859,37 @@ async function loadRooms() {
   var { data: rooms } = await sb.from('room_qr_codes').select('*')
     .eq('facility_id', FACILITY_ID).eq('location_type','room').eq('is_active', true);
 
+  rooms = rooms || [];
+  window._zoneRooms = rooms;
   var byUnit = {};
-  (rooms||[]).forEach(function(r){ (byUnit[r.unit]=byUnit[r.unit]||[]).push(r); });
+  rooms.forEach(function(r){ (byUnit[r.unit]=byUnit[r.unit]||[]).push(r); });
+
+  // Halls come from this facility's own codes (Atlanta also keeps its four fixed halls),
+  // grouped by building on a multi-building campus, filtered by the building pills.
+  var allBuildings = ZoneBuildings.buildings(rooms);
+  var bFilter = ZoneBuildings.getFilter(FACILITY_QR_PREFIX);
+  if (allBuildings.indexOf(bFilter) < 0) bFilter = '';
+  var bar = document.getElementById('roomsBuildingBar');
+  if (bar) bar.innerHTML = ZoneBuildings.filterBarHtml(rooms, bFilter, 'setRoomsBuilding');
+  fillHallPickers(rooms);
 
   grid.innerHTML = '';
+  if (!rooms.length && !ZoneBuildings.isAtlanta(FACILITY_QR_PREFIX)) {
+    grid.innerHTML = '<div style="padding:16px;color:var(--gray-light);font-size:12.5px;text-align:center;">No room QR codes yet. ' +
+      'Add the halls and rooms in Nursiao → Census → Building Setup, then Sync to Zone Defense.</div>';
+    return;
+  }
 
-  // Always render all 4 halls, even if empty — persistent structure
-  HALLS.forEach(function(hall) {
+  ZoneBuildings.groups(rooms, FACILITY_QR_PREFIX).forEach(function(grp) {
+  if (bFilter && grp.building !== bFilter) return;
+  if (allBuildings.length) {
+    var count = grp.halls.reduce(function(n, h){ return n + (byUnit[h] || []).length; }, 0);
+    var title = document.createElement('div');
+    title.className = 'zb-building-title';
+    title.innerHTML = escZb(grp.building || 'No building') + '<span>' + count + ' room code' + (count === 1 ? '' : 's') + '</span>';
+    grid.appendChild(title);
+  }
+  grp.halls.forEach(function(hall) {
     var roomsInHall = (byUnit[hall] || []).sort(function(a,b){return (+a.room_number)-(+b.room_number);});
     var isOpen = hallOpenState[hall] !== false; // default open
 
@@ -895,6 +927,28 @@ async function loadRooms() {
     section.appendChild(body);
     grid.appendChild(section);
   });
+  });
+}
+
+function escZb(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function setRoomsBuilding(b) {
+  ZoneBuildings.setFilter(FACILITY_QR_PREFIX, b);
+  loadRooms();
+}
+
+/** Unit pickers list this facility's halls, grouped by building. */
+function fillHallPickers(rooms) {
+  ['bulk-unit', 'single-unit'].forEach(function(id) {
+    var sel = document.getElementById(id);
+    if (!sel) return;
+    var keep = sel.value;
+    sel.innerHTML = ZoneBuildings.hallOptionsHtml(rooms, FACILITY_QR_PREFIX) ||
+      '<option value="">Add halls in Nursiao first</option>';
+    if (keep) sel.value = keep;
+  });
 }
 
 function toggleHall(hall) {
@@ -911,10 +965,15 @@ async function generateBulkRooms() {
   var start = +document.getElementById('bulk-start').value;
   var end = +document.getElementById('bulk-end').value;
   if (!start||!end||end<start) { alert('Enter a valid room range'); return; }
+  // Hall goes into the id (like Nursiao's sync) so two halls with the same room number never collide
+  var unitSlug = unit.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+  var building = ZoneBuildings.buildingOfHall(window._zoneRooms, unit);
   var rows = [];
   for (var n=start; n<=end; n++) {
-    rows.push({ facility_id:FACILITY_ID, location_type:'room', room_number:String(n),
-      unit:unit, display_name:'Room '+n, qr_identifier:FACILITY_QR_PREFIX+'-room-'+n });
+    var row = { facility_id:FACILITY_ID, location_type:'room', room_number:String(n),
+      unit:unit, display_name:'Room '+n, qr_identifier:FACILITY_QR_PREFIX+'-'+unitSlug+'-room-'+n };
+    if (building) row.building = building;
+    rows.push(row);
   }
   var { error } = await sb.from('room_qr_codes').upsert(rows, {onConflict:'facility_id,qr_identifier'});
   if (error) { alert('Error: '+error.message); return; }
@@ -991,7 +1050,7 @@ function renderQRTile(loc, container) {
 
   var metaDiv = document.createElement('div');
   metaDiv.className = 'qr-tile-meta';
-  metaDiv.textContent = loc.unit || loc.eoc_department || '';
+  metaDiv.textContent = (loc.unit || loc.eoc_department || '') + (loc.building ? ' · ' + loc.building : '');
   tile.appendChild(metaDiv);
 
   var idDiv = document.createElement('div');

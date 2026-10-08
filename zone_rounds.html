@@ -7,31 +7,39 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #E8E4D9;
-  --frame: #232320;
-  --surface: #F5F3EC;
-  --surface-dim: #ECE9DF;
-  --orange: #1D1D1B;
-  --orange-light: #EFF0C9;
-  --accent: #D8F93C;
-  --accent-dim: #EDF9A6;
-  --black: #1A1A17;
-  --gray: #8B856F;
-  --gray-light: #B7B09A;
-  --green: #4CAF6E;
-  --red: #E15B4E;
-  --amber: #DFA83C;
-  --shadow-out: 0 6px 18px rgba(35,35,32,.08);
-  --shadow-in: inset 0 2px 6px rgba(35,35,32,.10);
-  --shadow-card: 0 14px 34px rgba(35,35,32,.09);
-  --r: 28px;
-  --r-sm: 16px;
+  --navy: #0b2a4a;
+  --navy-2: #103a63;
+  --cyan: #0fb5c9;
+  --cyan-soft: #e3f7fa;
+  --bg: #f2f5f7;
+  --frame: #0b2a4a;
+  --surface: #ffffff;
+  --surface-dim: #eef3f6;
+  --orange: #ff6b1a;
+  --orange-dark: #e55a0e;
+  --orange-light: #fff4ec;
+  --accent: #0fb5c9;
+  --accent-dim: #e3f7fa;
+  --black: #10233b;
+  --ink: #10233b;
+  --ink-2: #5b6b7f;
+  --line: #e4eaef;
+  --gray: #5b6b7f;
+  --gray-light: #9aa8b8;
+  --green: #1d9e6b;
+  --red: #d64545;
+  --amber: #d99413;
+  --shadow-out: 0 1px 2px rgba(16,35,59,.06);
+  --shadow-in: inset 0 1px 2px rgba(16,35,59,.06);
+  --shadow-card: 0 1px 2px rgba(16,35,59,.05);
+  --r: 16px;
+  --r-sm: 12px;
   --r-pill: 999px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { background: var(--frame); font-family: 'Inter', sans-serif; color: var(--black); }
-body { min-height: 100vh; display: flex; padding: 18px; }
-h1,h2,.page-title,.stat-num,.rr-name,.room-hero-name { font-family: 'Outfit', 'Inter', sans-serif; }
+html, body { background: var(--frame); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--black); }
+body { min-height: 100vh; display: flex; padding: 0; }
+h1,h2,.page-title,.stat-num,.rr-name,.room-hero-name { font-family: inherit; }
 
 /* ── Admin login gate ── */
 /* ── Restricted manager session (Survey Prep only) ── */
@@ -69,8 +77,8 @@ body.restricted-mode .app-shell { display: block; }
 /* ── App shell — the dark rounded outer frame from the reference ── */
 .app-shell {
   display: flex; width: 100%; background: var(--bg);
-  border-radius: 40px; overflow: hidden; box-shadow: 0 30px 70px rgba(0,0,0,.35);
-  min-height: calc(100vh - 36px);
+  border-radius: 0; overflow: hidden; box-shadow: none;
+  min-height: 100vh;
 }
 
 /* ── Sidebar ── */
@@ -93,9 +101,18 @@ body.restricted-mode .app-shell { display: block; }
 
 .shell-inner { width: 100%; display: flex; flex-direction: column; }
 .topbar {
-  display: flex; align-items: center; gap: 20px; padding: 20px 32px;
-  background: var(--surface-dim); border-bottom: 1px solid rgba(0,0,0,.05); flex-wrap: wrap;
+  display: flex; align-items: center; gap: 16px; padding: 14px 20px;
+  background: var(--navy); border-bottom: 1px solid rgba(255,255,255,.08); flex-wrap: wrap; color: #fff;
 }
+.topbar .sidebar-logo-name { color: #fff; }
+.topbar .sidebar-logo-sub { color: #b9c9da; }
+.topbar .nav-item { color: #b9c9da; }
+.topbar .nav-item:hover { background: rgba(255,255,255,.08); color: #fff; }
+.topbar .nav-item.active, .topbar .nav-item.group-active {
+  background: rgba(255,107,26,.18); color: #fff; box-shadow: inset 0 0 0 1px rgba(255,107,26,.35);
+}
+.topbar .neu-btn { background: rgba(255,255,255,.1); color: #fff; box-shadow: none; }
+.topbar .neu-btn:hover { background: rgba(255,255,255,.16); }
 .topbar-left { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .pill-nav { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
 .topbar-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
@@ -136,6 +153,9 @@ body.restricted-mode .app-shell { display: block; }
 
 /* ── Main ── */
 .main { flex: 1; padding: 28px 32px; overflow-y: auto; }
+.main:has(#panel-dashboard:not([style*="display: none"])) { padding-top: 0; padding-left: 0; padding-right: 0; }
+#panel-dashboard .today-hero { margin: 0 0 18px; border-radius: 0 0 26px 26px; }
+#panel-dashboard > div[style*="padding:0 4px"] { padding-left: 32px !important; padding-right: 32px !important; }
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; }
 .page-title { font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
 .page-sub { font-size: 13px; color: var(--gray); margin-top: 3px; }
@@ -219,7 +239,7 @@ body.restricted-mode .app-shell { display: block; }
 /* ── Cards ── */
 .card {
   background: var(--surface); border-radius: var(--r);
-  box-shadow: var(--shadow-card); padding: 22px;
+  border: 1px solid var(--line); box-shadow: var(--shadow-card); padding: 18px;
 }
 .card-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
 .card-sub { font-size: 12px; color: var(--gray); margin-bottom: 18px; }
@@ -519,6 +539,15 @@ body.restricted-mode .app-shell { display: block; }
 
 /* ── Collapsible hall sections ── */
 .hall-section { margin-bottom: 16px; width: 100%; display: block; }
+/* Buildings (multi-building campus) — public/zone-buildings.js */
+.zb-filter { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+.zb-pill { border: none; border-radius: 999px; padding: 8px 14px; font: inherit; font-size: 12.5px; font-weight: 600;
+  background: var(--bg); color: var(--black); box-shadow: var(--shadow-out); cursor: pointer; }
+.zb-pill.active { background: var(--black); color: #fff; box-shadow: none; }
+.zb-building-title { font-size: 15px; font-weight: 800; margin: 22px 0 10px; letter-spacing: -.01em; }
+.zb-building-title:first-child { margin-top: 0; }
+.zb-building-title span { font-size: 12px; font-weight: 600; color: var(--gray); margin-left: 6px; }
+
 #roomsGrid, #eocGrid { display: flex; flex-direction: column; gap: 4px; width: 100%; }
 .hall-header {
   display: flex; align-items: center; gap: 12px; cursor: pointer;
@@ -697,6 +726,68 @@ table.policy-table tr:last-child td { border-bottom: none; }
 .sp-item-comment { width: 100%; padding: 7px 9px; border: none; border-radius: 8px; background: var(--surface); box-shadow: var(--shadow-in); font-family: inherit; font-size: 11.5px; }
 .sp-corrective-row { background: var(--bg); border-radius: 14px; padding: 12px 14px; box-shadow: var(--shadow-out); margin-bottom: 8px; }
 
+
+/* ── Today queue (redesign) ── */
+.today-hero{
+  background:linear-gradient(160deg,var(--navy) 0%,var(--navy-2) 70%,#155a7a 100%);
+  color:#fff; padding:8px 20px 22px; border-radius:0 0 26px 26px; margin: -8px -8px 18px;
+}
+.main #panel-dashboard { padding-top: 0; }
+.today-hero h3{font-size:28px;margin:8px 0 2px;font-weight:800;letter-spacing:-.4px;}
+.today-hero .sub{color:#b9c9da;font-size:14px;margin:0 0 14px;}
+.today-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.today-stat{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:10px 12px;}
+.today-stat .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:#9fb4c9;font-weight:700;margin-bottom:5px;}
+.today-stat .v{font-size:22px;font-weight:800;}
+.today-stat .v small{display:block;font-weight:500;color:#9fb4c9;font-size:11.5px;margin-top:2px;}
+.today-status-row{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+.today-dot{width:10px;height:10px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 4px rgba(217,148,19,.22);}
+.today-dot.done{background:var(--green);box-shadow:0 0 0 4px rgba(29,158,107,.22);}
+.today-pill{margin-left:auto;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:6px 10px;border-radius:999px;background:rgba(255,107,26,.16);color:#ffb27a;border:1px solid rgba(255,107,26,.5);}
+.today-pill.ok{background:rgba(29,158,107,.16);color:#7fe0b2;border-color:rgba(29,158,107,.5);}
+.today-cta{
+  display:flex;align-items:center;gap:14px;width:100%;
+  background:var(--orange);border:1px solid var(--orange-dark);color:#fff;
+  border-radius:16px;padding:15px 16px;margin-bottom:14px;cursor:pointer;font:inherit;text-align:left;
+  box-shadow:0 6px 16px rgba(255,107,26,.28);
+}
+.today-cta:disabled{opacity:.55;cursor:default;box-shadow:none;}
+.today-cta .ic{width:46px;height:46px;border-radius:14px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;flex:none;font-size:20px;}
+.today-cta .t{font-size:16px;font-weight:700;}
+.today-cta .s{font-size:13px;color:rgba(255,255,255,.85);margin-top:3px;}
+.today-cta .chev{margin-left:auto;font-size:20px;}
+.today-sect{margin:18px 0;}
+.today-sect h4{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-2);margin:0 4px 10px;font-weight:700;}
+.today-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.today-chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 13px;font:inherit;font-size:12.5px;font-weight:700;color:var(--ink-2);cursor:pointer;}
+.today-chip.sel{border-color:var(--orange);color:var(--orange-dark);background:var(--orange-light);}
+.today-list{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;}
+.today-row{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line);}
+.today-row:last-child{border-bottom:0;}
+.today-row .meta{flex:1;min-width:0;}
+.today-row .title{font-size:14.5px;font-weight:700;}
+.today-row .sub{font-size:12px;color:var(--ink-2);margin-top:2px;}
+.today-badge{font-size:11.5px;font-weight:700;border-radius:999px;padding:3px 9px;background:#eef3f6;color:var(--ink-2);}
+.today-badge.due{background:var(--orange);color:#fff;}
+.today-badge.warn{background:var(--red);color:#fff;}
+.today-badge.ok{background:var(--green);color:#fff;}
+.today-go{border:0;background:var(--navy);color:#fff;border-radius:10px;padding:8px 12px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;}
+.today-overview{margin-top:22px;border:1px solid var(--line);border-radius:16px;background:#fff;overflow:hidden;}
+.today-overview > summary{cursor:pointer;padding:14px 16px;font-weight:800;font-size:14px;list-style:none;display:flex;align-items:center;justify-content:space-between;}
+.today-overview > summary::-webkit-details-marker{display:none;}
+.today-overview > summary::after{content:'Show';font-size:12px;font-weight:700;color:var(--orange-dark);}
+.today-overview[open] > summary::after{content:'Hide';}
+.today-overview-body{padding:0 16px 16px;}
+.sidebar-logo-icon{background:var(--orange)!important;color:#fff!important;}
+.mobile-topbar{background:var(--navy)!important;color:#fff;}
+.mobile-logo-icon{background:var(--orange)!important;color:#fff!important;}
+.mobile-logo-name{color:#fff!important;}
+.mobile-drawer .nav-item.active{background:rgba(255,107,26,.12);color:var(--navy);}
+@media (max-width:900px){
+  .today-stats{grid-template-columns:1fr 1fr 1fr;}
+  .content-grid{grid-template-columns:1fr;}
+}
+
 </style>
 </head>
 <body>
@@ -736,59 +827,36 @@ table.policy-table tr:last-child td { border-bottom: none; }
     <button class="drawer-close" onclick="closeDrawer()">✕</button>
   </div>
   <button class="nav-item active" id="drawer-dashboard" onclick="drawerNav('dashboard')">
-    <span class="nav-icon">📊</span> Dashboard
+    <span class="nav-icon">✓</span> Today
+  </button>
+  <button class="nav-item" id="drawer-rooms" onclick="drawerNav('rooms')">
+    <span class="nav-icon">🚪</span> Rooms
+  </button>
+  <button class="nav-item" id="drawer-issues" onclick="drawerNav('issues')">
+    <span class="nav-icon">⚠</span> Issues
   </button>
 
-  <div class="hall-section open" id="drawer-group-housekeeping">
-    <div class="hall-header" onclick="toggleDrawerGroup('housekeeping')" style="padding:11px 8px;">
-      <div class="hall-icon" style="width:34px;height:34px;font-size:15px;">🧹</div>
-      <div class="hall-title-wrap"><div class="hall-title" style="font-size:13px;">Housekeeping</div></div>
+  <div class="hall-section open" id="drawer-group-manage">
+    <div class="hall-header" onclick="toggleDrawerGroup('manage')" style="padding:11px 8px;">
+      <div class="hall-icon" style="width:34px;height:34px;font-size:15px;">⚙</div>
+      <div class="hall-title-wrap"><div class="hall-title" style="font-size:13px;">Manage</div></div>
       <div class="hall-chevron">▼</div>
     </div>
     <div class="hall-body">
       <div class="hall-body-inner" style="padding:6px 0 6px 12px;">
-        <button class="nav-item" id="drawer-rooms" onclick="drawerNav('rooms')"><span class="nav-icon">🚪</span> Resident Rooms</button>
         <button class="nav-item" id="drawer-eoc" onclick="drawerNav('eoc')"><span class="nav-icon">📋</span> EOC Areas</button>
         <button class="nav-item" id="drawer-facilities" onclick="drawerNav('facilities')"><span class="nav-icon">🧹</span> Offices & Bathrooms</button>
         <button class="nav-item" id="drawer-inventory" onclick="drawerNav('inventory')"><span class="nav-icon">🧳</span> Patient Inventory</button>
         <button class="nav-item" id="drawer-hkassign" onclick="drawerNav('hkassign')"><span class="nav-icon">🧑‍🔧</span> Assign Housekeepers</button>
         <button class="nav-item" id="drawer-dccalendar" onclick="drawerNav('dccalendar')"><span class="nav-icon">📅</span> Deep Clean Calendar</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="hall-section open" id="drawer-group-maintenance">
-    <div class="hall-header" onclick="toggleDrawerGroup('maintenance')" style="padding:11px 8px;">
-      <div class="hall-icon" style="width:34px;height:34px;font-size:15px;">🔧</div>
-      <div class="hall-title-wrap"><div class="hall-title" style="font-size:13px;">Maintenance</div></div>
-      <div class="hall-chevron">▼</div>
-    </div>
-    <div class="hall-body">
-      <div class="hall-body-inner" style="padding:6px 0 6px 12px;">
         <button class="nav-item" id="drawer-compliance" onclick="drawerNav('compliance')"><span class="nav-icon">🔥</span> Life Safety</button>
-        <button class="nav-item" id="drawer-issues" onclick="drawerNav('issues')"><span class="nav-icon">⚠</span> Open Issues</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="hall-section open" id="drawer-group-reports">
-    <div class="hall-header" onclick="toggleDrawerGroup('reports')" style="padding:11px 8px;">
-      <div class="hall-icon" style="width:34px;height:34px;font-size:15px;">📄</div>
-      <div class="hall-title-wrap"><div class="hall-title" style="font-size:13px;">Reports</div></div>
-      <div class="hall-chevron">▼</div>
-    </div>
-    <div class="hall-body">
-      <div class="hall-body-inner" style="padding:6px 0 6px 12px;">
         <button class="nav-item" id="drawer-reports" onclick="drawerNav('reports')"><span class="nav-icon">📄</span> Reports</button>
         <button class="nav-item" id="drawer-policies" onclick="drawerNav('policies')"><span class="nav-icon">📚</span> Policies & Procedures</button>
         <button class="nav-item" id="drawer-surveyprep" onclick="drawerNav('surveyprep')"><span class="nav-icon">🔍</span> Survey Prep</button>
+        <button class="nav-item" onclick="window.print();closeDrawer();"><span class="nav-icon">🖨</span> Print QR Codes</button>
       </div>
     </div>
   </div>
-
-  <button class="nav-item" onclick="window.print();closeDrawer();">
-    <span class="nav-icon">🖨</span> Print QR Codes
-  </button>
 </div>
 
 <div class="app-shell">
@@ -805,38 +873,26 @@ table.policy-table tr:last-child td { border-bottom: none; }
 
   <div class="pill-nav" id="pillNav">
     <button class="nav-item active" id="navtop-dashboard" onclick="switchTab_direct('dashboard');closeAllNavDropdowns();">
-      <span class="nav-icon">📊</span> Dashboard
+      <span class="nav-icon">✓</span> Today
+    </button>
+    <button class="nav-item" id="navtop-rooms" onclick="switchTab_direct('rooms');closeAllNavDropdowns();">
+      <span class="nav-icon">🚪</span> Rooms
+    </button>
+    <button class="nav-item" id="navtop-issues" onclick="switchTab_direct('issues');closeAllNavDropdowns();">
+      <span class="nav-icon">⚠</span> Issues
     </button>
 
     <div class="nav-group">
-      <button class="nav-item" id="navtop-housekeeping" onclick="toggleNavDropdown('housekeeping')">
-        <span class="nav-icon">🧹</span> Housekeeping <span class="nav-caret">▾</span>
+      <button class="nav-item" id="navtop-manage" onclick="toggleNavDropdown('manage')">
+        <span class="nav-icon">⚙</span> Manage <span class="nav-caret">▾</span>
       </button>
-      <div class="nav-dropdown" id="navdrop-housekeeping">
-        <button onclick="navigateToSubtab('rooms')"><span class="nav-icon">🚪</span> Resident Rooms</button>
+      <div class="nav-dropdown" id="navdrop-manage">
         <button onclick="navigateToSubtab('eoc')"><span class="nav-icon">📋</span> EOC Areas</button>
         <button onclick="navigateToSubtab('facilities')"><span class="nav-icon">🧹</span> Offices & Bathrooms</button>
         <button onclick="navigateToSubtab('inventory')"><span class="nav-icon">🧳</span> Patient Inventory</button>
         <button onclick="navigateToSubtab('hkassign')"><span class="nav-icon">🧑‍🔧</span> Assign Housekeepers</button>
         <button onclick="navigateToSubtab('dccalendar')"><span class="nav-icon">📅</span> Deep Clean Calendar</button>
-      </div>
-    </div>
-
-    <div class="nav-group">
-      <button class="nav-item" id="navtop-maintenance" onclick="toggleNavDropdown('maintenance')">
-        <span class="nav-icon">🔧</span> Maintenance <span class="nav-caret">▾</span>
-      </button>
-      <div class="nav-dropdown" id="navdrop-maintenance">
         <button onclick="navigateToSubtab('compliance')"><span class="nav-icon">🔥</span> Life Safety</button>
-        <button onclick="navigateToSubtab('issues')"><span class="nav-icon">⚠</span> Open Issues</button>
-      </div>
-    </div>
-
-    <div class="nav-group">
-      <button class="nav-item" id="navtop-reports" onclick="toggleNavDropdown('reports')">
-        <span class="nav-icon">📄</span> Reports <span class="nav-caret">▾</span>
-      </button>
-      <div class="nav-dropdown" id="navdrop-reports">
         <button onclick="navigateToSubtab('reports')"><span class="nav-icon">📄</span> Reports</button>
         <button onclick="navigateToSubtab('policies')"><span class="nav-icon">📚</span> Policies & Procedures</button>
         <button onclick="navigateToSubtab('surveyprep')"><span class="nav-icon">🔍</span> Survey Prep</button>
@@ -854,91 +910,131 @@ table.policy-table tr:last-child td { border-bottom: none; }
 <!-- ════ MAIN ════ -->
 <main class="main">
 
-  <!-- ── Dashboard ── -->
+  <!-- ── Today (was Dashboard) ── -->
   <div id="panel-dashboard">
-    <div class="page-header">
-      <div>
-        <div class="page-title">Zone Stats</div>
-        <div class="page-sub" id="dash-date">Today's rounding overview</div>
+    <div class="today-hero" id="todayHero">
+      <div class="today-status-row">
+        <span class="today-dot" id="todayDot"></span>
+        <div>
+          <div style="font-size:17px;font-weight:700;" id="todayTopTitle">Today</div>
+          <div style="font-size:12px;color:#b9c9da;" id="dash-date">Today's rounding overview</div>
+        </div>
+        <span class="today-pill" id="todayPill">—</span>
       </div>
-      <div class="header-actions no-print">
+      <h3 id="todayHeroTitle">My rooms today</h3>
+      <p class="sub">Finish due rounds first — one tap opens the room QR flow.</p>
+      <div class="today-stats" id="todayStats">
+        <div class="today-stat"><div class="k">Due</div><div class="v" id="todayStatDue">—</div></div>
+        <div class="today-stat"><div class="k">Done</div><div class="v" id="todayStatDone">—</div></div>
+        <div class="today-stat"><div class="k">Open issues</div><div class="v" id="todayStatIssues">—</div></div>
+      </div>
+    </div>
+
+    <div style="padding:0 4px 8px;">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:8px;" class="no-print">
         <button class="neu-btn" onclick="loadDashboard()">↻ Refresh</button>
       </div>
-    </div>
 
-    <div class="dash-hero" id="dashHero">
-      <!-- populated by JS -->
-    </div>
+      <button class="today-cta" type="button" id="todayNextCta" disabled>
+        <span class="ic">📋</span>
+        <span style="flex:1;min-width:0;">
+          <div class="t" id="todayNextTitle">Loading next room…</div>
+          <div class="s" id="todayNextSub">Checking today's assignments</div>
+        </span>
+        <span class="chev">›</span>
+      </button>
 
-    <div class="filter-row" id="heatmapFilterRow">
-      <button class="filter-pill active" onclick="setHeatmapFilter('all', this)">All</button>
-      <button class="filter-pill" onclick="setHeatmapFilter('room', this)">Resident Rooms</button>
-      <button class="filter-pill" onclick="setHeatmapFilter('eoc_area', this)">EOC Areas</button>
-      <button class="filter-pill" onclick="setHeatmapFilter('office', this)">Offices</button>
-      <button class="filter-pill" onclick="setHeatmapFilter('bathroom', this)">Bathrooms</button>
-    </div>
-
-    <div class="content-grid">
-      <div style="display:flex;flex-direction:column;gap:16px;">
-        <div class="card heatmap-card" style="max-height:460px;">
-          <div class="card-title">Rounding Heat Map</div>
-          <div class="card-sub">Click any tile to view round details</div>
-          <div id="heatmapGrid"></div>
+      <div class="today-sect">
+        <h4>Due now</h4>
+        <div class="today-chips" id="todayUnitChips">
+          <button type="button" class="today-chip sel" data-unit="all" onclick="setTodayUnitFilter('all', this)">All units</button>
+          <button type="button" class="today-chip" data-unit="mine" onclick="setTodayUnitFilter('mine', this)">My rooms</button>
         </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-          <div class="card lead-card" id="leadCardAttention"></div>
-          <div class="card lead-card" id="leadCardLatest"></div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-          <div class="card lead-card" id="leadCardIntake"></div>
-          <div class="card lead-card" id="leadCardAssignments"></div>
-        </div>
+        <div class="today-list" id="todayDueList"><div class="today-row"><div class="sub">Loading…</div></div></div>
       </div>
 
-      <div style="display:flex;flex-direction:column;gap:16px;">
-        <div class="card">
-          <div class="card-title">Completion</div>
-          <div class="card-sub">Today's progress</div>
-          <div class="donut-wrap">
-            <svg width="110" height="110" viewBox="0 0 110 110">
-              <circle cx="55" cy="55" r="42" fill="none" stroke="#E5E7EB" stroke-width="14"/>
-              <circle id="donutArc" cx="55" cy="55" r="42" fill="none" stroke="#F5A623" stroke-width="14"
-                stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="264"
-                transform="rotate(-90 55 55)" style="transition:stroke-dashoffset .8s ease"/>
-            </svg>
-            <div class="donut-legend">
-              <div style="font-family:'DM Mono',monospace;font-size:28px;font-weight:500" id="donut-pct">—</div>
-              <div style="font-size:11px;color:var(--gray)">Complete</div>
-              <div class="legend-item" style="margin-top:8px"><div class="legend-dot" style="background:var(--orange)"></div><span>Rounded</span></div>
-              <div class="legend-item"><div class="legend-dot" style="background:#E5E7EB"></div><span>Remaining</span></div>
+      <div class="today-sect">
+        <h4>Done today</h4>
+        <div class="today-list" id="todayDoneList"><div class="today-row"><div class="sub">Loading…</div></div></div>
+      </div>
+
+      <details class="today-overview" id="todayOverview">
+        <summary>Overview · heatmap &amp; activity</summary>
+        <div class="today-overview-body">
+          <div class="dash-hero" id="dashHero" style="display:none;"></div>
+
+          <div class="filter-row" id="heatmapFilterRow">
+            <button class="filter-pill active" onclick="setHeatmapFilter('all', this)">All</button>
+            <button class="filter-pill" onclick="setHeatmapFilter('room', this)">Resident Rooms</button>
+            <button class="filter-pill" onclick="setHeatmapFilter('eoc_area', this)">EOC Areas</button>
+            <button class="filter-pill" onclick="setHeatmapFilter('office', this)">Offices</button>
+            <button class="filter-pill" onclick="setHeatmapFilter('bathroom', this)">Bathrooms</button>
+          </div>
+
+          <div class="content-grid">
+            <div style="display:flex;flex-direction:column;gap:16px;">
+              <div class="card heatmap-card" style="max-height:460px;">
+                <div class="card-title">Rounding Heat Map</div>
+                <div class="card-sub">Click any tile to view round details</div>
+                <div id="heatmapGrid"></div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="card lead-card" id="leadCardAttention"></div>
+                <div class="card lead-card" id="leadCardLatest"></div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="card lead-card" id="leadCardIntake"></div>
+                <div class="card lead-card" id="leadCardAssignments"></div>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:16px;">
+              <div class="card">
+                <div class="card-title">Completion</div>
+                <div class="card-sub">Today's progress</div>
+                <div class="donut-wrap">
+                  <svg width="110" height="110" viewBox="0 0 110 110">
+                    <circle cx="55" cy="55" r="42" fill="none" stroke="#E5E7EB" stroke-width="14"/>
+                    <circle id="donutArc" cx="55" cy="55" r="42" fill="none" stroke="#ff6b1a" stroke-width="14"
+                      stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="264"
+                      transform="rotate(-90 55 55)" style="transition:stroke-dashoffset .8s ease"/>
+                  </svg>
+                  <div class="donut-legend">
+                    <div style="font-size:28px;font-weight:700" id="donut-pct">—</div>
+                    <div style="font-size:11px;color:var(--gray)">Complete</div>
+                    <div class="legend-item" style="margin-top:8px"><div class="legend-dot" style="background:var(--orange)"></div><span>Rounded</span></div>
+                    <div class="legend-item"><div class="legend-dot" style="background:#E5E7EB"></div><span>Remaining</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card" id="maintAttentionCard">
+                <div class="card-title">🔧 Maintenance Attention Needed</div>
+                <div class="card-sub">Open items assigned to Maintenance — from failed zone round checks</div>
+                <div id="maintAttentionList"><div class="no-round-msg" style="padding:16px">Loading…</div></div>
+                <button class="neu-btn block" style="margin-top:10px;" onclick="switchTab_direct('issues')" id="maintAttentionViewAll">View All in Issues →</button>
+              </div>
+
+              <div class="card" id="recentIssuesCard">
+                <div class="card-title">Recent Issues</div>
+                <div class="card-sub">Open items needing attention</div>
+                <div id="recentIssuesList"><div class="no-round-msg" style="padding:16px">Loading…</div></div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="card" id="maintAttentionCard">
-          <div class="card-title">🔧 Maintenance Attention Needed</div>
-          <div class="card-sub">Open items assigned to Maintenance — from failed zone round checks</div>
-          <div id="maintAttentionList"><div class="no-round-msg" style="padding:16px">Loading…</div></div>
-          <button class="neu-btn block" style="margin-top:10px;" onclick="switchTab_direct('issues')" id="maintAttentionViewAll">View All in Issues →</button>
+          <div class="activity-scrubber" id="activityScrubber"></div>
         </div>
-
-        <div class="card" id="recentIssuesCard">
-          <div class="card-title">Recent Issues</div>
-          <div class="card-sub">Open items needing attention</div>
-          <div id="recentIssuesList"><div class="no-round-msg" style="padding:16px">Loading…</div></div>
-        </div>
-      </div>
+      </details>
     </div>
-
-    <div class="activity-scrubber" id="activityScrubber"></div>
   </div>
 
   <!-- ── Rooms ── -->
   <div id="panel-rooms" style="display:none;">
     <div class="page-header">
-      <div><div class="page-title">Resident Rooms</div><div class="page-sub">Generate QR codes for each room door</div></div>
+      <div><div class="page-title">Rooms</div><div class="page-sub">Room board, QR codes, employees &amp; zone assignments</div></div>
     </div>
 
     <div class="card" style="margin-bottom:20px;">
@@ -946,10 +1042,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
       <div class="card-sub">Generate one QR on demand — for a single new or renumbered room, without running a full range</div>
       <div class="bulk-form">
         <div class="field"><label>Unit</label>
-          <select id="single-unit">
-            <option>Taylor Hall</option><option>ICF Hall</option>
-            <option>Garden Hall</option><option>Victoria Court</option>
-          </select>
+          <select id="single-unit"></select>
         </div>
         <div class="field"><label>Room #</label><input type="text" id="single-room-num" placeholder="112"></div>
         <div></div>
@@ -962,10 +1055,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
       <div class="card-sub">Enter a unit and room number range to create QR codes at once</div>
       <div class="bulk-form">
         <div class="field"><label>Unit</label>
-          <select id="bulk-unit">
-            <option>Taylor Hall</option><option>ICF Hall</option>
-            <option>Garden Hall</option><option>Victoria Court</option>
-          </select>
+          <select id="bulk-unit"></select>
         </div>
         <div class="field"><label>Start Room #</label><input type="number" id="bulk-start" placeholder="101"></div>
         <div class="field"><label>End Room #</label><input type="number" id="bulk-end" placeholder="140"></div>
@@ -1047,6 +1137,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
         <button class="neu-btn" style="background:var(--red);color:white;font-size:12.5px;padding:9px 16px;" onclick="bulkRemoveSelectedRooms()">🗑 Remove Selected</button>
       </div>
     </div>
+    <div id="roomsBuildingBar"></div>
     <div id="roomsGrid"></div>
   </div>
 
@@ -1486,11 +1577,13 @@ table.policy-table tr:last-child td { border-bottom: none; }
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/zone-buildings.js"></script>
 <script src="/ftags.js"></script>
+<script>if (typeof ftagInfo !== 'function') { function ftagInfo() { return null; } }</script>
 <script>
 const SUPABASE_URL  = 'https://gtbiatetqyuxwuehwilr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34';
-const DEFAULT_FACILITY_DOMAIN = 'agrhodes-meal.vercel.app'; // fallback for localhost/preview URLs
+const DEFAULT_FACILITY_DOMAIN = "agrhodes-meal.vercel.app"; // fallback for localhost/preview URLs
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const BASE_URL = window.location.origin + '/round.html#round=';
 
@@ -1787,10 +1880,160 @@ function switchTab(tab) {
   switchTab_direct(tab);
 }
 
+/* ── Today queue (dashboard home) ── */
+var todayUnitFilter = 'all';
+var todayQueueCache = { rooms: [], zoneDone: {}, issueRooms: {}, assigns: null, lastRoundAt: {} };
+
+function formatTodayWhen(iso) {
+  if (!iso) return 'Never rounded';
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  var time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  var today = new Date();
+  if (d.toDateString() === today.toDateString()) return 'Today ' + time;
+  return d.toLocaleDateString([], { weekday: 'short' }) + ' ' + time;
+}
+
+function openRoundForQr(qrId) {
+  if (!qrId) return;
+  window.open(BASE_URL + encodeURIComponent(qrId), '_blank');
+}
+
+function setTodayUnitFilter(unit, btn) {
+  todayUnitFilter = unit || 'all';
+  document.querySelectorAll('#todayUnitChips .today-chip').forEach(function(c){ c.classList.remove('sel'); });
+  if (btn) btn.classList.add('sel');
+  renderTodayQueueLists();
+}
+
+function buildTodayUnitChips(rooms) {
+  var chips = document.getElementById('todayUnitChips');
+  if (!chips) return;
+  var units = [];
+  rooms.forEach(function(r){
+    var u = r.unit || '';
+    if (u && units.indexOf(u) < 0) units.push(u);
+  });
+  units.sort();
+  var html =
+    '<button type="button" class="today-chip' + (todayUnitFilter==='all'?' sel':'') + '" data-unit="all" onclick="setTodayUnitFilter(\'all\', this)">All units</button>' +
+    '<button type="button" class="today-chip' + (todayUnitFilter==='mine'?' sel':'') + '" data-unit="mine" onclick="setTodayUnitFilter(\'mine\', this)">My rooms</button>';
+  units.forEach(function(u){
+    html += '<button type="button" class="today-chip' + (todayUnitFilter===u?' sel':'') + '" data-unit="'+u.replace(/"/g,'&quot;')+'" onclick="setTodayUnitFilter(this.getAttribute(\'data-unit\'), this)">'+u+'</button>';
+  });
+  chips.innerHTML = html;
+}
+
+function filteredTodayRooms() {
+  var rooms = todayQueueCache.rooms || [];
+  var admin = getAdminSession();
+  if (todayUnitFilter === 'mine') {
+    var mine = todayQueueCache.assigns;
+    // No assignments → empty personal queue (do not fall back to every room).
+    if (!mine || !mine.size) return [];
+    return rooms.filter(function(r){ return mine.has(r.qr_identifier); });
+  }
+  if (todayUnitFilter && todayUnitFilter !== 'all') {
+    return rooms.filter(function(r){ return (r.unit || '') === todayUnitFilter; });
+  }
+  return rooms;
+}
+
+function renderTodayQueueLists() {
+  var rooms = filteredTodayRooms();
+  var due = [], done = [];
+  rooms.forEach(function(r){
+    if (todayQueueCache.zoneDone[r.qr_identifier]) done.push(r);
+    else due.push(r);
+  });
+  due.sort(function(a,b){ return (a.display_name||'').localeCompare(b.display_name||''); });
+  done.sort(function(a,b){ return (a.display_name||'').localeCompare(b.display_name||''); });
+
+  var dueEl = document.getElementById('todayDueList');
+  var doneEl = document.getElementById('todayDoneList');
+  if (dueEl) {
+    if (!due.length) {
+      dueEl.innerHTML = '<div class="today-row"><div class="meta"><div class="title">All caught up</div><div class="sub">No rooms due in this filter</div></div><span class="today-badge ok">Done</span></div>';
+    } else {
+      dueEl.innerHTML = due.slice(0, 40).map(function(r){
+        var hasIssue = !!todayQueueCache.issueRooms[String(r.room_number||'')];
+        return '<div class="today-row">' +
+          '<div class="meta"><div class="title">'+r.display_name+'</div>' +
+          '<div class="sub">'+(r.unit||'')+' · Last ' + formatTodayWhen(todayQueueCache.lastRoundAt[r.qr_identifier]) + '</div></div>' +
+          '<span class="today-badge '+(hasIssue?'warn':'due')+'">'+(hasIssue?'Issue':'Due')+'</span>' +
+          '<button type="button" class="today-go" onclick="openRoundForQr(\''+r.qr_identifier.replace(/'/g,"\\'")+'\')">Round</button></div>';
+      }).join('');
+    }
+  }
+  if (doneEl) {
+    if (!done.length) {
+      doneEl.innerHTML = '<div class="today-row"><div class="meta"><div class="sub">No zone rounds completed yet today</div></div></div>';
+    } else {
+      doneEl.innerHTML = done.slice(0, 30).map(function(r){
+        return '<div class="today-row">' +
+          '<div class="meta"><div class="title">'+r.display_name+'</div>' +
+          '<div class="sub">Completed ' + formatTodayWhen(todayQueueCache.lastRoundAt[r.qr_identifier]) + '</div></div>' +
+          '<span class="today-badge ok">Done</span></div>';
+      }).join('');
+    }
+  }
+
+  // Next CTA — prefer assigned rooms when available
+  var nextPool = due;
+  var admin = getAdminSession();
+  if (admin && todayQueueCache.assigns && todayQueueCache.assigns.size) {
+    var assignedDue = due.filter(function(r){ return todayQueueCache.assigns.has(r.qr_identifier); });
+    if (assignedDue.length) nextPool = assignedDue;
+  }
+  var next = nextPool[0] || null;
+  var cta = document.getElementById('todayNextCta');
+  if (cta) {
+    if (!next) {
+      cta.disabled = true;
+      document.getElementById('todayNextTitle').textContent = 'No rooms due right now';
+      document.getElementById('todayNextSub').textContent = 'Nice work — check Issues or Overview if needed';
+      cta.onclick = null;
+    } else {
+      cta.disabled = false;
+      document.getElementById('todayNextTitle').textContent = 'Continue next due room';
+      document.getElementById('todayNextSub').textContent = next.display_name + (next.unit ? ' · ' + next.unit : '') + ' · about 3 min';
+      cta.onclick = function(){ openRoundForQr(next.qr_identifier); };
+    }
+  }
+
+  var dueCount = due.length;
+  var doneCount = done.length;
+  var issueCount = Object.keys(todayQueueCache.issueRooms).length;
+  var highCount = todayQueueCache.highPriority || 0;
+  var dueStat = document.getElementById('todayStatDue');
+  var doneStat = document.getElementById('todayStatDone');
+  var issueStat = document.getElementById('todayStatIssues');
+  if (dueStat) dueStat.innerHTML = dueCount + '<small>' + (dueCount ? 'Still need a round' : 'All clear') + '</small>';
+  if (doneStat) doneStat.innerHTML = doneCount + '<small>Completed today</small>';
+  if (issueStat) issueStat.innerHTML = (todayQueueCache.openIssueCount || 0) + '<small>' + (highCount ? highCount + ' high priority' : 'None high') + '</small>';
+  var pill = document.getElementById('todayPill');
+  var dot = document.getElementById('todayDot');
+  if (pill) {
+    pill.textContent = dueCount ? (dueCount + ' due') : 'Up to date';
+    pill.className = 'today-pill' + (dueCount ? '' : ' ok');
+  }
+  if (dot) dot.className = 'today-dot' + (dueCount ? '' : ' done');
+}
+
+async function hydrateTodayAssignments() {
+  var admin = getAdminSession();
+  todayQueueCache.assigns = null;
+  if (!admin || !admin.employee_number) return;
+  var { data: assigns } = await sb.from('room_assignments').select('qr_identifier')
+    .eq('facility_id', FACILITY_ID).eq('employee_id', admin.employee_number).eq('assignment_type', 'zone_round');
+  todayQueueCache.assigns = new Set((assigns || []).map(function(a){ return a.qr_identifier; }));
+}
+
 /* ── Dashboard ── */
 async function loadDashboard() {
   var today = new Date();
-  document.getElementById('dash-date').textContent =
+  var dashDate = document.getElementById('dash-date');
+  if (dashDate) dashDate.textContent =
     today.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
 
   loadActivityScrubber();
@@ -1803,14 +2046,20 @@ async function loadDashboard() {
   var { data: openIssues } = await sb.from('zone_issues').select('*')
     .eq('facility_id', FACILITY_ID).eq('status','Open').order('created_at',{ascending:false});
 
+  // Latest room zone round overall (for "last rounded" labels) — cheap extra query
+  var { data: recentZone } = await sb.from('zone_rounds').select('qr_identifier,rounded_at')
+    .eq('facility_id', FACILITY_ID).eq('round_type','room')
+    .order('rounded_at', { ascending: false }).limit(400);
+
   var roundedIds = new Set((roundsToday||[]).map(function(r){return r.qr_identifier;}));
   var highPriority = (openIssues||[]).filter(function(i){return i.priority==='High';}).length;
   var completionRate = (locations||[]).length
     ? Math.round((roundedIds.size / locations.length) * 100) : 0;
   var remaining = (locations||[]).length - roundedIds.size;
 
-  // Facility profile card + plain stat readout (reference-style Diagnosys/Heart Rate row)
-  document.getElementById('dashHero').innerHTML =
+  // Facility profile card (kept for overview section)
+  var dashHero = document.getElementById('dashHero');
+  if (dashHero) dashHero.innerHTML =
     '<div class="facility-card">' +
       '<div class="facility-avatar">AG</div>' +
       '<div><div class="facility-name">' + (FACILITY_NAME || 'A.G. Rhodes') + '</div>' +
@@ -1827,8 +2076,9 @@ async function loadDashboard() {
   // Donut
   var arc = document.getElementById('donutArc');
   var circumference = 264;
-  arc.style.strokeDashoffset = circumference - (completionRate/100)*circumference;
-  document.getElementById('donut-pct').textContent = completionRate + '%';
+  if (arc) arc.style.strokeDashoffset = circumference - (completionRate/100)*circumference;
+  var donutPct = document.getElementById('donut-pct');
+  if (donutPct) donutPct.textContent = completionRate + '%';
 
   // Heat map — grouped by hall/area for readability
   lastDashLocations = locations || [];
@@ -1841,41 +2091,72 @@ async function loadDashboard() {
   // Maintenance attention widget — the specific items a maintenance director needs to act on
   var maintList = document.getElementById('maintAttentionList');
   var maintItems = (openIssues||[]).filter(function(i){ return i.issue_type === 'Maintenance'; });
-  if (!maintItems.length) {
-    maintList.innerHTML = '<div class="no-round-msg" style="padding:16px;font-size:12px;color:var(--green)">✓ Nothing needs maintenance right now</div>';
-    document.getElementById('maintAttentionViewAll').style.display = 'none';
-  } else {
-    document.getElementById('maintAttentionViewAll').style.display = 'block';
-    maintList.innerHTML = maintItems.slice(0,5).map(function(i){
-      var location = i.room_number ? 'Room ' + i.room_number : (i.eoc_section||'').replace(/_/g,' ');
-      return '<div class="issue-item" style="cursor:pointer;" onclick="openMaintIssueDetail(\''+i.id+'\')">' +
-        '<div class="issue-dot '+i.priority+'"></div>' +
-        '<div class="issue-info">' +
-          '<div class="issue-type-label">' + (location || 'Facility') + '</div>' +
-          '<div class="issue-desc-label">'+(i.issue_description||'—')+'</div>' +
-        '</div>' +
-        '<button class="neu-btn primary" style="font-size:10.5px;padding:6px 10px;flex-shrink:0;" onclick="event.stopPropagation();resolveIssue(\''+i.id+'\');setTimeout(loadDashboard,400);">✓ Fixed</button>' +
-        '</div>';
-    }).join('');
+  if (maintList) {
+    if (!maintItems.length) {
+      maintList.innerHTML = '<div class="no-round-msg" style="padding:16px;font-size:12px;color:var(--green)">✓ Nothing needs maintenance right now</div>';
+      var maintBtn = document.getElementById('maintAttentionViewAll');
+      if (maintBtn) maintBtn.style.display = 'none';
+    } else {
+      var maintBtn2 = document.getElementById('maintAttentionViewAll');
+      if (maintBtn2) maintBtn2.style.display = 'block';
+      maintList.innerHTML = maintItems.slice(0,5).map(function(i){
+        var location = i.room_number ? 'Room ' + i.room_number : (i.eoc_section||'').replace(/_/g,' ');
+        return '<div class="issue-item" style="cursor:pointer;" onclick="openMaintIssueDetail(\''+i.id+'\')">' +
+          '<div class="issue-dot '+i.priority+'"></div>' +
+          '<div class="issue-info">' +
+            '<div class="issue-type-label">' + (location || 'Facility') + '</div>' +
+            '<div class="issue-desc-label">'+(i.issue_description||'—')+'</div>' +
+          '</div>' +
+          '<button class="neu-btn primary" style="font-size:10.5px;padding:6px 10px;flex-shrink:0;" onclick="event.stopPropagation();resolveIssue(\''+i.id+'\');setTimeout(loadDashboard,400);">✓ Fixed</button>' +
+          '</div>';
+      }).join('');
+    }
   }
 
   // Recent issues sidebar
   var issueList = document.getElementById('recentIssuesList');
   var recent = (openIssues||[]).slice(0,5);
-  if (!recent.length) {
-    issueList.innerHTML = '<div class="no-round-msg" style="padding:16px;font-size:12px;color:var(--green)">✓ No open issues</div>';
-  } else {
-    issueList.innerHTML = recent.map(function(i){
-      return '<div class="issue-item">' +
-        '<div class="issue-dot '+i.priority+'"></div>' +
-        '<div class="issue-info">' +
-          '<div class="issue-type-label">'+i.issue_type+(i.ftag ? ' · <span title="'+((ftagInfo(i.ftag)||{}).title||'')+'">'+i.ftag+'</span>' : '')+'</div>' +
-          '<div class="issue-desc-label">'+(i.issue_description||'—')+'</div>' +
-        '</div>' +
-        '<span class="issue-badge badge-'+i.priority+'">'+i.priority+'</span>' +
-        '</div>';
-    }).join('');
+  if (issueList) {
+    if (!recent.length) {
+      issueList.innerHTML = '<div class="no-round-msg" style="padding:16px;font-size:12px;color:var(--green)">✓ No open issues</div>';
+    } else {
+      issueList.innerHTML = recent.map(function(i){
+        return '<div class="issue-item">' +
+          '<div class="issue-dot '+i.priority+'"></div>' +
+          '<div class="issue-info">' +
+            '<div class="issue-type-label">'+i.issue_type+(i.ftag ? ' · <span title="'+((ftagInfo(i.ftag)||{}).title||'')+'">'+i.ftag+'</span>' : '')+'</div>' +
+            '<div class="issue-desc-label">'+(i.issue_description||'—')+'</div>' +
+          '</div>' +
+          '<span class="issue-badge badge-'+i.priority+'">'+i.priority+'</span>' +
+          '</div>';
+      }).join('');
+    }
   }
+
+  // Populate Today queue
+  var rooms = (locations || []).filter(function(l){ return l.location_type === 'room'; });
+  var zoneDone = {};
+  (roundsToday || []).forEach(function(r){
+    if (r.round_type === 'room') zoneDone[r.qr_identifier] = r.rounded_at;
+  });
+  var lastRoundAt = {};
+  (recentZone || []).forEach(function(r){
+    if (!lastRoundAt[r.qr_identifier]) lastRoundAt[r.qr_identifier] = r.rounded_at;
+  });
+  Object.keys(zoneDone).forEach(function(k){ lastRoundAt[k] = zoneDone[k]; });
+  var issueRooms = {};
+  (openIssues || []).forEach(function(i){
+    if (i.room_number != null && i.room_number !== '') issueRooms[String(i.room_number)] = true;
+  });
+  todayQueueCache.rooms = rooms;
+  todayQueueCache.zoneDone = zoneDone;
+  todayQueueCache.lastRoundAt = lastRoundAt;
+  todayQueueCache.issueRooms = issueRooms;
+  todayQueueCache.openIssueCount = (openIssues || []).length;
+  todayQueueCache.highPriority = highPriority;
+  await hydrateTodayAssignments();
+  buildTodayUnitChips(rooms);
+  renderTodayQueueLists();
 }
 
 async function loadActivityScrubber() {
@@ -1972,6 +2253,8 @@ async function generateSingleRoom() {
 
   var row = { facility_id:FACILITY_ID, location_type:'room', room_number:roomNum,
     unit:unit, display_name:'Room '+roomNum, qr_identifier: qrId };
+  var singleBuilding = ZoneBuildings.buildingOfHall(window._zoneRooms, unit);
+  if (singleBuilding) row.building = singleBuilding;
 
   var { data: inserted, error } = await sb.from('room_qr_codes')
     .upsert([row], {onConflict:'facility_id,qr_identifier'}).select().single();
@@ -2033,13 +2316,37 @@ async function loadRooms() {
 
   loadRoomAssignmentsPanel(rooms || []);
 
+  rooms = rooms || [];
+  window._zoneRooms = rooms;
   var byUnit = {};
-  (rooms||[]).forEach(function(r){ (byUnit[r.unit]=byUnit[r.unit]||[]).push(r); });
+  rooms.forEach(function(r){ (byUnit[r.unit]=byUnit[r.unit]||[]).push(r); });
+
+  // Halls come from this facility's own codes (Atlanta also keeps its four fixed halls),
+  // grouped by building on a multi-building campus, filtered by the building pills.
+  var allBuildings = ZoneBuildings.buildings(rooms);
+  var bFilter = ZoneBuildings.getFilter(FACILITY_QR_PREFIX);
+  if (allBuildings.indexOf(bFilter) < 0) bFilter = '';
+  var bar = document.getElementById('roomsBuildingBar');
+  if (bar) bar.innerHTML = ZoneBuildings.filterBarHtml(rooms, bFilter, 'setRoomsBuilding');
+  fillHallPickers(rooms);
 
   grid.innerHTML = '';
+  if (!rooms.length && !ZoneBuildings.isAtlanta(FACILITY_QR_PREFIX)) {
+    grid.innerHTML = '<div style="padding:16px;color:var(--gray-light);font-size:12.5px;text-align:center;">No room QR codes yet. ' +
+      'Add the halls and rooms in Nursiao → Census → Building Setup, then Sync to Zone Defense.</div>';
+    return;
+  }
 
-  // Always render all 4 halls, even if empty — persistent structure
-  HALLS.forEach(function(hall) {
+  ZoneBuildings.groups(rooms, FACILITY_QR_PREFIX).forEach(function(grp) {
+  if (bFilter && grp.building !== bFilter) return;
+  if (allBuildings.length) {
+    var count = grp.halls.reduce(function(n, h){ return n + (byUnit[h] || []).length; }, 0);
+    var title = document.createElement('div');
+    title.className = 'zb-building-title';
+    title.innerHTML = escZb(grp.building || 'No building') + '<span>' + count + ' room code' + (count === 1 ? '' : 's') + '</span>';
+    grid.appendChild(title);
+  }
+  grp.halls.forEach(function(hall) {
     var roomsInHall = (byUnit[hall] || []).sort(function(a,b){return (+a.room_number)-(+b.room_number);});
     var isOpen = hallOpenState[hall] !== false; // default open
 
@@ -2077,6 +2384,28 @@ async function loadRooms() {
     section.appendChild(body);
     grid.appendChild(section);
   });
+  });
+}
+
+function escZb(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function setRoomsBuilding(b) {
+  ZoneBuildings.setFilter(FACILITY_QR_PREFIX, b);
+  loadRooms();
+}
+
+/** Unit pickers list this facility's halls, grouped by building. */
+function fillHallPickers(rooms) {
+  ['bulk-unit', 'single-unit'].forEach(function(id) {
+    var sel = document.getElementById(id);
+    if (!sel) return;
+    var keep = sel.value;
+    sel.innerHTML = ZoneBuildings.hallOptionsHtml(rooms, FACILITY_QR_PREFIX) ||
+      '<option value="">Add halls in Nursiao first</option>';
+    if (keep) sel.value = keep;
+  });
 }
 
 function toggleHall(hall) {
@@ -2100,6 +2429,8 @@ async function generateBulkRooms() {
     rows.push({ facility_id:FACILITY_ID, location_type:'room', room_number:String(n),
       unit:unit, display_name:'Room '+n, qr_identifier:(FACILITY_QR_PREFIX+'-')+unitSlug+'-room-'+n });
   }
+  var bulkBuilding = ZoneBuildings.buildingOfHall(window._zoneRooms, unit);
+  if (bulkBuilding) rows.forEach(function(r){ r.building = bulkBuilding; });
   // Guard: warn if any of these identifiers already exist under a DIFFERENT unit,
   // which would mean two halls share a room-number range and are about to collide.
   var { data: existing } = await sb.from('room_qr_codes').select('qr_identifier,unit,room_number')
@@ -3029,7 +3360,7 @@ function renderQRTile(loc, container) {
   var metaDiv = document.createElement('div');
   metaDiv.className = 'qr-tile-meta';
   var typeIcon = FACILITY_TYPE_ICONS[loc.location_type] ? FACILITY_TYPE_ICONS[loc.location_type] + ' ' : '';
-  metaDiv.textContent = typeIcon + (loc.unit || loc.eoc_department || '');
+  metaDiv.textContent = typeIcon + (loc.unit || loc.eoc_department || '') + (loc.building ? ' · ' + loc.building : '');
   tile.appendChild(metaDiv);
 
   var idDiv = document.createElement('div');
@@ -3491,10 +3822,12 @@ function toggleDrawerGroup(group) {
 // Maps each panel/tab to the top-level nav group it lives under
 var NAV_GROUP_MAP = {
   dashboard: 'dashboard',
-  rooms: 'housekeeping', eoc: 'housekeeping', facilities: 'housekeeping', inventory: 'housekeeping',
-  hkassign: 'housekeeping', dccalendar: 'housekeeping',
-  compliance: 'maintenance', issues: 'maintenance',
-  reports: 'reports', policies: 'reports', surveyprep: 'reports'
+  rooms: 'rooms',
+  issues: 'issues',
+  eoc: 'manage', facilities: 'manage', inventory: 'manage',
+  hkassign: 'manage', dccalendar: 'manage',
+  compliance: 'manage',
+  reports: 'manage', policies: 'manage', surveyprep: 'manage'
 };
 
 function switchTab_direct(tab) {
@@ -3518,22 +3851,29 @@ function switchTab_direct(tab) {
 
 function updateNavActiveState(tab) {
   var group = NAV_GROUP_MAP[tab] || 'dashboard';
-  ['dashboard','housekeeping','maintenance','reports'].forEach(function(g){
+  ['dashboard','rooms','issues','manage'].forEach(function(g){
     var btn = document.getElementById('navtop-' + g);
     if (!btn) return;
-    if (g === 'dashboard') btn.classList.toggle('active', group === 'dashboard');
-    else btn.classList.toggle('group-active', group === g);
+    if (g === 'manage') btn.classList.toggle('group-active', group === 'manage');
+    else btn.classList.toggle('active', group === g);
   });
   // Highlight the specific sub-item within its dropdown too
   document.querySelectorAll('.nav-dropdown button').forEach(function(b){ b.classList.remove('current'); });
-  if (group !== 'dashboard') {
-    var dropdown = document.getElementById('navdrop-' + group);
+  if (group === 'manage') {
+    var dropdown = document.getElementById('navdrop-manage');
     if (dropdown) {
-      var btns = dropdown.querySelectorAll('button');
-      btns.forEach(function(b){
+      dropdown.querySelectorAll('button').forEach(function(b){
         if (b.getAttribute('onclick') === "navigateToSubtab('"+tab+"')") b.classList.add('current');
       });
     }
+  }
+  // Mobile drawer active state
+  document.querySelectorAll('.mobile-drawer .nav-item').forEach(function(b){ b.classList.remove('active'); });
+  var drawerBtn = document.getElementById('drawer-' + tab);
+  if (drawerBtn) drawerBtn.classList.add('active');
+  else if (group === 'dashboard') {
+    var d = document.getElementById('drawer-dashboard');
+    if (d) d.classList.add('active');
   }
 }
 
