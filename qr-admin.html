@@ -376,6 +376,13 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
 
 /* ── Collapsible hall sections ── */
 .hall-section { margin-bottom: 16px; width: 100%; display: block; }
+.qr-tile { position: relative; }
+.qr-tile-print-btn {
+  position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border-radius: 10px;
+  border: none; background: var(--surface); box-shadow: var(--shadow-out); cursor: pointer;
+  font-size: 14px; display: flex; align-items: center; justify-content: center; z-index: 2;
+}
+.qr-tile-print-btn:active { box-shadow: var(--shadow-in); }
 /* Buildings (multi-building campus) — public/zone-buildings.js */
 .zb-filter { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
 .zb-pill { border: none; border-radius: 999px; padding: 8px 14px; font: inherit; font-size: 12.5px; font-weight: 600;
@@ -548,7 +555,11 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
   <div id="panel-rooms" style="display:none;">
     <div class="page-header">
       <div><div class="page-title">Resident Rooms</div><div class="page-sub">Generate QR codes for each room door</div></div>
-      <button class="neu-btn no-print" onclick="ZoneBuildings.printRoomCodes()" title="Prints the room codes listed below — pick a building first to print just that building">🖨 Print these codes</button>
+      <span class="no-print" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <select id="zlSize" title="Brother DK label roll" onchange="ZoneLabels.setPreset(this.value)" style="padding:9px 12px;border:none;border-radius:10px;background:var(--bg);box-shadow:var(--shadow-in);font-family:inherit;font-size:12px;color:var(--black);"></select>
+        <button class="neu-btn primary" onclick="ZoneLabels.printListed(window._zoneRooms, FACILITY_QR_PREFIX, BASE_URL, document.getElementById('zlSize').value)" title="One label per room on the Brother QL printer — pick a building first to print just that building">🏷 Print labels</button>
+        <button class="neu-btn" onclick="ZoneBuildings.printRoomCodes()" title="Prints the room codes listed below on regular paper — pick a building first to print just that building">🖨 Print sheet</button>
+      </span>
     </div>
     <div class="card" style="margin-bottom:20px;">
       <div class="card-title">Generate in Bulk</div>
@@ -616,6 +627,10 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
         <div class="qr-holder" id="rdQrHolder"></div>
         <div class="room-hero-name" id="rdName">—</div>
         <div class="room-hero-unit" id="rdUnit"></div>
+        <div style="display:flex;gap:8px;margin-top:14px;justify-content:center;flex-wrap:wrap;">
+          <select id="rdLabelSize" onchange="ZoneLabels.setPreset(this.value)" style="padding:9px 12px;border:none;border-radius:10px;background:var(--bg);box-shadow:var(--shadow-in);font-family:inherit;font-size:12px;color:var(--black);"></select>
+          <button class="neu-btn primary" style="font-size:12px;" onclick="printCurrentRoomLabel()">🖨 Print This Label</button>
+        </div>
       </div>
 
       <div class="modal-section">
@@ -672,6 +687,7 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/zone-buildings.js"></script>
+<script src="/zone-labels.js"></script>
 <script>
 const SUPABASE_URL  = 'https://gtbiatetqyuxwuehwilr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34';
@@ -942,6 +958,8 @@ function setRoomsBuilding(b) {
 
 /** Unit pickers list this facility's halls, grouped by building. */
 function fillHallPickers(rooms) {
+  var zl = document.getElementById('zlSize');
+  if (zl && !zl.options.length) zl.innerHTML = ZoneLabels.presetOptionsHtml();
   ['bulk-unit', 'single-unit'].forEach(function(id) {
     var sel = document.getElementById(id);
     if (!sel) return;
@@ -1042,6 +1060,14 @@ function renderQRTile(loc, container) {
   var qrDiv = document.createElement('div');
   qrDiv.style.cssText = 'width:120px;margin:0 auto 10px;';
   tile.appendChild(qrDiv);
+
+  // Quick print — one Brother label, last size picked
+  var printBtn = document.createElement('button');
+  printBtn.className = 'qr-tile-print-btn no-print';
+  printBtn.textContent = '🖨';
+  printBtn.title = 'Print this label';
+  printBtn.onclick = function(e) { e.stopPropagation(); ZoneLabels.print([loc], BASE_URL, ZoneLabels.getPreset()); };
+  tile.appendChild(printBtn);
 
   // Text info — built with DOM, not innerHTML, to avoid wiping qrDiv
   var nameDiv = document.createElement('div');
@@ -1445,8 +1471,18 @@ function switchTab_direct(tab) {
 /* ── Room Detail (QR + Assets) ── */
 var currentRoomLoc = null;
 
+/** Brother label for the room open in the detail window (shared printer: zone-labels.js). */
+function printCurrentRoomLabel() {
+  if (!currentRoomLoc) return;
+  var key = document.getElementById('rdLabelSize').value;
+  ZoneLabels.setPreset(key);
+  ZoneLabels.print([currentRoomLoc], BASE_URL, key);
+}
+
 async function openRoomDetail(loc) {
   currentRoomLoc = loc;
+  var sizeSel = document.getElementById('rdLabelSize');
+  if (sizeSel) sizeSel.innerHTML = ZoneLabels.presetOptionsHtml();
   var modal = document.getElementById('roomDetailModal');
   modal.style.display = 'flex';
   document.getElementById('rdTitle').textContent = loc.display_name;
