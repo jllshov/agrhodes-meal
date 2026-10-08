@@ -2,362 +2,443 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>A.G. Rhodes — Zone Round</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #EAEEF2;
-  --surface: #EEF1F5;
-  --orange: #F5A623;
-  --orange-light: #FFF3DC;
-  --black: #1A1A1A;
-  --gray: #6B7280;
-  --gray-light: #9CA3AF;
-  --green: #22C55E;
-  --red: #EF4444;
-  --amber: #F59E0B;
-  --shadow-out: 6px 6px 14px #C8CDD5, -6px -6px 14px #FFFFFF;
-  --shadow-in: inset 4px 4px 10px #C8CDD5, inset -4px -4px 10px #FFFFFF;
-  --shadow-card: 8px 8px 20px #C5CAD1, -8px -8px 20px #FFFFFF;
-  --r: 20px;
-  --r-sm: 12px;
-  --r-pill: 999px;
+:root{
+  --navy:#0b2a4a; --navy-2:#103a63;
+  --cyan:#0fb5c9; --cyan-soft:#e3f7fa;
+  --orange:#ff6b1a; --orange-dark:#e55a0e; --orange-light:#fff4ec;
+  --bg:#f2f5f7; --surface:#ffffff; --card:#ffffff;
+  --ink:#10233b; --ink-2:#5b6b7f; --line:#e4eaef;
+  --black:#10233b; --gray:#5b6b7f; --gray-light:#9aa8b8;
+  --green:#1d9e6b; --amber:#d99413; --red:#d64545;
+  --radius:16px;
+  --shadow-out:0 1px 2px rgba(16,35,59,.06);
+  --shadow-in:inset 0 1px 2px rgba(16,35,59,.06);
+  --shadow-card:0 1px 2px rgba(16,35,59,.05);
+  --r:16px; --r-sm:12px; --r-pill:999px;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--black); }
-body { min-height: 100vh; padding-bottom: 100px; }
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+body{
+  max-width:480px;margin:0 auto;min-height:100vh;
+  padding-bottom:calc(28px + env(safe-area-inset-bottom));
+}
+#app{min-height:100vh;}
+body:not(.landing-mode):not(.login-mode) #app{padding:16px 16px calc(28px + env(safe-area-inset-bottom));}
+.wrap{padding:0 16px;}
 
-.wrap { max-width: 480px; margin: 0 auto; padding: 22px 18px; }
+/* ---------- top bar / hero (landing) ---------- */
+.topbar{
+  position:sticky;top:0;z-index:20;
+  background:var(--navy);color:#fff;
+  padding:14px 18px 12px;
+  display:flex;align-items:center;gap:12px;
+}
+.topbar .room-dot{
+  width:10px;height:10px;border-radius:50%;
+  background:var(--amber);box-shadow:0 0 0 4px rgba(217,148,19,.22);flex:none;
+}
+.topbar .room-dot.done{background:var(--green);box-shadow:0 0 0 4px rgba(29,158,107,.22);}
+.topbar h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.2px;}
+.topbar p{margin:1px 0 0;font-size:12px;color:#b9c9da;font-weight:500;}
+.topbar .spacer{flex:1;}
+.pill{
+  font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
+  padding:6px 10px;border-radius:999px;white-space:nowrap;
+}
+.pill.due{background:rgba(255,107,26,.16);color:#ffb27a;border:1px solid rgba(255,107,26,.5);}
+.pill.ok{background:rgba(29,158,107,.16);color:#7fe0b2;border:1px solid rgba(29,158,107,.5);}
 
-/* ── Header ── */
-.rr-header {
-  background: var(--surface); border-radius: 26px; box-shadow: var(--shadow-card);
-  padding: 26px 22px; text-align: center; margin-bottom: 20px;
+.hero{
+  background:linear-gradient(160deg,var(--navy) 0%,var(--navy-2) 70%,#155a7a 100%);
+  color:#fff;padding:6px 18px 22px;border-radius:0 0 26px 26px;
 }
-.rr-icon { font-size: 34px; margin-bottom: 8px; }
-.rr-name { font-size: 23px; font-weight: 800; letter-spacing: -.02em; }
-.rr-meta { font-size: 13.5px; color: var(--gray); margin-top: 4px; }
+.hero h2{font-size:34px;margin:10px 0 2px;font-weight:800;letter-spacing:-.5px;}
+.hero .sub{color:#b9c9da;font-size:14px;margin:0 0 16px;}
+.today{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.stat{
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);
+  border-radius:14px;padding:10px 12px;
+}
+.stat .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:#9fb4c9;font-weight:700;margin-bottom:5px;}
+.stat .v{font-size:13.5px;font-weight:700;}
+.stat .v small{display:block;font-weight:500;color:#9fb4c9;font-size:11.5px;margin-top:2px;}
 
-/* ── Reusable search bar (matches the job-board reference) ── */
-.search-bar {
-  display: flex; align-items: center; gap: 10px; background: var(--surface);
-  border-radius: 999px; box-shadow: var(--shadow-card); padding: 14px 18px; margin-bottom: 16px;
+.sect{margin-top:22px;}
+.sect > h3{
+  font-size:12px;text-transform:uppercase;letter-spacing:1px;
+  color:var(--ink-2);margin:0 4px 10px;font-weight:700;
 }
-.search-bar-icon { font-size: 16px; color: var(--gray-light); flex-shrink: 0; }
-.search-bar input {
-  border: none; outline: none; background: transparent; flex: 1;
-  font-family: inherit; font-size: 15px; color: var(--black);
-}
-.search-bar input::placeholder { color: var(--gray-light); }
+.sect > h3 .soft{font-weight:500;text-transform:none;letter-spacing:0;}
 
-/* ── Buttons ── */
-.neu-btn {
-  padding: 14px 22px; border-radius: var(--r-pill); border: none; cursor: pointer;
-  font-family: inherit; font-size: 15px; font-weight: 600;
-  background: var(--surface); box-shadow: var(--shadow-out);
-  color: var(--black); transition: all .15s;
+.action{
+  display:flex;align-items:center;gap:14px;width:100%;
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:15px 16px;margin-bottom:10px;text-align:left;cursor:pointer;
+  font:inherit;color:inherit;transition:transform .08s ease, box-shadow .08s ease;
+  box-shadow:var(--shadow-card);
 }
-.neu-btn:active { box-shadow: var(--shadow-in); }
-.neu-btn.primary { background: var(--orange); color: white;
-  box-shadow: 4px 4px 12px rgba(245,166,35,.5), -2px -2px 8px rgba(245,166,35,.2); }
-.neu-btn.primary:active { box-shadow: inset 3px 3px 8px rgba(0,0,0,.15); }
-.neu-btn.block { width: 100%; }
-.neu-btn.ghost { background: transparent; box-shadow: none; color: var(--gray); font-size: 14px; }
+.action:active{transform:scale(.985);}
+.action.primary{
+  background:var(--orange);border-color:var(--orange-dark);color:#fff;
+  box-shadow:0 6px 16px rgba(255,107,26,.28);
+}
+.action.primary .sub{color:rgba(255,255,255,.85);}
+.action.primary .chev{color:rgba(255,255,255,.8);}
+.icon{
+  width:46px;height:46px;border-radius:14px;flex:none;
+  display:flex;align-items:center;justify-content:center;background:var(--cyan-soft);
+}
+.action.primary .icon{background:rgba(255,255,255,.18);}
+.icon svg,.ric svg{width:24px;height:24px;}
+.ric svg{width:17px;height:17px;}
+.action .txt{flex:1;min-width:0;}
+.action .t{font-size:16px;font-weight:700;letter-spacing:-.2px;}
+.action .sub{font-size:13px;color:var(--ink-2);margin-top:3px;line-height:1.35;}
+.chev{color:#b6c2cf;flex:none;font-size:20px;font-weight:600;}
 
-/* ── Landing choice cards ── */
-.choice-card {
-  position: relative; background: var(--surface); border-radius: 20px; box-shadow: var(--shadow-card);
-  padding: 20px 20px 20px 24px; display: flex; align-items: center; gap: 16px;
-  cursor: pointer; margin-bottom: 14px; transition: transform .15s; overflow: hidden;
+.list{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+.row{
+  display:flex;align-items:center;gap:12px;width:100%;
+  padding:13px 16px;background:none;border:0;border-bottom:1px solid var(--line);
+  font:inherit;color:inherit;text-align:left;cursor:pointer;font-size:14.5px;font-weight:600;
 }
-.choice-card::before {
-  content: ''; position: absolute; inset: 0; border-radius: 20px; pointer-events: none;
-  background: radial-gradient(120px 100% at 0% 50%, var(--glow-color, transparent) 0%, transparent 70%);
-  opacity: .35;
+.row:last-child{border-bottom:0;}
+.row:active{background:#f6f9fb;}
+.row .ric{
+  width:32px;height:32px;border-radius:10px;background:#eef3f6;
+  display:flex;align-items:center;justify-content:center;flex:none;
 }
-.choice-card:active { transform: scale(.98); }
-.choice-icon {
-  position: relative; width: 46px; height: 46px; border-radius: 14px; background: var(--surface);
-  box-shadow: var(--shadow-out); display: flex; align-items: center; justify-content: center;
-  font-size: 20px; flex-shrink: 0; color: var(--accent-color, var(--orange));
+.row .chev{margin-left:auto;}
+.badge{
+  margin-left:auto;font-size:11.5px;font-weight:700;color:var(--ink-2);
+  background:#eef3f6;border-radius:999px;padding:3px 9px;
 }
-.choice-title { position: relative; font-size: 16px; font-weight: 800; }
-.choice-sub { position: relative; font-size: 12.5px; color: var(--gray); margin-top: 3px; }
-.choice-arrow { position: relative; margin-left: auto; font-size: 18px; color: var(--gray-light); flex-shrink: 0; }
+.badge.warn{color:#fff;background:var(--red);}
+.row .badge + .chev{margin-left:0;}
+.foot{margin:26px 4px 0;font-size:12px;color:var(--ink-2);text-align:center;line-height:1.5;}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+.chip{
+  border:1.5px solid var(--line);background:#fff;border-radius:999px;
+  padding:9px 14px;font:inherit;font-size:13.5px;font-weight:600;color:var(--ink-2);cursor:pointer;
+}
+.chip.sel{border-color:var(--orange);color:var(--orange-dark);background:var(--orange-light);}
 
-.choice-card.tint-blue    { --glow-color: #93C5FD; --accent-color: #2563EB; }
-.choice-card.tint-green   { --glow-color: #86EFAC; --accent-color: #16A34A; }
-.choice-card.tint-amber   { --glow-color: #FCD34D; --accent-color: #D97706; }
+/* Legacy aliases used by checklist / other views */
+.rr-header{
+  background:var(--navy);color:#fff;border-radius:18px;
+  padding:20px 18px;text-align:left;margin-bottom:16px;
+  box-shadow:0 8px 20px rgba(11,42,74,.18);
+}
+.rr-icon{font-size:28px;margin-bottom:6px;}
+.rr-name{font-size:20px;font-weight:800;letter-spacing:-.02em;color:#fff;}
+.rr-meta{font-size:13px;color:#b9c9da;margin-top:4px;}
 
-/* ── Cards / sections ── */
-.card { background: var(--surface); border-radius: 24px; box-shadow: var(--shadow-card); padding: 22px; margin-bottom: 16px; }
-.section-title {
-  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
-  color: var(--gray); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+.search-bar{
+  display:flex;align-items:center;gap:10px;background:var(--card);
+  border:1px solid var(--line);border-radius:999px;padding:14px 18px;margin-bottom:16px;
 }
-.section-count { font-family: 'DM Mono', monospace; font-size: 10.5px; background: var(--bg); padding: 3px 9px; border-radius: 999px; box-shadow: var(--shadow-out); }
+.search-bar-icon{font-size:16px;color:var(--gray-light);flex-shrink:0;}
+.search-bar input{border:none;outline:none;background:transparent;flex:1;font:inherit;font-size:15px;color:var(--ink);}
+.search-bar input::placeholder{color:var(--gray-light);}
 
-/* ── Checklist item ── */
-.check-row { margin-bottom: 18px; }
-.check-row:last-child { margin-bottom: 0; }
-.check-label { font-size: 14.5px; font-weight: 700; margin-bottom: 10px; }
-.ftag-chip {
-  display: inline-block; margin-left: 6px; padding: 2px 7px; border-radius: var(--r-pill);
-  font-family: 'DM Mono', monospace; font-size: 10.5px; font-weight: 500; vertical-align: 1px;
-  color: var(--gray); background: var(--bg); box-shadow: var(--shadow-in);
+.neu-btn{
+  padding:14px 22px;border-radius:14px;border:0;cursor:pointer;
+  font:inherit;font-size:15px;font-weight:700;
+  background:#eef3f6;color:var(--ink);transition:transform .08s ease, background .15s;
 }
-.ftag-cite { font-size: 12px; color: var(--gray); margin: -4px 0 10px; line-height: 1.45; }
-.ftag-cite b { color: #DC2626; font-family: 'DM Mono', monospace; font-weight: 500; }
-.check-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-.check-btn {
-  padding: 13px 8px; border-radius: 14px; border: none; cursor: pointer;
-  font-family: inherit; font-size: 13px; font-weight: 700;
-  background: var(--bg); box-shadow: var(--shadow-out); color: var(--gray); transition: all .15s;
-}
-.check-btn.sel-pass { background: rgba(34,197,94,.15); color: #16A34A; box-shadow: 3px 3px 8px rgba(34,197,94,.25); }
-.check-btn.sel-fail { background: rgba(239,68,68,.15); color: #DC2626; box-shadow: 3px 3px 8px rgba(239,68,68,.25); }
-.check-btn.sel-na   { background: rgba(107,114,128,.15); color: var(--gray); box-shadow: var(--shadow-in); }
+.neu-btn:active{transform:scale(.985);}
+.neu-btn.primary{background:var(--orange);color:#fff;box-shadow:0 6px 16px rgba(255,107,26,.28);}
+.neu-btn.primary:active{background:var(--orange-dark);}
+.neu-btn.block{width:100%;}
+.neu-btn.ghost{background:transparent;color:var(--ink-2);font-size:14px;box-shadow:none;}
 
-/* ── Progress bar (sticky) ── */
-.progress-bar-wrap {
-  position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface);
-  box-shadow: 0 -6px 20px rgba(0,0,0,.08); padding: 16px 18px; z-index: 50;
+.choice-card{
+  display:flex;align-items:center;gap:14px;width:100%;
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:15px 16px;margin-bottom:10px;cursor:pointer;text-align:left;
+  box-shadow:var(--shadow-card);transition:transform .08s ease;
 }
-.progress-bar-inner { max-width: 480px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
-.progress-track { flex: 1; height: 9px; border-radius: 999px; background: var(--bg); box-shadow: var(--shadow-in); overflow: hidden; }
-.progress-fill { height: 100%; background: var(--orange); border-radius: 999px; transition: width .3s ease; width: 0%; }
-.progress-label { font-family: 'DM Mono', monospace; font-size: 12.5px; color: var(--gray); flex-shrink: 0; }
+.choice-card:active{transform:scale(.985);}
+.choice-card::before{display:none;}
+.choice-icon{
+  width:46px;height:46px;border-radius:14px;background:var(--cyan-soft);
+  display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;
+}
+.choice-title{font-size:16px;font-weight:700;letter-spacing:-.2px;}
+.choice-sub{font-size:13px;color:var(--ink-2);margin-top:3px;line-height:1.35;}
+.choice-arrow{margin-left:auto;font-size:20px;color:#b6c2cf;flex-shrink:0;}
+.choice-card.tint-blue .choice-icon,
+.choice-card.tint-green .choice-icon,
+.choice-card.tint-amber .choice-icon{background:var(--cyan-soft);}
 
-/* ── Issue block ── */
-.issue-card { background: var(--bg); border-radius: 18px; padding: 16px; box-shadow: var(--shadow-out); margin-bottom: 12px; }
-.issue-card-title { font-size: 13.5px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
-.issue-card textarea, .issue-card input, .issue-card select {
-  width: 100%; padding: 12px 14px; border: none; border-radius: 12px;
-  background: var(--surface); box-shadow: var(--shadow-in);
-  font-family: inherit; font-size: 13.5px; color: var(--black); margin-bottom: 10px; resize: vertical;
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px;margin-bottom:14px;box-shadow:var(--shadow-card);
 }
-.priority-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
-.priority-btn {
-  padding: 10px; border-radius: 12px; border: none; cursor: pointer; font-family: inherit;
-  font-size: 12.5px; font-weight: 700; background: var(--surface); box-shadow: var(--shadow-out); color: var(--gray);
+.section-title{
+  font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--ink-2);margin-bottom:12px;display:flex;align-items:center;gap:8px;
 }
-.priority-btn.sel-High { background: rgba(239,68,68,.15); color: var(--red); }
-.priority-btn.sel-Medium { background: rgba(245,158,11,.15); color: var(--amber); }
-.priority-btn.sel-Low { background: rgba(34,197,94,.15); color: var(--green); }
-.issue-remove { background: none; border: none; color: var(--gray-light); font-size: 14px; cursor: pointer; margin-left: auto; }
+.section-count{
+  font-size:11px;font-weight:700;background:#eef3f6;padding:3px 9px;border-radius:999px;color:var(--ink-2);
+}
 
-/* ── List item card — resident-app version of a "job card" ── */
-.asset-item {
-  display: flex; align-items: center; gap: 14px; background: var(--surface); border-radius: 20px;
-  padding: 16px 17px; box-shadow: var(--shadow-card); margin-bottom: 12px;
+.check-row{margin-bottom:18px;}
+.check-row:last-child{margin-bottom:0;}
+.check-label{font-size:14.5px;font-weight:700;margin-bottom:10px;}
+.ftag-chip{
+  display:inline-block;margin-left:6px;padding:2px 7px;border-radius:999px;
+  font-size:10.5px;font-weight:700;vertical-align:1px;color:var(--ink-2);background:#eef3f6;
 }
-.asset-icon { width: 48px; height: 48px; border-radius: 16px; background: var(--orange-light); display: flex; align-items: center; justify-content: center; font-size: 21px; flex-shrink: 0; }
-.asset-info { flex: 1; min-width: 0; }
-.asset-name { font-size: 15px; font-weight: 800; }
-.asset-meta { font-size: 12.5px; color: var(--gray); margin-top: 3px; }
-.asset-condition { font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 999px; flex-shrink: 0; }
-.asset-tag-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-.asset-tag { font-size: 10.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--bg); color: var(--gray); }
+.ftag-cite{font-size:12px;color:var(--ink-2);margin:-4px 0 10px;line-height:1.45;}
+.ftag-cite b{color:var(--red);font-weight:700;}
+.check-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.check-btn{
+  padding:13px 8px;border-radius:12px;border:1.5px solid var(--line);cursor:pointer;
+  font:inherit;font-size:13px;font-weight:700;background:#fff;color:var(--ink-2);transition:all .15s;
+}
+.check-btn.sel-pass{background:rgba(29,158,107,.12);color:var(--green);border-color:rgba(29,158,107,.35);}
+.check-btn.sel-fail{background:rgba(214,69,69,.12);color:var(--red);border-color:rgba(214,69,69,.35);}
+.check-btn.sel-na{background:#eef3f6;color:var(--ink-2);border-color:var(--line);}
 
-/* ── Compact room checkbox grid (Assign Housekeepers) ── */
-.hk-room-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.hk-room-item {
-  display: flex; align-items: center; gap: 8px; background: var(--bg); border-radius: 10px;
-  padding: 9px 10px; box-shadow: var(--shadow-out); cursor: pointer; font-size: 11.5px; font-weight: 600;
+.progress-bar-wrap{
+  position:fixed;bottom:0;left:0;right:0;background:var(--card);
+  border-top:1px solid var(--line);padding:14px 16px;z-index:50;
 }
-.hk-room-item.checked { background: var(--orange-light); }
-.hk-room-item input { width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--orange); }
-.hk-room-item .hk-room-meta { font-size: 9.5px; color: var(--gray); font-weight: 500; margin-top: 1px; }
+.progress-bar-inner{max-width:480px;margin:0 auto;display:flex;align-items:center;gap:12px;}
+.progress-track{flex:1;height:9px;border-radius:999px;background:#eef3f6;overflow:hidden;}
+.progress-fill{height:100%;background:var(--orange);border-radius:999px;transition:width .3s ease;width:0%;}
+.progress-label{font-size:12.5px;color:var(--ink-2);flex-shrink:0;font-weight:700;}
 
-/* ── "My Assigned Rooms" — adapted from the career-1 job-board pattern ── */
-.assign-badge {
-  display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(0,0,0,.08);
-  background: var(--bg); border-radius: 999px; padding: 7px 15px; font-size: 12px;
-  font-weight: 700; color: var(--gray); margin-bottom: 14px;
+.issue-card{background:#f6f9fb;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;}
+.issue-card-title{font-size:13.5px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.issue-card textarea,.issue-card input,.issue-card select,
+.card textarea,.card input,.card select,
+.field input,.field select,.field textarea,
+.name-field-card input{
+  width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;
+  background:#fff;font:inherit;font-size:14px;color:var(--ink);margin-bottom:10px;resize:vertical;
 }
-.assign-heading { font-size: 24px; font-weight: 800; letter-spacing: -.02em; margin-bottom: 6px; }
-.assign-heading .hl { position: relative; }
-.assign-heading .hl::after { content: ''; position: absolute; left: 0; right: 0; bottom: 2px; height: 7px; background: var(--orange-light); border-radius: 3px; z-index: -1; }
-.assign-desc { font-size: 13.5px; color: var(--gray); margin-bottom: 20px; }
+.issue-card textarea:focus,.card textarea:focus,.card input:focus,.card select:focus,
+.field input:focus,.field select:focus,.name-field-card input:focus{
+  outline:none;border-color:var(--cyan);
+}
+.field{margin-bottom:10px;}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;}
+.priority-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.priority-btn{
+  padding:10px;border-radius:12px;border:1.5px solid var(--line);cursor:pointer;font:inherit;
+  font-size:12.5px;font-weight:700;background:#fff;color:var(--ink-2);
+}
+.priority-btn.sel-High{background:rgba(214,69,69,.12);color:var(--red);border-color:rgba(214,69,69,.35);}
+.priority-btn.sel-Medium{background:rgba(217,148,19,.12);color:var(--amber);border-color:rgba(217,148,19,.35);}
+.priority-btn.sel-Low{background:rgba(29,158,107,.12);color:var(--green);border-color:rgba(29,158,107,.35);}
+.issue-remove{background:none;border:none;color:var(--gray-light);font-size:14px;cursor:pointer;margin-left:auto;}
 
-.assign-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-.assign-tab {
-  display: inline-flex; align-items: center; gap: 7px; border: none; border-radius: 999px;
-  padding: 10px 17px; font-size: 13.5px; font-weight: 700; cursor: pointer;
-  background: var(--surface); box-shadow: var(--shadow-out); color: var(--gray); transition: all .15s;
+.asset-item{
+  display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);
+  border-radius:14px;padding:14px 15px;margin-bottom:10px;
 }
-.assign-tab.active { background: var(--black); color: white; box-shadow: none; }
-.assign-tab-count {
-  display: inline-flex; align-items: center; justify-content: center; min-width: 19px; height: 19px;
-  padding: 0 5px; border-radius: 999px; font-size: 10.5px; font-weight: 800; background: var(--bg);
-}
-.assign-tab.active .assign-tab-count { background: rgba(255,255,255,.22); color: white; }
+.asset-icon{width:48px;height:48px;border-radius:14px;background:var(--cyan-soft);display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0;}
+.asset-info{flex:1;min-width:0;}
+.asset-name{font-size:15px;font-weight:800;}
+.asset-meta{font-size:12.5px;color:var(--ink-2);margin-top:3px;}
+.asset-condition{font-size:11px;font-weight:700;padding:5px 12px;border-radius:999px;flex-shrink:0;}
+.asset-tag-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.asset-tag{font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:999px;background:#eef3f6;color:var(--ink-2);}
 
-.assign-list-card { background: var(--surface); border-radius: 22px; box-shadow: var(--shadow-card); padding: 0 20px; }
-.assign-row { display: flex; align-items: center; gap: 14px; padding: 19px 0; border-bottom: 1px solid rgba(0,0,0,.06); cursor: pointer; }
-.assign-row:last-child { border-bottom: none; }
-.assign-row:active { opacity: .7; }
-.assign-row-main { flex: 1; min-width: 0; }
-.assign-row-title-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.assign-row-title { font-size: 15.5px; font-weight: 800; }
-.assign-badge-new {
-  display: inline-flex; align-items: center; gap: 3px; background: rgba(245,158,11,.12); color: #B45309;
-  border: 1px solid rgba(245,158,11,.25); border-radius: 999px; padding: 2px 9px; font-size: 10px; font-weight: 800;
+.hk-room-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.hk-room-item{
+  display:flex;align-items:center;gap:8px;background:#f6f9fb;border:1px solid var(--line);
+  border-radius:10px;padding:9px 10px;cursor:pointer;font-size:11.5px;font-weight:600;
 }
-.assign-row-sub { font-size: 12.5px; color: var(--gray); margin-top: 3px; }
-.assign-status-pill {
-  display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 6px 12px;
-  font-size: 11px; font-weight: 800; border: 1px solid transparent; flex-shrink: 0;
-}
-.assign-status-done { background: rgba(34,197,94,.1); color: #16A34A; border-color: rgba(34,197,94,.22); }
-.assign-status-pending { background: rgba(245,166,35,.12); color: var(--orange); border-color: rgba(245,166,35,.22); }
-.assign-row-arrow {
-  width: 30px; height: 30px; border-radius: 50%; background: var(--bg); display: flex;
-  align-items: center; justify-content: center; font-size: 13px; color: var(--gray); flex-shrink: 0;
-}
-.assign-empty { text-align: center; padding: 50px 20px; }
-.assign-empty-icon { font-size: 34px; margin-bottom: 12px; }
+.hk-room-item.checked{background:var(--orange-light);border-color:rgba(255,107,26,.35);}
+.hk-room-item input{width:16px;height:16px;flex-shrink:0;accent-color:var(--orange);}
+.hk-room-item .hk-room-meta{font-size:9.5px;color:var(--ink-2);font-weight:500;margin-top:1px;}
 
-/* ── Employee search picker ── */
-.emp-search-result {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  background: var(--bg); border-radius: 14px; padding: 13px 15px; margin-bottom: 7px;
-  cursor: pointer; box-shadow: var(--shadow-out); font-size: 14px; font-weight: 600;
+.assign-badge{
+  display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);
+  background:#eef3f6;border-radius:999px;padding:7px 15px;font-size:12px;
+  font-weight:700;color:var(--ink-2);margin-bottom:14px;
 }
-.emp-search-result:active { box-shadow: var(--shadow-in); }
-.emp-selected-chip {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  background: var(--orange-light); border-radius: 14px; padding: 14px 16px; margin-bottom: 4px;
-  font-size: 14px; font-weight: 700;
+.assign-heading{font-size:24px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px;}
+.assign-heading .hl{position:relative;color:var(--navy);}
+.assign-heading .hl::after{content:'';position:absolute;left:0;right:0;bottom:2px;height:7px;background:var(--orange-light);border-radius:3px;z-index:-1;}
+.assign-desc{font-size:13.5px;color:var(--ink-2);margin-bottom:20px;}
+.assign-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+.assign-tab{
+  display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;
+  padding:10px 17px;font-size:13.5px;font-weight:700;cursor:pointer;background:#fff;color:var(--ink-2);
 }
-.emp-selected-chip button { background: none; border: none; color: var(--orange); font-size: 13px; font-weight: 700; cursor: pointer; }
-
-/* ── Sticky confirm bar ── */
-.sticky-confirm-bar {
-  position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface);
-  box-shadow: 0 -6px 20px rgba(0,0,0,.08); padding: 14px 16px; z-index: 50;
+.assign-tab.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+.assign-tab-count{
+  display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;
+  padding:0 5px;border-radius:999px;font-size:10.5px;font-weight:800;background:#eef3f6;
 }
-.sticky-confirm-bar .sticky-confirm-inner { max-width: 520px; margin: 0 auto; }
-
-/* ── Success ── */
-.success-wrap { text-align: center; padding: 40px 20px; }
-.success-icon { font-size: 56px; margin-bottom: 14px; }
-.success-title { font-size: 20px; font-weight: 800; }
-.success-sub { font-size: 13px; color: var(--gray); margin-top: 6px; }
-
-.center-msg { text-align: center; padding: 60px 20px; color: var(--gray); font-size: 13.5px; }
-
-/* ── Login screen (geometric background) ── */
-body.login-mode { min-height: 100vh; padding-bottom: 0; display: flex; align-items: center; justify-content: center; background: #2AAFC0; overflow-x: hidden; }
-.login-bg-navy { position: fixed; inset: 0; z-index: 0; background: #1B3550; clip-path: polygon(0 0, 100% 0, 100% 36%, 0 56%); }
-.login-bg-orange { position: fixed; inset: 0; z-index: 0; background: var(--orange); clip-path: polygon(100% 64%, 100% 100%, 12% 100%); }
-.login-content { position: relative; z-index: 2; width: 100%; }
-.login-title { text-align: center; color: white; font-size: 27px; font-weight: 600; margin-bottom: 50px; letter-spacing: -.02em; }
-.login-avatar {
-  width: 88px; height: 88px; border-radius: 50%; background: #1B3550; border: 4px solid white;
-  display: flex; align-items: center; justify-content: center; margin: 0 auto -44px; position: relative; z-index: 3;
-  box-shadow: 0 6px 16px rgba(0,0,0,.25);
+.assign-tab.active .assign-tab-count{background:rgba(255,255,255,.22);color:#fff;}
+.assign-list-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:0 16px;}
+.assign-row{display:flex;align-items:center;gap:14px;padding:16px 0;border-bottom:1px solid var(--line);cursor:pointer;}
+.assign-row:last-child{border-bottom:none;}
+.assign-row:active{opacity:.7;}
+.assign-row-main{flex:1;min-width:0;}
+.assign-row-title-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.assign-row-title{font-size:15.5px;font-weight:800;}
+.assign-badge-new{
+  display:inline-flex;align-items:center;gap:3px;background:rgba(217,148,19,.12);color:#B45309;
+  border:1px solid rgba(217,148,19,.25);border-radius:999px;padding:2px 9px;font-size:10px;font-weight:800;
 }
-.login-avatar svg { width: 42px; height: 42px; fill: white; }
-.login-card { background: var(--surface); border-radius: 22px; padding: 60px 26px 26px; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
-.login-field { display: flex; align-items: center; gap: 12px; border-bottom: 1.5px solid #E3E0D6; padding-bottom: 11px; margin-bottom: 30px; }
-.login-field-icon { flex-shrink: 0; font-size: 18px; }
-.login-field input { border: none; outline: none; flex: 1; font-size: 16px; font-family: inherit; color: var(--black); background: transparent; }
-.login-field input::placeholder { color: var(--gray-light); }
-.login-signin-btn {
-  width: 100%; background: var(--orange); color: white; border: none; border-radius: 12px;
-  padding: 15px; font-size: 15.5px; font-weight: 700; cursor: pointer; font-family: inherit;
-  box-shadow: 0 10px 24px rgba(245,166,35,.45);
+.assign-row-sub{font-size:12.5px;color:var(--ink-2);margin-top:3px;}
+.assign-status-pill{
+  display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:6px 12px;
+  font-size:11px;font-weight:800;border:1px solid transparent;flex-shrink:0;
 }
-.login-signin-btn:active { transform: scale(.98); }
-.login-facility { text-align: center; color: var(--gray); font-size: 12px; margin-top: 16px; }
-
-.back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--gray); background: none; border: none; cursor: pointer; font-family: inherit; margin-bottom: 14px; }
-
-/* ── In-page toast (replaces alert() — blocked in many in-app browsers) ── */
-.toast {
-  position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 300;
-  max-width: 420px; width: calc(100% - 32px); background: var(--surface); color: var(--black);
-  padding: 16px 18px; border-radius: 18px; box-shadow: var(--shadow-card);
-  display: flex; align-items: flex-start; gap: 13px;
+.assign-status-done{background:rgba(29,158,107,.1);color:var(--green);border-color:rgba(29,158,107,.22);}
+.assign-status-pending{background:rgba(255,107,26,.12);color:var(--orange-dark);border-color:rgba(255,107,26,.22);}
+.assign-row-arrow{
+  width:30px;height:30px;border-radius:50%;background:#eef3f6;display:flex;
+  align-items:center;justify-content:center;font-size:13px;color:var(--ink-2);flex-shrink:0;
 }
-.toast-icon {
-  width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 800;
-}
-.toast-body { flex: 1; min-width: 0; padding-top: 1px; }
-.toast-title { font-size: 14.5px; font-weight: 800; line-height: 1.3; }
-.toast-desc { font-size: 12.5px; color: var(--gray); margin-top: 3px; line-height: 1.4; }
-.toast-close { background: none; border: none; color: var(--gray-light); font-size: 15px; cursor: pointer; flex-shrink: 0; padding: 2px; }
+.assign-empty{text-align:center;padding:50px 20px;}
+.assign-empty-icon{font-size:34px;margin-bottom:12px;}
 
-.toast.info .toast-icon { background: #E5F3FF; color: #2563EB; }
-.toast.success .toast-icon { background: rgba(34,197,94,.15); color: var(--green); }
-.toast.warning .toast-icon { background: rgba(245,158,11,.15); color: var(--amber); }
-.toast.error .toast-icon { background: rgba(239,68,68,.15); color: var(--red); }
-
-/* ── In-page confirm modal (replaces confirm() — also blocked in many in-app browsers) ── */
-.confirm-overlay {
-  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 400;
-  align-items: center; justify-content: center; padding: 20px;
+.emp-search-result{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  background:#f6f9fb;border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:7px;
+  cursor:pointer;font-size:14px;font-weight:600;
 }
-.confirm-overlay.show { display: flex; }
-.confirm-box { background: var(--surface); border-radius: 20px; padding: 22px; max-width: 360px; width: 100%; box-shadow: var(--shadow-card); }
-.confirm-msg { font-size: 14px; font-weight: 600; margin-bottom: 18px; line-height: 1.4; }
-.confirm-actions { display: flex; gap: 10px; }
-
-/* ── Inline name field ── */
-.name-field-card { padding: 14px 18px; }
-.name-field-card input { width: 100%; padding: 11px 12px; border: none; border-radius: 12px; background: var(--bg); box-shadow: var(--shadow-in); font-family: inherit; font-size: 13.5px; color: var(--black); }
-
-/* ── Cleaning tips popup ── */
-.tips-overlay {
-  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 500;
-  align-items: flex-end; justify-content: center;
+.emp-search-result:active{background:#eef3f6;}
+.emp-selected-chip{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--orange-light);border:1px solid rgba(255,107,26,.25);border-radius:14px;padding:14px 16px;margin-bottom:4px;
+  font-size:14px;font-weight:700;
 }
-.tips-overlay.show { display: flex; }
-.tips-box {
-  background: var(--surface); border-radius: 24px 24px 0 0; width: 100%; max-width: 480px;
-  max-height: 85vh; overflow-y: auto; padding: 20px 20px 30px; box-shadow: 0 -10px 30px rgba(0,0,0,.25);
-}
-.tips-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; position: sticky; top: 0; background: var(--surface); padding-bottom: 10px; }
-.tips-title { font-size: 16px; font-weight: 800; }
-.tips-close { background: var(--bg); border: none; border-radius: 10px; width: 32px; height: 32px; font-size: 15px; cursor: pointer; box-shadow: var(--shadow-out); color: var(--gray); flex-shrink: 0; }
-.tips-callout { background: var(--orange-light); border-radius: 14px; padding: 12px 14px; font-size: 12.5px; font-weight: 700; color: #92400E; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
-.tips-section-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--gray); margin: 16px 0 8px; }
-.tips-step { font-size: 12.5px; line-height: 1.5; margin-bottom: 10px; }
-.tips-step b { display: block; margin-bottom: 2px; }
-.tips-sublist { margin: 6px 0 0 16px; padding: 0; list-style: disc; }
-.tips-sublist li { font-size: 11.5px; color: var(--gray); margin-bottom: 3px; line-height: 1.4; }
-.tips-warn { background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.22); border-radius: 14px; padding: 12px 14px; margin-top: 10px; }
-.tips-warn-title { font-size: 11.5px; font-weight: 800; color: var(--red); margin-bottom: 6px; }
-.tips-warn p { font-size: 11.5px; line-height: 1.5; margin-bottom: 6px; color: var(--black); }
-.tips-table { width: 100%; font-size: 11px; border-collapse: collapse; margin-top: 6px; }
-.tips-table td { padding: 9px 4px; border-bottom: 1px solid rgba(0,0,0,.07); vertical-align: top; line-height: 1.4; }
-.tips-table td:first-child { font-weight: 700; }
+.emp-selected-chip button{background:none;border:none;color:var(--orange-dark);font-size:13px;font-weight:700;cursor:pointer;}
 
-/* ── Barcode/QR scanner ── */
-.scanner-overlay {
-  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 600;
-  align-items: center; justify-content: center; padding: 16px;
+.sticky-confirm-bar{
+  position:fixed;bottom:0;left:0;right:0;background:var(--card);
+  border-top:1px solid var(--line);padding:14px 16px;z-index:50;
 }
-.scanner-overlay.show { display: flex; }
-.scanner-box { background: var(--surface); border-radius: 24px; width: 100%; max-width: 420px; padding: 18px; }
-.scanner-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.scanner-title { font-size: 15px; font-weight: 800; }
-#scannerReader { border-radius: 16px; overflow: hidden; background: #000; }
-#scannerReader video { border-radius: 16px; }
-.scanner-hint { text-align: center; font-size: 11.5px; color: var(--gray); margin-top: 10px; }
-.scan-btn {
-  background: var(--bg); border: none; border-radius: 10px; width: 38px; height: 38px;
-  cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
-  box-shadow: var(--shadow-out); flex-shrink: 0;
+.sticky-confirm-bar .sticky-confirm-inner{max-width:520px;margin:0 auto;}
+
+.success-wrap{text-align:center;padding:40px 20px;}
+.success-icon{font-size:56px;margin-bottom:14px;}
+.success-title{font-size:20px;font-weight:800;}
+.success-sub{font-size:13px;color:var(--ink-2);margin-top:6px;}
+.center-msg{text-align:center;padding:60px 20px;color:var(--ink-2);font-size:13.5px;}
+
+body.login-mode{min-height:100vh;padding-bottom:0;display:flex;align-items:center;justify-content:center;background:var(--cyan);overflow-x:hidden;max-width:none;}
+.login-bg-navy{position:fixed;inset:0;z-index:0;background:var(--navy);clip-path:polygon(0 0,100% 0,100% 36%,0 56%);}
+.login-bg-orange{position:fixed;inset:0;z-index:0;background:var(--orange);clip-path:polygon(100% 64%,100% 100%,12% 100%);}
+.login-content{position:relative;z-index:2;width:100%;max-width:420px;padding:0 18px;}
+.login-title{text-align:center;color:#fff;font-size:27px;font-weight:700;margin-bottom:50px;letter-spacing:-.02em;}
+.login-avatar{
+  width:88px;height:88px;border-radius:50%;background:var(--navy);border:4px solid #fff;
+  display:flex;align-items:center;justify-content:center;margin:0 auto -44px;position:relative;z-index:3;
+  box-shadow:0 6px 16px rgba(0,0,0,.25);
+}
+.login-avatar svg{width:42px;height:42px;fill:#fff;}
+.login-card{background:#fff;border-radius:22px;padding:60px 26px 26px;box-shadow:0 20px 50px rgba(0,0,0,.3);}
+.login-field{display:flex;align-items:center;gap:12px;border-bottom:1.5px solid var(--line);padding-bottom:11px;margin-bottom:30px;}
+.login-field-icon{flex-shrink:0;font-size:18px;}
+.login-field input{border:none;outline:none;flex:1;font-size:16px;font-family:inherit;color:var(--ink);background:transparent;}
+.login-field input::placeholder{color:var(--gray-light);}
+.login-signin-btn{
+  width:100%;background:var(--orange);color:#fff;border:none;border-radius:14px;
+  padding:15px;font-size:15.5px;font-weight:700;cursor:pointer;font-family:inherit;
+  box-shadow:0 10px 24px rgba(255,107,26,.35);
+}
+.login-signin-btn:active{transform:scale(.98);}
+.login-facility{text-align:center;color:var(--ink-2);font-size:12px;margin-top:16px;}
+
+.back-link{
+  display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;
+  color:var(--ink-2);background:none;border:none;cursor:pointer;font-family:inherit;margin-bottom:14px;
+}
+
+.toast{
+  position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:300;
+  max-width:420px;width:calc(100% - 32px);background:var(--card);color:var(--ink);
+  padding:16px 18px;border-radius:16px;border:1px solid var(--line);
+  box-shadow:0 10px 30px rgba(11,42,74,.18);
+  display:flex;align-items:flex-start;gap:13px;
+}
+.toast-icon{
+  width:38px;height:38px;border-radius:12px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;
+}
+.toast-body{flex:1;min-width:0;padding-top:1px;}
+.toast-title{font-size:14.5px;font-weight:800;line-height:1.3;}
+.toast-desc{font-size:12.5px;color:var(--ink-2);margin-top:3px;line-height:1.4;}
+.toast-close{background:none;border:none;color:var(--gray-light);font-size:15px;cursor:pointer;flex-shrink:0;padding:2px;}
+.toast.info .toast-icon{background:var(--cyan-soft);color:var(--cyan);}
+.toast.success .toast-icon{background:rgba(29,158,107,.15);color:var(--green);}
+.toast.warning .toast-icon{background:rgba(217,148,19,.15);color:var(--amber);}
+.toast.error .toast-icon{background:rgba(214,69,69,.15);color:var(--red);}
+
+.confirm-overlay{
+  display:none;position:fixed;inset:0;background:rgba(11,42,74,.5);z-index:400;
+  align-items:center;justify-content:center;padding:20px;
+}
+.confirm-overlay.show{display:flex;}
+.confirm-box{background:#fff;border-radius:18px;padding:22px;max-width:360px;width:100%;box-shadow:0 16px 40px rgba(11,42,74,.25);}
+.confirm-msg{font-size:14px;font-weight:600;margin-bottom:18px;line-height:1.4;}
+.confirm-actions{display:flex;gap:10px;}
+
+.name-field-card{padding:14px 16px;}
+
+.tips-overlay{
+  display:none;position:fixed;inset:0;background:rgba(11,42,74,.5);z-index:500;
+  align-items:flex-end;justify-content:center;
+}
+.tips-overlay.show{display:flex;}
+.tips-box{
+  background:#fff;border-radius:22px 22px 0 0;width:100%;max-width:480px;
+  max-height:85vh;overflow-y:auto;padding:20px 20px 30px;
+}
+.tips-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;position:sticky;top:0;background:#fff;padding-bottom:10px;}
+.tips-title{font-size:16px;font-weight:800;}
+.tips-close{background:#eef3f6;border:none;border-radius:10px;width:32px;height:32px;font-size:15px;cursor:pointer;color:var(--ink-2);flex-shrink:0;}
+.tips-callout{background:var(--orange-light);border-radius:14px;padding:12px 14px;font-size:12.5px;font-weight:700;color:#92400E;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.tips-section-title{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);margin:16px 0 8px;}
+.tips-step{font-size:12.5px;line-height:1.5;margin-bottom:10px;}
+.tips-step b{display:block;margin-bottom:2px;}
+.tips-sublist{margin:6px 0 0 16px;padding:0;list-style:disc;}
+.tips-sublist li{font-size:11.5px;color:var(--ink-2);margin-bottom:3px;line-height:1.4;}
+.tips-warn{background:rgba(214,69,69,.08);border:1px solid rgba(214,69,69,.22);border-radius:14px;padding:12px 14px;margin-top:10px;}
+.tips-warn-title{font-size:11.5px;font-weight:800;color:var(--red);margin-bottom:6px;}
+.tips-warn p{font-size:11.5px;line-height:1.5;margin-bottom:6px;color:var(--ink);}
+.tips-table{width:100%;font-size:11px;border-collapse:collapse;margin-top:6px;}
+.tips-table td{padding:9px 4px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.4;}
+.tips-table td:first-child{font-weight:700;}
+
+.scanner-overlay{
+  display:none;position:fixed;inset:0;background:rgba(11,42,74,.7);z-index:600;
+  align-items:center;justify-content:center;padding:16px;
+}
+.scanner-overlay.show{display:flex;}
+.scanner-box{background:#fff;border-radius:18px;width:100%;max-width:420px;padding:18px;}
+.scanner-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.scanner-title{font-size:15px;font-weight:800;}
+#scannerReader{border-radius:16px;overflow:hidden;background:#000;}
+#scannerReader video{border-radius:16px;}
+.scanner-hint{text-align:center;font-size:11.5px;color:var(--ink-2);margin-top:10px;}
+.scan-btn{
+  background:#eef3f6;border:none;border-radius:10px;width:38px;height:38px;
+  cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important;}
 }
 </style>
 </head>
 <body>
 
-<div class="wrap" id="app">
+<div id="app">
   <div class="center-msg" id="loadingMsg">Loading…</div>
 </div>
 
@@ -428,10 +509,11 @@ body.login-mode { min-height: 100vh; padding-bottom: 0; display: flex; align-ite
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/ftags.js"></script>
+<script>if (typeof ftagInfo !== 'function') { function ftagInfo() { return null; } }</script>
 <script>
 const SUPABASE_URL  = 'https://gtbiatetqyuxwuehwilr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34';
-const DEFAULT_FACILITY_DOMAIN = 'agrhodes-meal.vercel.app'; // fallback for localhost/preview URLs
+const DEFAULT_FACILITY_DOMAIN = "agrhodes-meal.vercel.app"; // fallback for localhost/preview URLs
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const app = document.getElementById('app');
 const ASSET_URL_BASE = window.location.origin + '/round.html#asset=';
@@ -733,6 +815,7 @@ async function init() {
 
 /* ── Employee ID gate — shown on every scan before anything else ── */
 function renderEmployeeGate() {
+  document.body.classList.remove('landing-mode');
   document.body.classList.add('login-mode');
   var lastId = localStorage.getItem('agrhodes_last_employee_id') || '';
   app.innerHTML =
@@ -801,18 +884,135 @@ async function routeToContent() {
     return;
   }
   currentLoc = loc;
-  renderLanding();
+  await renderLanding();
 }
 
 function locSubtitle(loc) {
-  return loc.unit || loc.eoc_department || '';
+  var area = loc.unit || loc.eoc_department || '';
+  // Multi-building campus: "Magnolia Court · Memory Village"
+  return loc.building ? (area ? area + ' · ' + loc.building : loc.building) : area;
 }
 
-function renderLanding() {
+function enterAppPage() {
+  document.body.classList.remove('landing-mode', 'login-mode');
+}
+
+function formatLandingWhen(iso) {
+  if (!iso) return '—';
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  var time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  var today = new Date();
+  if (d.toDateString() === today.toDateString()) return 'Today ' + time;
+  return d.toLocaleDateString([], { weekday: 'short' }) + ' ' + time;
+}
+
+function svgIcon(name, stroke) {
+  var s = stroke || '#0fb5c9';
+  var icons = {
+    checklist: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
+    broom: '<path d="M3 21c3 0 7-1 9-3l8-8a2.1 2.1 0 0 0-3-3l-8 8c-2 2-3 6-6 6Z"/><path d="m14 6 4 4"/>',
+    wrench: '<path d="M14.7 6.3a4.5 4.5 0 0 0-6 6L3 18l3 3 5.7-5.7a4.5 4.5 0 0 0 6-6L14 13l-3-3 3.7-3.7Z"/>',
+    box: '<path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>',
+    home: '<path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/>',
+    check: '<path d="m5 13 4 4L19 7"/>',
+    users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
+    calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    layers: '<path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>'
+  };
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="' + s + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (icons[name] || '') + '</svg>';
+}
+
+async function loadLandingStats(loc) {
+  var stats = {
+    roundAt: null, roundToday: false,
+    cleanAt: null, cleanToday: false,
+    openIssues: 0, lastIssueAt: null,
+    assetCount: 0, cleaningsLeft: null, cleaningsDoneToday: null
+  };
+  if (!loc || !FACILITY_ID) return stats;
+
+  var todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  var todayIso = todayStart.toISOString();
+  var qr = loc.qr_identifier;
+  var roomNum = loc.room_number;
+
+  try {
+    var roundQ = sb.from('zone_rounds').select('rounded_at')
+      .eq('facility_id', FACILITY_ID).eq('qr_identifier', qr).eq('round_type', 'room')
+      .order('rounded_at', { ascending: false }).limit(1);
+    // Resident rooms save housekeeping as room_cleaning; offices/bathrooms save as their location type.
+    var cleanType = 'room_cleaning';
+    if (loc.location_type === 'office') cleanType = 'office';
+    else if (loc.location_type === 'bathroom') cleanType = 'bathroom';
+    var cleanQ = sb.from('zone_rounds').select('rounded_at')
+      .eq('facility_id', FACILITY_ID).eq('qr_identifier', qr).eq('round_type', cleanType)
+      .order('rounded_at', { ascending: false }).limit(1);
+    var assetQ = sb.from('room_assets').select('id', { count: 'exact', head: true })
+      .eq('facility_id', FACILITY_ID).eq('qr_identifier', qr).eq('is_active', true);
+
+    var issueCountQ = null;
+    var issueLatestQ = null;
+    if (roomNum) {
+      issueCountQ = sb.from('zone_issues').select('id', { count: 'exact', head: true })
+        .eq('facility_id', FACILITY_ID).eq('room_number', String(roomNum)).eq('status', 'Open');
+      issueLatestQ = sb.from('zone_issues').select('created_at')
+        .eq('facility_id', FACILITY_ID).eq('room_number', String(roomNum)).eq('status', 'Open')
+        .order('created_at', { ascending: false }).limit(1);
+    }
+
+    var results = await Promise.all([
+      roundQ, cleanQ, assetQ,
+      issueCountQ || Promise.resolve({ count: 0 }),
+      issueLatestQ || Promise.resolve({ data: [] })
+    ]);
+    var lastRound = (results[0].data || [])[0];
+    var lastClean = (results[1].data || [])[0];
+    if (lastRound) {
+      stats.roundAt = lastRound.rounded_at;
+      stats.roundToday = new Date(lastRound.rounded_at) >= todayStart;
+    }
+    if (lastClean) {
+      stats.cleanAt = lastClean.rounded_at;
+      stats.cleanToday = new Date(lastClean.rounded_at) >= todayStart;
+    }
+    stats.assetCount = results[2].count || 0;
+    stats.openIssues = results[3].count || 0;
+    var latestIssue = (results[4].data || [])[0];
+    if (latestIssue) stats.lastIssueAt = latestIssue.created_at;
+
+    if (currentEmployee) {
+      var empId = currentEmployee.employee_number;
+      var { data: assigns } = await sb.from('room_assignments').select('qr_identifier')
+        .eq('facility_id', FACILITY_ID).eq('employee_id', empId).eq('assignment_type', 'housekeeping');
+      var assigned = (assigns || []).map(function(a){ return a.qr_identifier; });
+      if (assigned.length) {
+        var { data: doneRows } = await sb.from('zone_rounds').select('qr_identifier')
+          .eq('facility_id', FACILITY_ID).eq('round_type', 'room_cleaning')
+          .eq('rounded_by', empId).gte('rounded_at', todayIso);
+        // rounded_by may be name; also try employee display — keep assigned count as badge fallback
+        var doneSet = {};
+        (doneRows || []).forEach(function(r){ doneSet[r.qr_identifier] = true; });
+        var left = assigned.filter(function(q){ return !doneSet[q]; }).length;
+        stats.cleaningsLeft = left;
+        stats.cleaningsDoneToday = assigned.length - left;
+      }
+    }
+  } catch (e) {
+    console.error('Landing stats error:', e);
+  }
+  return stats;
+}
+
+async function renderLanding() {
   var loc = currentLoc;
+  if (!loc) return;
+  document.body.classList.remove('login-mode');
+  document.body.classList.add('landing-mode');
   currentChecklistMode = 'round';
   var cfg = getLocConfig(loc);
-  var isRoom = loc.location_type === 'room' || loc.location_type === 'eoc_area';
   var isResidentRoom = loc.location_type === 'room';
   // Zone Defense (the nursing round) is restricted to Manager/Admin for resident rooms.
   // EOC area rounds are left open, since that's a separate, pre-existing feature.
@@ -821,41 +1021,125 @@ function renderLanding() {
   // My Assigned Rooms, and Survey Prep (if assigned) — nothing housekeeping-related.
   // Staff, Housekeeping Manager, and Admin still see the full cleaning-related set.
   var showHousekeepingLinks = isResidentRoom && !isZoneRoundOnlyManager();
+  var showRoomTools = showHousekeepingLinks || (!isResidentRoom && loc.location_type !== 'eoc_area');
+
+  app.innerHTML = '<div class="center-msg">Loading room…</div>';
+  var stats = await loadLandingStats(loc);
+  if (currentLoc !== loc) return;
+
+  var facilityLabel = (FACILITY_NAME || 'A.G. Rhodes');
+  var subLine = [locSubtitle(loc), facilityLabel].filter(Boolean).join(' · ');
+  var roundDue = isResidentRoom ? !stats.roundToday : false;
+  var roundVal = roundDue
+    ? '<span style="color:#ffb27a">Due</span><small>Last: ' + (stats.roundAt ? formatLandingWhen(stats.roundAt) : 'None yet') + '</small>'
+    : '<span style="color:#7fe0b2">Done</span><small>' + (stats.roundAt ? formatLandingWhen(stats.roundAt) : '—') + '</small>';
+  var cleanVal = stats.cleanToday
+    ? '<span style="color:#7fe0b2">Done</span><small>' + formatLandingWhen(stats.cleanAt) + '</small>'
+    : '<span style="color:#ffb27a">' + (stats.cleanAt ? 'Open' : 'Due') + '</span><small>' + (stats.cleanAt ? ('Last: ' + formatLandingWhen(stats.cleanAt)) : 'Not yet today') + '</small>';
+  var issueVal = String(stats.openIssues) +
+    '<small>' + (stats.openIssues ? ('Latest ' + formatLandingWhen(stats.lastIssueAt)) : 'None open') + '</small>';
+
+  var primaryIsRound = !!canShowZoneRound;
+  var actionsHtml = '';
+  if (canShowZoneRound) {
+    actionsHtml +=
+      '<button class="action' + (primaryIsRound ? ' primary' : '') + '" type="button" onclick="startRound()">' +
+        '<span class="icon">' + svgIcon('checklist', primaryIsRound ? '#fff' : '#0fb5c9') + '</span>' +
+        '<span class="txt"><span class="t">' + cfg.roundTitle + '</span>' +
+          '<div class="sub">' + (roundDue ? 'Checklist + issue log · round due' : cfg.roundSub) + '</div></span>' +
+        '<span class="chev">›</span></button>';
+  }
+  if (showHousekeepingLinks) {
+    actionsHtml +=
+      '<button class="action' + (!primaryIsRound ? ' primary' : '') + '" type="button" onclick="startRoomCleaning()">' +
+        '<span class="icon">' + svgIcon('broom', !primaryIsRound ? '#fff' : '#0fb5c9') + '</span>' +
+        '<span class="txt"><span class="t">' + ROOM_CLEANING_CONFIG.roundTitle + '</span>' +
+          '<div class="sub">' + (stats.cleanToday ? ('Housekeeping checklist · done ' + formatLandingWhen(stats.cleanAt)) : ROOM_CLEANING_CONFIG.roundSub) + '</div></span>' +
+        '<span class="chev">›</span></button>';
+  }
+  actionsHtml +=
+    '<button class="action" type="button" onclick="reportIssueForm()">' +
+      '<span class="icon">' + svgIcon('wrench') + '</span>' +
+      '<span class="txt"><span class="t">Report an Issue</span>' +
+        '<div class="sub">30 seconds · no checklist needed</div></span>' +
+      '<span class="chev">›</span></button>';
+
+  var roomList = '';
+  if (showHousekeepingLinks || showRoomTools) {
+    roomList +=
+      '<button class="row" type="button" onclick="viewAssets()">' +
+        '<span class="ric">' + svgIcon('box', '#5b6b7f') + '</span>Assets on File' +
+        '<span class="badge">' + stats.assetCount + '</span><span class="chev">›</span></button>';
+  }
+  if (isResidentRoom || loc.room_number) {
+    roomList +=
+      '<button class="row" type="button" onclick="viewOpenIssues()">' +
+        '<span class="ric">' + svgIcon('clock', '#5b6b7f') + '</span>Issue History' +
+        (stats.openIssues
+          ? '<span class="badge warn">' + stats.openIssues + ' open</span>'
+          : '<span class="badge">0</span>') +
+        '<span class="chev">›</span></button>';
+  }
+
+  var myWork = '';
+  if (isResidentRoom && canDoZoneRound()) {
+    myWork +=
+      '<button class="row" type="button" onclick="viewMyAssignedRooms()">' +
+        '<span class="ric">' + svgIcon('home', '#5b6b7f') + '</span>My Assigned Rooms<span class="chev">›</span></button>';
+  }
+  if (showHousekeepingLinks) {
+    myWork +=
+      '<button class="row" type="button" onclick="viewMyCleaningAssignments()">' +
+        '<span class="ric">' + svgIcon('checklist', '#5b6b7f') + '</span>My Cleaning Assignments' +
+        (stats.cleaningsLeft != null ? '<span class="badge">' + stats.cleaningsLeft + ' left</span>' : '') +
+        '<span class="chev">›</span></button>';
+    if (isCleaningCapableLocation(loc)) {
+      myWork +=
+        '<button class="row" type="button" onclick="viewMyCleanings()">' +
+          '<span class="ric">' + svgIcon('check', '#5b6b7f') + '</span>Completed Cleanings Today' +
+          (stats.cleaningsDoneToday != null ? '<span class="badge">' + stats.cleaningsDoneToday + '</span>' : '') +
+          '<span class="chev">›</span></button>';
+    }
+  }
+
+  var manage = '';
+  if (canManageHousekeepingStaff()) {
+    manage +=
+      '<button class="row" type="button" onclick="assignHousekeepersView()">' +
+        '<span class="ric">' + svgIcon('users', '#5b6b7f') + '</span>Assign Housekeepers<span class="chev">›</span></button>' +
+      '<button class="row" type="button" onclick="deepCleanCalendarView()">' +
+        '<span class="ric">' + svgIcon('calendar', '#5b6b7f') + '</span>Deep Clean Calendar<span class="chev">›</span></button>';
+  }
+  if (currentSurveyPrepDept) {
+    manage +=
+      '<button class="row" type="button" onclick="openMySurveyPrep()">' +
+        '<span class="ric">' + svgIcon('layers', '#5b6b7f') + '</span>Survey Prep Assessment<span class="chev">›</span></button>';
+  }
 
   app.innerHTML =
-    '<div class="rr-header">' +
-      '<div class="rr-icon">' + cfg.icon + '</div>' +
-      '<div class="rr-name">' + loc.display_name + '</div>' +
-      '<div class="rr-meta">' + locSubtitle(loc) + '</div>' +
+    '<header class="topbar">' +
+      '<span class="room-dot' + (roundDue ? '' : ' done') + '"></span>' +
+      '<div><h1>' + loc.display_name + '</h1><p>' + subLine + '</p></div>' +
+      '<span class="spacer"></span>' +
+      '<span class="pill ' + (roundDue ? 'due' : 'ok') + '">' + (roundDue ? 'Round due' : 'Up to date') + '</span>' +
+    '</header>' +
+    '<div class="hero">' +
+      '<h2>' + loc.display_name + '</h2>' +
+      '<p class="sub">' + subLine + '</p>' +
+      '<div class="today">' +
+        '<div class="stat"><div class="k">Zone round</div><div class="v">' + (isResidentRoom ? roundVal : '—<small>N/A</small>') + '</div></div>' +
+        '<div class="stat"><div class="k">Cleaning</div><div class="v">' + (isResidentRoom || isCleaningCapableLocation(loc) ? cleanVal : '—<small>N/A</small>') + '</div></div>' +
+        '<div class="stat"><div class="k">Open issues</div><div class="v">' + issueVal + '</div></div>' +
+      '</div>' +
     '</div>' +
-    (canShowZoneRound ?
-      '<div class="choice-card tint-blue" onclick="startRound()">' +
-        '<div class="choice-icon">' + (isRoom ? '📋' : '🧹') + '</div>' +
-        '<div><div class="choice-title">' + cfg.roundTitle + '</div>' +
-          '<div class="choice-sub">' + cfg.roundSub + '</div></div>' +
-        '<div class="choice-arrow">›</div>' +
-      '</div>' : '') +
-    (showHousekeepingLinks ?
-      '<div class="choice-card tint-green" onclick="startRoomCleaning()">' +
-        '<div class="choice-icon">🧹</div>' +
-        '<div><div class="choice-title">' + ROOM_CLEANING_CONFIG.roundTitle + '</div>' +
-          '<div class="choice-sub">' + ROOM_CLEANING_CONFIG.roundSub + '</div></div>' +
-        '<div class="choice-arrow">›</div>' +
-      '</div>' : '') +
-    '<div class="choice-card tint-amber" onclick="reportIssueForm()">' +
-      '<div class="choice-icon">🛠</div>' +
-      '<div><div class="choice-title">Report Something That Needs Fixing</div>' +
-        '<div class="choice-sub">Quick issue report — no checklist required</div></div>' +
-      '<div class="choice-arrow">›</div>' +
-    '</div>' +
-    '<div style="text-align:center;margin-top:6px;">' +
-      (showHousekeepingLinks ? '<button class="neu-btn ghost" onclick="viewAssets()">View Assets on File →</button>' : '') +
-      (showHousekeepingLinks && isCleaningCapableLocation(loc) ? '<br><button class="neu-btn ghost" onclick="viewMyCleanings()">📋 My Completed Cleanings Today →</button>' : '') +
-      (showHousekeepingLinks ? '<br><button class="neu-btn ghost" onclick="viewMyCleaningAssignments()">🧺 My Cleaning Assignments →</button>' : '') +
-      (isResidentRoom && canDoZoneRound() ? '<br><button class="neu-btn ghost" onclick="viewMyAssignedRooms()">🗂 My Assigned Rooms →</button>' : '') +
-      (canManageHousekeepingStaff() ? '<br><button class="neu-btn ghost" onclick="assignHousekeepersView()">🧹 Assign Housekeepers →</button>' : '') +
-      (canManageHousekeepingStaff() ? '<br><button class="neu-btn ghost" onclick="deepCleanCalendarView()">📅 Deep Clean Calendar →</button>' : '') +
-      (currentSurveyPrepDept ? '<br><button class="neu-btn ghost" onclick="openMySurveyPrep()">📋 My Survey Prep Assessment →</button>' : '') +
+    '<div class="wrap">' +
+      '<section class="sect"><h3>Start a task</h3>' + actionsHtml + '</section>' +
+      (roomList ? '<section class="sect"><h3>This room</h3><div class="list">' + roomList + '</div></section>' : '') +
+      (myWork ? '<section class="sect"><h3>My work today</h3><div class="list">' + myWork + '</div></section>' : '') +
+      (manage ? '<section class="sect"><h3>Manage <span class="soft">· supervisors</span></h3><div class="list">' + manage + '</div></section>' : '') +
+      '<p class="foot">Signed in as ' +
+        ((currentEmployee.first_name || '') + ' ' + (currentEmployee.last_name || '')).trim() +
+        '<br>Zone Rounds · ' + facilityLabel + '</p>' +
     '</div>';
 }
 
@@ -895,6 +1179,8 @@ function backToLanding() {
   cleaningPurpose = null;
   if (admissionPhotoPreviewUrl) { URL.revokeObjectURL(admissionPhotoPreviewUrl); }
   admissionPhotoFile = null; admissionPhotoPreviewUrl = null;
+  var bar = document.getElementById('progressBarWrap');
+  if (bar) bar.remove();
   renderLanding();
 }
 
@@ -904,6 +1190,7 @@ function startRound() {
     showToast('Only managers can complete Zone Defense rounds.', 'error');
     return;
   }
+  enterAppPage();
   currentChecklistMode = 'round';
   roundValues = {}; issueDrafts = {};
   renderChecklist();
@@ -914,6 +1201,7 @@ function startRoomCleaning() {
     showToast('Managers handle Zone Rounds — cleaning tasks go to Housekeeping.', 'error');
     return;
   }
+  enterAppPage();
   currentChecklistMode = 'cleaning';
   roundValues = {}; issueDrafts = {};
   cleaningPurpose = null;
@@ -922,34 +1210,33 @@ function startRoomCleaning() {
 }
 
 function renderCleaningPurposeChoice() {
+  enterAppPage();
   var loc = currentLoc;
   app.innerHTML =
-    '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
+    '<button class="back-link" type="button" onclick="backToLanding()">‹ Back to menu</button>' +
     '<div class="rr-header" style="padding:16px 18px;">' +
-      '<div class="rr-name" style="font-size:16px;">' + loc.display_name + '</div>' +
+      '<div class="rr-name" style="font-size:18px;">' + loc.display_name + '</div>' +
       '<div class="rr-meta">What\'s this cleaning for?</div>' +
     '</div>' +
-    '<div class="choice-card tint-green" onclick="selectCleaningPurpose(\'routine\')">' +
-      '<div class="choice-icon">🧹</div>' +
-      '<div><div class="choice-title">Routine</div>' +
-        '<div class="choice-sub">Standard scheduled cleaning</div></div>' +
-      '<div class="choice-arrow">›</div>' +
-    '</div>' +
-    '<div class="choice-card tint-blue" onclick="selectCleaningPurpose(\'admission_prep\')">' +
-      '<div class="choice-icon">🛎</div>' +
-      '<div><div class="choice-title">Admissions Prep</div>' +
-        '<div class="choice-sub">Room being prepared for a new admission</div></div>' +
-      '<div class="choice-arrow">›</div>' +
-    '</div>' +
-    '<div class="choice-card tint-amber" onclick="selectCleaningPurpose(\'strip_wax\')">' +
-      '<div class="choice-icon">🪣</div>' +
-      '<div><div class="choice-title">Stripping & Waxing</div>' +
-        '<div class="choice-sub">Floor stripped and refinished</div></div>' +
-      '<div class="choice-arrow">›</div>' +
-    '</div>';
+    '<button class="action primary" type="button" onclick="selectCleaningPurpose(\'routine\')">' +
+      '<span class="icon">' + svgIcon('broom', '#fff') + '</span>' +
+      '<span class="txt"><span class="t">Routine</span>' +
+        '<div class="sub">Standard scheduled cleaning</div></span>' +
+      '<span class="chev">›</span></button>' +
+    '<button class="action" type="button" onclick="selectCleaningPurpose(\'admission_prep\')">' +
+      '<span class="icon">' + svgIcon('home') + '</span>' +
+      '<span class="txt"><span class="t">Admissions Prep</span>' +
+        '<div class="sub">Room being prepared for a new admission</div></span>' +
+      '<span class="chev">›</span></button>' +
+    '<button class="action" type="button" onclick="selectCleaningPurpose(\'strip_wax\')">' +
+      '<span class="icon">' + svgIcon('layers') + '</span>' +
+      '<span class="txt"><span class="t">Stripping & Waxing</span>' +
+        '<div class="sub">Floor stripped and refinished</div></span>' +
+      '<span class="chev">›</span></button>';
 }
 
 function selectCleaningPurpose(purpose) {
+  enterAppPage();
   cleaningPurpose = purpose;
   roundValues = {}; issueDrafts = {};
   renderChecklist();
@@ -985,8 +1272,9 @@ function answeredCount() {
 }
 
 function renderChecklist() {
+  enterAppPage();
   var sections = getSections();
-  var html = '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>';
+  var html = '<button class="back-link" type="button" onclick="backToLanding()">‹ Back to menu</button>';
   html += '<div class="rr-header" style="padding:16px 18px;"><div class="rr-name" style="font-size:16px;">' + currentLoc.display_name + '</div>' +
     '<div class="rr-meta">' + locSubtitle(currentLoc) + '</div></div>';
   html += identifierFieldHTML();
@@ -1297,6 +1585,7 @@ async function submitRound() {
 }
 
 function renderSuccess(issueCount) {
+  enterAppPage();
   var photoNote = (cleaningPurpose === 'admission_prep' && admissionPhotoFile) ? '<br>📸 Photo attached.' : '';
   app.innerHTML =
     '<div class="card success-wrap">' +
@@ -1315,34 +1604,40 @@ var quickIssue = { dept:'Maintenance', description:'', priority:'Medium' };
 var ISSUE_DEPTS = ['Nursing','Housekeeping','Maintenance','Dietary','Social Services','Activities','Infection Control','Safety','Other'];
 
 function reportIssueForm() {
+  enterAppPage();
   quickIssue = { dept:'Maintenance', description:'', priority:'Medium' };
   renderReportIssueForm();
 }
 
 function renderReportIssueForm() {
+  enterAppPage();
   var loc = currentLoc;
+  var chips = ISSUE_DEPTS.map(function(d){
+    return '<button type="button" class="chip' + (quickIssue.dept===d?' sel':'') + '" onclick="quickIssue.dept=\''+d+'\';renderReportIssueForm()">' + d + '</button>';
+  }).join('');
   app.innerHTML =
-    '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
+    '<button class="back-link" type="button" onclick="backToLanding()">‹ Back to menu</button>' +
     '<div class="rr-header" style="padding:16px 18px;">' +
-      '<div class="rr-name" style="font-size:16px;">🛠 Report Something</div>' +
-      '<div class="rr-meta">' + loc.display_name + ' · ' + locSubtitle(loc) + '</div>' +
+      '<div class="rr-name" style="font-size:18px;">Report an Issue</div>' +
+      '<div class="rr-meta">' + loc.display_name + (locSubtitle(loc) ? ' · ' + locSubtitle(loc) : '') + ' — goes to the right team.</div>' +
     '</div>' +
     identifierFieldHTML() +
     '<div class="card">' +
-      '<div class="section-title">What department does this belong to?</div>' +
-      '<select id="qi-dept" onchange="quickIssue.dept=this.value">' +
-        ISSUE_DEPTS.map(function(d){ return '<option value="'+d+'"'+(quickIssue.dept===d?' selected':'')+'>'+d+'</option>'; }).join('') +
-      '</select>' +
-      '<div class="section-title" style="margin-top:14px;">What needs fixing?</div>' +
-      '<textarea id="qi-desc" rows="4" placeholder="Describe what you noticed…" oninput="quickIssue.description=this.value"></textarea>' +
-      '<div class="section-title" style="margin-top:14px;">Priority</div>' +
+      '<div class="section-title">Department</div>' +
+      '<div class="chips" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">' + chips + '</div>' +
+      '<div class="section-title" style="margin-top:10px;">What needs fixing?</div>' +
+      '<textarea id="qi-desc" rows="4" placeholder="What needs fixing? e.g. Sink draining slowly…" oninput="quickIssue.description=this.value">' + (quickIssue.description || '') + '</textarea>' +
+      '<div class="section-title" style="margin-top:10px;">Priority</div>' +
       '<div class="priority-row">' +
-        '<button class="priority-btn' + (quickIssue.priority==='Low'?' sel-Low':'') + '" onclick="setQuickPriority(\'Low\')">Low</button>' +
-        '<button class="priority-btn' + (quickIssue.priority==='Medium'?' sel-Medium':'') + '" onclick="setQuickPriority(\'Medium\')">Medium</button>' +
-        '<button class="priority-btn' + (quickIssue.priority==='High'?' sel-High':'') + '" onclick="setQuickPriority(\'High\')">High</button>' +
+        '<button class="priority-btn' + (quickIssue.priority==='Low'?' sel-Low':'') + '" type="button" onclick="setQuickPriority(\'Low\')">Low</button>' +
+        '<button class="priority-btn' + (quickIssue.priority==='Medium'?' sel-Medium':'') + '" type="button" onclick="setQuickPriority(\'Medium\')">Medium</button>' +
+        '<button class="priority-btn' + (quickIssue.priority==='High'?' sel-High':'') + '" type="button" onclick="setQuickPriority(\'High\')">High</button>' +
       '</div>' +
     '</div>' +
-    '<button class="neu-btn primary block" id="qi-submit-btn" onclick="submitQuickIssue()">🛠 Submit Report</button>';
+    '<button class="neu-btn primary block" id="qi-submit-btn" type="button" onclick="submitQuickIssue()">Send Report</button>';
+  // restore description after re-render from chip tap
+  var desc = document.getElementById('qi-desc');
+  if (desc) desc.value = quickIssue.description || '';
 }
 
 function setQuickPriority(p) {
@@ -1395,10 +1690,45 @@ async function submitQuickIssue() {
     '</div>';
 }
 
+/* ── Open issues for this room ── */
+async function viewOpenIssues() {
+  enterAppPage();
+  var loc = currentLoc;
+  app.innerHTML =
+    '<button class="back-link" type="button" onclick="backToLanding()">‹ Back to menu</button>' +
+    '<div class="rr-header" style="padding:16px 18px;">' +
+      '<div class="rr-name" style="font-size:18px;">Issue History</div>' +
+      '<div class="rr-meta">' + loc.display_name + (locSubtitle(loc) ? ' · ' + locSubtitle(loc) : '') + '</div>' +
+    '</div>' +
+    '<div class="card"><div class="section-title">Open Issues</div><div id="openIssuesList">Loading…</div></div>';
+
+  var q = sb.from('zone_issues').select('*')
+    .eq('facility_id', FACILITY_ID).eq('status', 'Open')
+    .order('created_at', { ascending: false }).limit(40);
+  if (loc.room_number) q = q.eq('room_number', String(loc.room_number));
+  var { data: issues, error } = await q;
+  var list = document.getElementById('openIssuesList');
+  if (!list) return;
+  if (error) { list.innerHTML = '<div style="color:var(--red);font-size:13px;">' + error.message + '</div>'; return; }
+  if (!issues || !issues.length) {
+    list.innerHTML = '<div style="color:var(--ink-2);font-size:13.5px;text-align:center;padding:16px;">No open issues for this room.</div>';
+    return;
+  }
+  list.innerHTML = issues.map(function(iss){
+    return '<div class="issue-card">' +
+      '<div class="issue-card-title">' + (iss.issue_type || 'Issue') +
+        '<span class="badge' + (iss.priority==='High'?' warn':'') + '" style="margin-left:auto;">' + (iss.priority || '') + '</span></div>' +
+      '<div style="font-size:13.5px;line-height:1.45;white-space:pre-wrap;">' + (iss.issue_description || '') + '</div>' +
+      '<div style="font-size:11.5px;color:var(--ink-2);margin-top:8px;">' + formatLandingWhen(iss.created_at) + '</div>' +
+    '</div>';
+  }).join('');
+}
+
 /* ── Assets view (read-only) ── */
 async function viewAssets() {
+  enterAppPage();
   var loc = currentLoc;
-  app.innerHTML = '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
+  app.innerHTML = '<button class="back-link" type="button" onclick="backToLanding()">‹ Back to menu</button>' +
     '<div class="rr-header" style="padding:16px 18px;"><div class="rr-name" style="font-size:16px;">' + loc.display_name + '</div>' +
     '<div class="rr-meta">' + locSubtitle(loc) + '</div></div>' +
     '<button class="neu-btn block" style="margin-bottom:14px;" onclick="scanToFindAsset()">📷 Scan to Find an Asset</button>' +
@@ -1527,6 +1857,7 @@ function showAssetQrModal(assetId, assetName) {
 
 /* ── Asset detail (scanning a printed asset QR) ── */
 async function renderAssetDetail(assetId) {
+  enterAppPage();
   app.innerHTML = '<div class="center-msg">Loading…</div>';
   var { data: asset, error } = await sb.from('room_assets').select('*').eq('id', assetId).maybeSingle();
   if (error) { app.innerHTML = '<div class="center-msg">⚠ Error loading asset.<br>'+error.message+'</div>'; return; }
@@ -1556,6 +1887,7 @@ async function renderAssetDetail(assetId) {
 
 /* ── My Completed Cleanings Today (housekeeping self-check) ── */
 function viewMyCleanings() {
+  enterAppPage();
   var savedId = localStorage.getItem('agrhodes_employee_id') || '';
   app.innerHTML =
     '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
@@ -1625,6 +1957,7 @@ async function loadMyCleanings() {
 
 /* ── My Assigned Rooms (manager self-check for zone rounds) ── */
 function viewMyAssignedRooms() {
+  enterAppPage();
   loadMyAssignedRooms();
 }
 
@@ -1740,6 +2073,7 @@ function setMyAssignedFilter(f) {
 
 /* ── My Cleaning Assignments (housekeeper self-check) ── */
 async function viewMyCleaningAssignments() {
+  enterAppPage();
   var emp = currentEmployee;
   app.innerHTML =
     '<button class="back-link" onclick="backToLanding()">‹ Back to menu</button>' +
@@ -1802,6 +2136,7 @@ var lastAllEmployees = [];
 
 async function assignHousekeepersView() {
   if (!canManageHousekeepingStaff()) { showToast('Only Housekeeping Managers can assign housekeepers.', 'error'); backToLanding(); return; }
+  enterAppPage();
   app.innerHTML = '<div class="center-msg">Loading…</div>';
   hkSelectedEmployee = null;
 
@@ -1944,6 +2279,7 @@ var dcCalendarData = {};
 
 async function deepCleanCalendarView() {
   if (!canManageHousekeepingStaff()) { showToast('Only Housekeeping Managers can access the Deep Clean Calendar.', 'error'); backToLanding(); return; }
+  enterAppPage();
   app.innerHTML = '<div class="center-msg">Loading calendar…</div>';
   await renderDcCalendar();
 }
