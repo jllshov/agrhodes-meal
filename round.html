@@ -800,11 +800,40 @@ function setStoredEmployee(emp) {
   currentEmployee = emp;
 }
 
+/** Re-read the remembered employee so a role change (e.g. made an admin) applies on the next scan. */
+async function refreshStoredEmployee() {
+  try {
+    var { data: emp, error } = await sb.from('employees').select('*')
+      .eq('facility_id', FACILITY_ID).eq('employee_number', currentEmployee.employee_number).maybeSingle();
+    if (error) return;                       // offline / hiccup: keep the remembered record
+    if (!emp || emp.is_active === false) {   // removed or deactivated: sign in again
+      sessionStorage.removeItem('agrhodes_employee_session');
+      currentEmployee = null;
+      return;
+    }
+    setStoredEmployee(emp);
+  } catch (_) {}
+}
+
+/** Sign in as someone else on this device. */
+function switchEmployee() {
+  sessionStorage.removeItem('agrhodes_employee_session');
+  currentEmployee = null;
+  currentSurveyPrepDept = null;
+  document.body.classList.remove('landing-mode');
+  renderEmployeeGate();
+}
+
 async function init() {
   if (!FACILITY_ID) await facilityReady;
   if (!FACILITY_ID) { app.innerHTML = '<div class="center-msg">⚠ Facility not available for this site.</div>'; return; }
   document.title = FACILITY_NAME + ' — Zone Round';
   currentEmployee = getStoredEmployee();
+  if (!currentEmployee) {
+    renderEmployeeGate();
+    return;
+  }
+  await refreshStoredEmployee();
   if (!currentEmployee) {
     renderEmployeeGate();
     return;
@@ -1147,7 +1176,8 @@ async function renderLanding() {
       (myWork ? '<section class="sect"><h3>My work today</h3><div class="list">' + myWork + '</div></section>' : '') +
       (manage ? '<section class="sect"><h3>Manage <span class="soft">· supervisors</span></h3><div class="list">' + manage + '</div></section>' : '') +
       '<p class="foot">Signed in as ' +
-        ((currentEmployee.first_name || '') + ' ' + (currentEmployee.last_name || '')).trim() +
+        escapeAttr(((currentEmployee.first_name || '') + ' ' + (currentEmployee.last_name || '')).trim()) +
+        ' · <button type="button" onclick="switchEmployee()" style="background:none;border:none;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer">Not you? Switch</button>' +
         '<br>Zone Rounds · ' + facilityLabel + '</p>' +
     '</div>';
 }
