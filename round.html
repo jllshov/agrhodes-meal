@@ -1057,6 +1057,15 @@ async function renderLanding() {
           '<div class="sub">' + (stats.cleanToday ? ('Housekeeping checklist · done ' + formatLandingWhen(stats.cleanAt)) : ROOM_CLEANING_CONFIG.roundSub) + '</div></span>' +
         '<span class="chev">›</span></button>';
   }
+  // Administrator only: the Nursiao Walking Rounds by Hall checklist, opened on this hall.
+  if (isZoneAdmin() && loc.unit) {
+    actionsHtml +=
+      '<button class="action" type="button" onclick="openWalkingRound()">' +
+        '<span class="icon">' + svgIcon('layers') + '</span>' +
+        '<span class="txt"><span class="t">Walking Round — ' + escapeAttr(loc.unit) + '</span>' +
+          '<div class="sub">Hall checklist + flag rooms · opens in Nursiao</div></span>' +
+        '<span class="chev">›</span></button>';
+  }
   actionsHtml +=
     '<button class="action" type="button" onclick="reportIssueForm()">' +
       '<span class="icon">' + svgIcon('wrench') + '</span>' +
@@ -1146,6 +1155,24 @@ async function renderLanding() {
 function openMySurveyPrep() {
   window.location.href = window.location.origin + '/zone_rounds.html?employee_id=' +
     encodeURIComponent(currentEmployee.employee_number) + '#surveyprep=' + encodeURIComponent(currentSurveyPrepDept.department_key);
+}
+
+function escapeAttr(v) {
+  return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function isZoneAdmin() {
+  return !!currentEmployee && currentEmployee.zone_rounds_permission === 'admin';
+}
+
+/** Walking Rounds by Hall lives in Nursiao (Nursiao sign-in); hand it this hall, room and building. */
+function openWalkingRound() {
+  if (!isZoneAdmin() || !currentLoc) return;
+  var onNursiao = /(^|\.)nursiao\.com$/.test(location.hostname) || location.hostname === 'localhost';
+  var q = 'hall=' + encodeURIComponent(currentLoc.unit || '') +
+    (currentLoc.location_type === 'room' && currentLoc.room_number ? '&room=' + encodeURIComponent(currentLoc.room_number) : '') +
+    '&zf=' + encodeURIComponent(FACILITY_ID || '');
+  location.href = (onNursiao ? location.origin : 'https://nursiao.com') + '/rounds/walk?' + q;
 }
 
 function canDoZoneRound() {
