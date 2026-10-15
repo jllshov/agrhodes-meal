@@ -1570,6 +1570,13 @@ async function submitRound() {
     if (loc.location_type === 'room' && currentChecklistMode === 'cleaning' && cleaningPurpose) {
       scores.cleaning_purpose = cleaningPurpose;
     }
+    // Admission-ready photo: upload first and save its link with the round. (Linking it
+    // afterwards with an update was silently refused by the database, so photos were
+    // stored but never shown.) A failed upload still saves the round, without the photo.
+    if (cleaningPurpose === 'admission_prep' && admissionPhotoFile) {
+      var photoUrl = await uploadAdmissionPhoto(loc);
+      if (photoUrl) scores.admission_photo_url = photoUrl;
+    }
     roundRow.eoc_scores = JSON.stringify(scores);
     roundRow.eoc_compliance_pct = totalScored ? Math.round((passCount/totalScored)*100) : null;
   }
@@ -1579,22 +1586,6 @@ async function submitRound() {
     showToast('Error saving round: ' + roundErr.message, 'error');
     if (wrap) { var btn2 = wrap.querySelector('button'); if (btn2) btn2.textContent = 'Review →'; }
     return;
-  }
-
-  // Optional admission-ready photo — uploaded after the round exists so we have an
-  // id to name the file with. Failure here doesn't undo the round save.
-  if (cleaningPurpose === 'admission_prep' && admissionPhotoFile) {
-    var ext = (admissionPhotoFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
-    var photoPath = loc.qr_identifier + '/' + insertedRound.id + '.' + ext;
-    var { error: uploadErr } = await sb.storage.from('round-photos').upload(photoPath, admissionPhotoFile, { upsert: true });
-    if (uploadErr) {
-      showToast('Round was saved, but the photo failed to upload: ' + uploadErr.message, 'error');
-    } else {
-      var pub = sb.storage.from('round-photos').getPublicUrl(photoPath);
-      var updatedScores = JSON.parse(insertedRound.eoc_scores || '{}');
-      updatedScores.admission_photo_url = pub.data.publicUrl;
-      await sb.from('zone_rounds').update({ eoc_scores: JSON.stringify(updatedScores) }).eq('id', insertedRound.id);
-    }
   }
 
   // Build the full list of issues: auto-flagged from failed items + manually added
@@ -1641,9 +1632,27 @@ async function submitRound() {
   renderSuccess(allIssues.length);
 }
 
+/** Upload the staged admission photo; returns its public link, or null (and says so) on failure. */
+async function uploadAdmissionPhoto(loc) {
+  var ext = (admissionPhotoFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+  var key = (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+    : Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  var photoPath = loc.qr_identifier + '/' + key + '.' + ext;
+  var { error: uploadErr } = await sb.storage.from('round-photos').upload(photoPath, admissionPhotoFile, { upsert: false });
+  if (uploadErr) {
+    admissionPhotoSaved = false;
+    showToast('The photo did not upload (' + uploadErr.message + '). The cleaning will still be saved.', 'error');
+    return null;
+  }
+  admissionPhotoSaved = true;
+  return sb.storage.from('round-photos').getPublicUrl(photoPath).data.publicUrl;
+}
+var admissionPhotoSaved = false;
+
 function renderSuccess(issueCount) {
   enterAppPage();
-  var photoNote = (cleaningPurpose === 'admission_prep' && admissionPhotoFile) ? '<br>📸 Photo attached.' : '';
+  var photoNote = (cleaningPurpose === 'admission_prep' && admissionPhotoFile)
+    ? (admissionPhotoSaved ? '<br>📸 Photo attached.' : '<br>⚠ The photo did not upload.') : '';
   app.innerHTML =
     '<div class="card success-wrap">' +
       '<div class="success-icon">✅</div>' +
@@ -1995,8 +2004,12 @@ async function loadMyCleanings() {
     var area = loc ? (loc.unit || loc.eoc_department || '') : '';
     var time = new Date(r.rounded_at).toLocaleTimeString('en-US',{hour:'2-digit', minute:'2-digit'});
     var purposeTag = '';
+    var photoLink = '';
     if (r.round_type === 'room_cleaning' && r.eoc_scores) {
       var scores = typeof r.eoc_scores === 'string' ? JSON.parse(r.eoc_scores) : r.eoc_scores;
+      if (/^https:\/\//.test(String(scores.admission_photo_url || ''))) {
+        photoLink = '<a href="' + escapeAttr(scores.admission_photo_url) + '" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;white-space:nowrap;">📸 Photo</a>';
+      }
       if (scores.cleaning_purpose === 'admission_prep') purposeTag = '🛎 Admissions Prep';
       else if (scores.cleaning_purpose === 'strip_wax') purposeTag = '🪣 Stripping & Waxing';
       else purposeTag = '🧹 Routine';
@@ -2005,6 +2018,7 @@ async function loadMyCleanings() {
       '<div class="asset-icon">✅</div>' +
       '<div class="asset-info"><div class="asset-name">' + name + '</div>' +
       '<div class="asset-meta">' + (area?area+' · ':'') + time + (purposeTag?' · '+purposeTag:'') + '</div></div>' +
+      photoLink +
     '</div>';
   }).join('');
   html += '</div>';
