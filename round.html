@@ -1148,6 +1148,15 @@ async function renderLanding() {
       '<button class="row" type="button" onclick="deepCleanCalendarView()">' +
         '<span class="ric">' + svgIcon('calendar', '#5b6b7f') + '</span>Deep Clean Calendar<span class="chev">›</span></button>';
   }
+  // Department heads: every open problem reported for their department
+  var deptPerm = currentEmployee && currentEmployee.zone_rounds_permission;
+  if (deptPerm === 'maintenance_director' || deptPerm === 'housekeeping_manager') {
+    manage +=
+      '<button class="row" type="button" onclick="openMyDepartmentList()">' +
+        '<span class="ric">' + svgIcon('wrench', '#5b6b7f') + '</span>' +
+        (deptPerm === 'maintenance_director' ? 'Open Maintenance & Safety Problems' : 'Open Housekeeping Problems') +
+        '<span class="chev">›</span></button>';
+  }
   if (currentSurveyPrepDept) {
     manage +=
       '<button class="row" type="button" onclick="openMySurveyPrep()">' +
@@ -1180,6 +1189,11 @@ async function renderLanding() {
         ' · <button type="button" onclick="switchEmployee()" style="background:none;border:none;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer">Not you? Switch</button>' +
         '<br>Zone Rounds · ' + facilityLabel + '</p>' +
     '</div>';
+}
+
+function openMyDepartmentList() {
+  window.location.href = window.location.origin + '/zone_rounds.html?employee_id=' +
+    encodeURIComponent(currentEmployee.employee_number);
 }
 
 function openMySurveyPrep() {
