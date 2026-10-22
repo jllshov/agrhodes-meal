@@ -1205,8 +1205,10 @@ function openWalkingRound() {
   location.href = (onNursiao ? location.origin : 'https://nursiao.com') + '/rounds/walk?' + q;
 }
 
+// Zone Round on resident rooms: managers, housekeeping managers (who are assigned rooms too) and admins.
 function canDoZoneRound() {
-  return currentEmployee && (currentEmployee.zone_rounds_permission === 'manager' || currentEmployee.zone_rounds_permission === 'admin');
+  var perm = currentEmployee && currentEmployee.zone_rounds_permission;
+  return perm === 'manager' || perm === 'housekeeping_manager' || perm === 'admin';
 }
 
 // True for the plain "Manager" tier specifically — not Staff, not Housekeeping Manager, not Admin.
@@ -1244,7 +1246,7 @@ function backToLanding() {
 /* ── Checklist flow ── */
 function startRound() {
   if (currentLoc.location_type === 'room' && !canDoZoneRound()) {
-    showToast('Only managers can complete Zone Defense rounds.', 'error');
+    showToast('Only managers and housekeeping managers can complete Zone Defense rounds.', 'error');
     return;
   }
   enterAppPage();
