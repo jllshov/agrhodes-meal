@@ -5462,7 +5462,8 @@ async function checkAdminGate() {
   if (existing) {
     document.getElementById('adminGateOverlay').classList.remove('show');
     if (existing.zone_rounds_permission === 'admin') { bootDashboard(); }
-    else if (existing.zone_rounds_permission === 'maintenance_director') { bootRestrictedMaintenance(existing); }
+    else if (existing.zone_rounds_permission === 'maintenance_director') { bootRestrictedDept(existing, 'maintenance'); }
+    else if (existing.zone_rounds_permission === 'housekeeping_manager') { bootRestrictedDept(existing, 'housekeeping'); }
     else { bootRestrictedSurveyPrep(existing); }
     return;
   }
@@ -5502,10 +5503,10 @@ async function tryAdminLogin(employeeId, silent) {
 
   // Maintenance Director gets a restricted, single-purpose session too —
   // no per-person assignment needed, the role itself is the unlock.
-  if (emp.zone_rounds_permission === 'maintenance_director') {
+  if (emp.zone_rounds_permission === 'maintenance_director' || emp.zone_rounds_permission === 'housekeeping_manager') {
     sessionStorage.setItem('agrhodes_admin_session', JSON.stringify(emp));
     document.getElementById('adminGateOverlay').classList.remove('show');
-    bootRestrictedMaintenance(emp);
+    bootRestrictedDept(emp, emp.zone_rounds_permission === 'maintenance_director' ? 'maintenance' : 'housekeeping');
     return true;
   }
 
@@ -5580,46 +5581,112 @@ async function bootRestrictedSurveyPrep(emp) {
   startSurveyPrepAssessment(assignment.department_key, true);
 }
 
-async function bootRestrictedMaintenance(emp) {
-  document.body.classList.add('restricted-mode');
-  localStorage.setItem('agrhodes_round_staff', emp.first_name + ' ' + emp.last_name); // so resolveIssue() doesn't need to prompt
+/* ── Department view: Maintenance Director / Housekeeping Manager ──────────
+   Every open problem for their department, from any source (room rounds,
+   Report an Issue, cleanings, EOC), newest first, refreshed every minute.
+   They can mark one In Progress or Fixed. */
+var DEPT_VIEWS = {
+  maintenance:  { icon: '🔧', title: 'Maintenance & Safety', types: ['Maintenance', 'Safety'] },
+  housekeeping: { icon: '🧹', title: 'Housekeeping', types: ['Housekeeping'] }
+};
+var deptState = { dept: null, emp: null, timer: null, firstLoad: true };
 
+function deptEsc(v) {
+  return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function deptAge(ts) {
+  var mins = Math.max(0, Math.round((Date.now() - new Date(ts).getTime()) / 60000));
+  if (mins < 60) return mins <= 1 ? 'just now' : mins + ' min ago';
+  var h = Math.round(mins / 60);
+  if (h < 24) return h + ' hr ago';
+  var d = Math.round(h / 24);
+  return d + (d === 1 ? ' day' : ' days') + ' ago';
+}
+function deptSeenKey() { return 'agrhodes_dept_seen_' + deptState.dept + '_' + (deptState.emp && deptState.emp.employee_number); }
+
+async function bootRestrictedDept(emp, dept) {
+  var view = DEPT_VIEWS[dept];
+  deptState = { dept: dept, emp: emp, timer: null, firstLoad: true };
+  document.body.classList.add('restricted-mode');
+  localStorage.setItem('agrhodes_round_staff', emp.first_name + ' ' + emp.last_name); // resolver name, no prompt
+  var { data: sp } = await sb.from('survey_prep_dept_assignments').select('department_key')
+    .eq('facility_id', FACILITY_ID).eq('employee_id', emp.employee_number).maybeSingle();
   document.querySelector('.main').innerHTML =
     '<div class="restricted-banner">' +
-      '<div><b>' + emp.first_name + ' ' + emp.last_name + '</b> — 🔧 Maintenance Concerns</div>' +
-      '<button class="neu-btn" style="font-size:12px;padding:8px 14px;" onclick="adminLogOut()">Log Out</button>' +
+      '<div><b>' + deptEsc(emp.first_name + ' ' + emp.last_name) + '</b> — ' + view.icon + ' ' + view.title + '</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+        (sp ? '<button class="neu-btn" style="font-size:12px;padding:8px 14px;" onclick="bootRestrictedSurveyPrep(deptState.emp)">Survey Prep</button>' : '') +
+        '<button class="neu-btn" style="font-size:12px;padding:8px 14px;" onclick="adminLogOut()">Log Out</button>' +
+      '</div>' +
     '</div>' +
     '<div class="panel" style="display:block;padding:24px;max-width:760px;margin:0 auto;">' +
-      '<div class="card"><div id="restrictedMaintList"><div class="no-round-msg" style="padding:16px">Loading…</div></div></div>' +
+      '<div class="card"><div id="restrictedDeptList"><div class="no-round-msg" style="padding:16px">Loading…</div></div></div>' +
     '</div>';
-
-  await loadRestrictedMaintList();
+  await loadRestrictedDeptList();
+  deptState.timer = setInterval(function() { if (!document.hidden) loadRestrictedDeptList(); }, 60000);
 }
 
-async function loadRestrictedMaintList() {
-  var listEl = document.getElementById('restrictedMaintList');
-  var { data: issues, error } = await sb.from('zone_issues').select('*')
-    .eq('facility_id', FACILITY_ID).eq('status', 'Open').eq('issue_type', 'Maintenance')
-    .order('created_at', {ascending:false});
+// Kept for anything still calling the old name.
+function bootRestrictedMaintenance(emp) { return bootRestrictedDept(emp, 'maintenance'); }
 
-  if (error) { listEl.innerHTML = '<div style="color:var(--red);font-size:13px;">Error: '+error.message+'</div>'; return; }
+async function loadRestrictedDeptList() {
+  var view = DEPT_VIEWS[deptState.dept];
+  var listEl = document.getElementById('restrictedDeptList');
+  if (!view || !listEl) return;
+  var { data: issues, error } = await sb.from('zone_issues').select('*')
+    .eq('facility_id', FACILITY_ID).in('status', ['Open', 'In Progress']).in('issue_type', view.types)
+    .order('created_at', { ascending: false });
+  if (error) { listEl.innerHTML = '<div style="color:var(--red);font-size:13px;">Error: ' + deptEsc(error.message) + '</div>'; return; }
+
+  var seen = Number(localStorage.getItem(deptSeenKey()) || 0);
+  var newest = issues && issues.length ? new Date(issues[0].created_at).getTime() : 0;
   if (!issues || !issues.length) {
-    listEl.innerHTML = '<div class="no-round-msg" style="padding:30px;text-align:center;color:var(--green);font-size:14px;">✓ Nothing open right now — you\'re all caught up.</div>';
+    listEl.innerHTML = '<div class="no-round-msg" style="padding:30px;text-align:center;color:var(--green);font-size:14px;">✓ Nothing open right now — you\'re all caught up.</div>' +
+      '<div style="text-align:center;font-size:11.5px;color:var(--gray-light)">Checks for new reports every minute</div>';
     return;
   }
-
-  listEl.innerHTML = '<div class="card-title" style="margin-bottom:14px;">' + issues.length + ' Open Concern' + (issues.length!==1?'s':'') + '</div>' +
-    issues.map(function(i){
-      var location = i.room_number ? 'Room ' + i.room_number : (i.eoc_section||'').replace(/_/g,' ');
-      return '<div class="issue-item" id="restricted-issue-'+i.id+'">' +
-        '<div class="issue-dot '+i.priority+'"></div>' +
+  var newCount = seen ? issues.filter(function(i) { return new Date(i.created_at).getTime() > seen; }).length : 0;
+  var inProgress = issues.filter(function(i) { return i.status === 'In Progress'; }).length;
+  listEl.innerHTML =
+    '<div class="card-title" style="margin-bottom:6px;">' + issues.length + ' open problem' + (issues.length !== 1 ? 's' : '') +
+      (newCount ? ' · <span style="color:var(--orange)">' + newCount + ' new</span>' : '') +
+      (inProgress ? ' · ' + inProgress + ' in progress' : '') + '</div>' +
+    '<div style="font-size:11.5px;color:var(--gray-light);margin-bottom:14px">Newest first · checks for new reports every minute · updated ' +
+      new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) + '</div>' +
+    issues.map(function(i) {
+      var where = i.room_number ? 'Room ' + i.room_number : (i.eoc_section || '').replace(/_/g, ' ');
+      var isNew = seen && new Date(i.created_at).getTime() > seen;
+      var source = i.round_id ? (i.round_type === 'room_cleaning' ? 'Cleaning' : 'Round') : 'Reported';
+      var photo = /^https:\/\//.test(String(i.photo_url || '')) ? ' · <a href="' + deptEsc(i.photo_url) + '" target="_blank" rel="noopener">📸 Photo</a>' : '';
+      return '<div class="issue-item" id="restricted-issue-' + deptEsc(i.id) + '">' +
+        '<div class="issue-dot ' + deptEsc(i.priority) + '"></div>' +
         '<div class="issue-info">' +
-          '<div class="issue-type-label">' + (location || 'Facility') + ' · ' + i.priority + '</div>' +
-          '<div class="issue-desc-label">' + (i.issue_description||'—') + '</div>' +
+          '<div class="issue-type-label">' + (isNew ? '<span style="color:var(--orange);font-weight:800">NEW · </span>' : '') +
+            deptEsc(where || 'Facility') + ' · ' + deptEsc(i.issue_type) + ' · ' + deptEsc(i.priority) +
+            (i.status === 'In Progress' ? ' · <b>In progress</b>' : '') + '</div>' +
+          '<div class="issue-desc-label">' + deptEsc(i.issue_description || '—') + '</div>' +
+          '<div style="font-size:11px;color:var(--gray-light);margin-top:4px">' + source + ' · ' + deptAge(i.created_at) + photo + '</div>' +
         '</div>' +
-        '<button class="neu-btn primary" style="font-size:11px;padding:7px 12px;flex-shrink:0;" onclick="resolveIssue(\''+i.id+'\');setTimeout(loadRestrictedMaintList,400);">✓ Fixed</button>' +
+        '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">' +
+          (i.status !== 'In Progress' ? '<button class="neu-btn" style="font-size:11px;padding:7px 12px;" onclick="deptSetStatus(\'' + deptEsc(i.id) + '\',\'In Progress\')">Start</button>' : '') +
+          '<button class="neu-btn primary" style="font-size:11px;padding:7px 12px;" onclick="deptSetStatus(\'' + deptEsc(i.id) + '\',\'Resolved\')">✓ Fixed</button>' +
+        '</div>' +
       '</div>';
     }).join('');
+  // What counts as "new" next time: everything up to the newest report shown now.
+  if (deptState.firstLoad || !seen) { localStorage.setItem(deptSeenKey(), String(newest)); deptState.firstLoad = false; }
+  else setTimeout(function() { localStorage.setItem(deptSeenKey(), String(newest)); }, 15000);
+}
+
+async function deptSetStatus(issueId, status) {
+  var update = { status: status };
+  if (status === 'Resolved') {
+    update.resolved_at = new Date().toISOString();
+    update.resolved_by = localStorage.getItem('agrhodes_round_staff') || 'Staff';
+  }
+  var { error } = await sb.from('zone_issues').update(update).eq('id', issueId);
+  if (error) { alert('Could not update: ' + error.message); return; }
+  loadRestrictedDeptList();
 }
 
 // Boot
