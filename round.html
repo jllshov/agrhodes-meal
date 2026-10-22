@@ -509,6 +509,7 @@ body.login-mode{min-height:100vh;padding-bottom:0;display:flex;align-items:cente
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/ftags.js"></script>
+<script src="/private-photos.js"></script>
 <script>if (typeof ftagInfo !== 'function') { function ftagInfo() { return null; } }</script>
 <script>
 const SUPABASE_URL  = 'https://gtbiatetqyuxwuehwilr.supabase.co';
@@ -1590,8 +1591,9 @@ async function submitRound() {
     // afterwards with an update was silently refused by the database, so photos were
     // stored but never shown.) A failed upload still saves the round, without the photo.
     if (cleaningPurpose === 'admission_prep' && admissionPhotoFile) {
-      var photoUrl = await uploadAdmissionPhoto(loc);
-      if (photoUrl) scores.admission_photo_url = photoUrl;
+      var photo = await uploadAdmissionPhoto(loc);
+      if (photo && photo.id) { scores.admission_photo_id = photo.id; scores.admission_photo_facility = photo.facilityId; }
+      else if (photo && photo.url) scores.admission_photo_url = photo.url;
     }
     roundRow.eoc_scores = JSON.stringify(scores);
     roundRow.eoc_compliance_pct = totalScored ? Math.round((passCount/totalScored)*100) : null;
@@ -1648,8 +1650,24 @@ async function submitRound() {
   renderSuccess(allIssues.length);
 }
 
-/** Upload the staged admission photo; returns its public link, or null (and says so) on failure. */
+/**
+ * Save the staged admission photo. Private storage first ({ id, facilityId }); while that
+ * isn't set up, the old public upload ({ url }). Null (and says so) on failure.
+ */
 async function uploadAdmissionPhoto(loc) {
+  if (typeof savePrivatePhoto === 'function') {
+    try {
+      var saved = await savePrivatePhoto(admissionPhotoFile, {
+        zone_facility_id: FACILITY_ID, kind: 'admission_prep', qr_identifier: loc.qr_identifier,
+        employee_number: currentEmployee && currentEmployee.employee_number
+      });
+      if (saved) { admissionPhotoSaved = true; return saved; }
+    } catch (e) {
+      admissionPhotoSaved = false;
+      showToast('The photo did not upload (' + e.message + '). The cleaning will still be saved.', 'error');
+      return null;
+    }
+  }
   var ext = (admissionPhotoFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
   var key = (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
     : Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
@@ -1661,7 +1679,7 @@ async function uploadAdmissionPhoto(loc) {
     return null;
   }
   admissionPhotoSaved = true;
-  return sb.storage.from('round-photos').getPublicUrl(photoPath).data.publicUrl;
+  return { url: sb.storage.from('round-photos').getPublicUrl(photoPath).data.publicUrl };
 }
 var admissionPhotoSaved = false;
 
@@ -2023,8 +2041,10 @@ async function loadMyCleanings() {
     var photoLink = '';
     if (r.round_type === 'room_cleaning' && r.eoc_scores) {
       var scores = typeof r.eoc_scores === 'string' ? JSON.parse(r.eoc_scores) : r.eoc_scores;
-      if (/^https:\/\//.test(String(scores.admission_photo_url || ''))) {
-        photoLink = '<a href="' + escapeAttr(scores.admission_photo_url) + '" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;white-space:nowrap;">📸 Photo</a>';
+      var photoHref = typeof admissionPhotoHref === 'function' ? admissionPhotoHref(scores)
+        : (/^https:\/\//.test(String(scores.admission_photo_url || '')) ? scores.admission_photo_url : '');
+      if (photoHref) {
+        photoLink = '<a href="' + escapeAttr(photoHref) + '" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;white-space:nowrap;">📸 Photo</a>';
       }
       if (scores.cleaning_purpose === 'admission_prep') purposeTag = '🛎 Admissions Prep';
       else if (scores.cleaning_purpose === 'strip_wax') purposeTag = '🪣 Stripping & Waxing';
