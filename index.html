@@ -334,8 +334,8 @@
         <div class="credit-banner">
           <div class="cb-icon">🎟</div>
           <div>
-            <div class="cb-title">Bundle Credit</div>
-            <div class="cb-sub"><span id="creditCount">0</span> meal(s) remaining on your bundle</div>
+            <div class="cb-title">Prepaid Meals</div>
+            <div class="cb-sub"><span id="creditCount">0</span> prepaid meal(s) left from your bundle</div>
           </div>
         </div>
       </div>
@@ -343,15 +343,8 @@
         <button class="meal-opt" id="opt-single" onclick="selectOpt('single')">
           <div class="oi">🍽</div>
           <div class="ot">1 Meal</div>
-          <div class="op single-color">$2.50</div>
-          <div class="os">Single ticket</div>
-        </button>
-        <button class="meal-opt" id="opt-bundle" onclick="selectOpt('bundle')">
-          <div class="oi">🎟</div>
-          <div class="ot">5 Meals</div>
-          <div class="op bundle-color">$9.00</div>
-          <div class="save-badge">Save $3.50</div>
-          <div class="os">Use over 5 check-ins</div>
+          <div class="op single-color" id="singlePriceLabel">$3.00</div>
+          <div class="os">Per scan</div>
         </button>
       </div>
       <button class="btn btn-primary" id="confirmBtn" disabled onclick="doCheckin()">Confirm Check-In</button>
@@ -605,20 +598,19 @@ async function lookup() {
       document.getElementById('creditArea').style.display = 'block';
       document.getElementById('creditCount').textContent = bundleCredits;
       document.getElementById('confirmBtn').disabled = false;
-      document.getElementById('confirmBtn').textContent = 'Use Bundle Credit →';
+      document.getElementById('confirmBtn').textContent = 'Use Prepaid Meal →';
       emp.bundleCredits = bundleCredits;
       showScr('choice');
     } else {
-      selOpt = null;
+      // Every scan is one meal at the single price (bundles are no longer sold).
       document.getElementById('regularFlow').style.display = 'block';
       document.getElementById('freeFlow').style.display = 'none';
       document.getElementById('bannerName').textContent = emp.first_name + ' ' + emp.last_name;
       document.getElementById('bannerDept').textContent = emp.unit || facilityName;
       document.getElementById('mealChoiceArea').style.display = 'flex';
       document.getElementById('creditArea').style.display = 'none';
-      document.getElementById('opt-single').className = 'meal-opt';
-      document.getElementById('opt-bundle').className = 'meal-opt';
-      document.getElementById('confirmBtn').disabled = true;
+      document.getElementById('singlePriceLabel').textContent = money(mealPrice());
+      selectOpt('single');
       document.getElementById('confirmBtn').textContent = 'Confirm Check-In';
       showScr('choice');
     }
@@ -635,9 +627,15 @@ async function lookup() {
 function selectOpt(opt) {
   selOpt = opt;
   document.getElementById('opt-single').className = 'meal-opt'+(opt==='single'?' sel-single':'');
-  document.getElementById('opt-bundle').className = 'meal-opt'+(opt==='bundle'?' sel-bundle':'');
   document.getElementById('confirmBtn').disabled = false;
 }
+
+// Price of one meal: the building's setting, else $3.00.
+function mealPrice() {
+  const p = facilityConfig ? parseFloat(facilityConfig.single_meal_price) : NaN;
+  return isFinite(p) && p >= 0 ? p : 3.00;
+}
+function money(n) { return '$' + Number(n).toFixed(2); }
 
 function goBack() {
   emp = null; selOpt = null;
@@ -653,15 +651,9 @@ async function doCheckin() {
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Checking in…';
 
   try {
-    const config       = facilityConfig;
-    const singlePrice  = config ? parseFloat(config.single_meal_price) : 2.50;
-    const bundlePrice  = config ? parseFloat(config.bundle_price) : 9.00;
-    const bundleSize   = config ? config.bundle_meal_count : 5;
-
-    let mealType      = selOpt === 'bundle' ? 'bundle' : selOpt === 'credit' ? 'credit' : selOpt === 'free' ? 'free' : 'single';
-    let amountCharged = 0.00;
-    if (selOpt === 'single')  amountCharged = singlePrice;
-    if (selOpt === 'bundle')  amountCharged = bundlePrice;
+    // Bundles are no longer sold; staff with prepaid bundle meals left still use them ('credit').
+    let mealType      = selOpt === 'credit' ? 'credit' : selOpt === 'free' ? 'free' : 'single';
+    let amountCharged = mealType === 'single' ? mealPrice() : 0.00;
 
     // Get active payroll period
     const today = new Date().toISOString().split('T')[0];
@@ -688,11 +680,9 @@ async function doCheckin() {
       })
     });
 
-    // Calculate bundle remaining after this transaction
+    // Prepaid bundle meals left after this one
     let bundleRemaining = 0;
-    if (selOpt === 'bundle') {
-      bundleRemaining = bundleSize - 1;
-    } else if (selOpt === 'credit') {
+    if (mealType === 'credit') {
       bundleRemaining = Math.max(0, (emp.bundleCredits || 1) - 1);
     }
 
@@ -701,7 +691,8 @@ async function doCheckin() {
       employee_name:    emp.first_name + ' ' + emp.last_name,
       department:       emp.unit || '',
       is_free:          isFree,
-      meal_option:      selOpt,
+      meal_option:      mealType,
+      amount:           amountCharged,
       bundle_remaining: bundleRemaining,
       time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
       date: now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -739,23 +730,22 @@ function showDone(d) {
   const rp = document.getElementById('rP');
   rp.className = 'rp '+(isFree?'rp-gold':(isBundle||isCredit)?'rp-purple':'rp-green');
   if(isFree)        rp.textContent = '✨ FREE MEAL';
-  else if(isBundle) rp.textContent = '🎟 Bundle purchased — $9.00';
-  else if(isCredit) rp.textContent = '🎟 Bundle credit used — $0.00';
-  else              rp.textContent = '1 Meal — $2.50';
+  else if(isCredit) rp.textContent = '🎟 Prepaid meal used — $0.00';
+  else              rp.textContent = '1 Meal — ' + money(d.amount != null ? d.amount : mealPrice());
   const rc = document.getElementById('rC');
   if((isBundle||isCredit) && remaining > 0) {
     rc.style.display='inline-block'; rc.style.background=''; rc.style.color='';
-    rc.textContent = remaining+' bundle meal'+(remaining===1?'':'s')+' remaining';
+    rc.textContent = remaining+' prepaid meal'+(remaining===1?'':'s')+' left';
   } else if((isBundle||isCredit) && remaining === 0) {
     rc.style.display='inline-block'; rc.style.background='#F2F3FF'; rc.style.color='#8A8FAD';
-    rc.textContent = 'Bundle fully used — purchase a new one next time';
+    rc.textContent = 'Prepaid meals used up — meals are ' + money(mealPrice()) + ' each from now on';
   } else { rc.style.display='none'; }
 
   // Store ticket info
   lastTicket = {
     name: d.employee_name,
     dept: d.department || facilityName,
-    type: isFree ? 'Free Meal' : isBundle ? 'Bundle (5 meals)' : isCredit ? 'Bundle Credit' : 'Single Meal',
+    type: isFree ? 'Free Meal' : isBundle ? 'Bundle (5 meals)' : isCredit ? 'Prepaid Meal' : 'Single Meal',
     date: d.date,
     time: d.time,
     num:  d.ticket_number || generateTicketNum()
