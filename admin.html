@@ -466,6 +466,12 @@
     <input type="text" class="modal-input" id="mRole" placeholder="e.g. CNA, LPN…"/>
     <label class="modal-label">Hire Date (optional)</label>
     <input type="date" class="modal-input" id="mHire"/>
+    <label class="modal-label">Agency (leave blank for our own staff)</label>
+    <input type="text" class="modal-input" id="mAgency" placeholder="e.g. Acme Staffing" autocomplete="off"/>
+    <label class="modal-label" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+      <input type="checkbox" id="mFloat" style="width:18px;height:18px"/>
+      Works in all buildings (ID works at every A.G. Rhodes building)
+    </label>
     <div class="modal-actions">
       <button class="btn-sm btn-outline-sm" onclick="closeModal()">Cancel</button>
       <button class="btn-sm btn-accent" id="modalSaveBtn" onclick="saveEmployee()">Save</button>
@@ -630,7 +636,7 @@ function renderEmployees(rows) {
   if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-icon">👤</div>No employees found</div></td></tr>'; return; }
   tbody.innerHTML = rows.map(e => `
     <tr>
-      <td><strong>${e.first_name} ${e.last_name}</strong></td>
+      <td><strong>${e.first_name} ${e.last_name}</strong>${e.works_all_buildings ? ' <span class="badge" style="background:#EEF2FF;color:#4338CA">All buildings</span>' : ''}${e.agency ? ' <span class="badge" style="background:#FEF3C7;color:#92400E">Agency</span>' : ''}</td>
       <td style="font-size:.78rem;color:var(--text2)">${e.employee_number}</td>
       <td style="font-size:.8rem">${e.unit||'—'}</td>
       <td>${e.is_active ? '<span class="badge badge-active">Active</span>' : '<span class="badge badge-inactive">Inactive</span>'}</td>
@@ -676,6 +682,8 @@ function openAddEmployee() {
   document.getElementById('mUnit').value = '';
   document.getElementById('mRole').value = '';
   document.getElementById('mHire').value = '';
+  document.getElementById('mAgency').value = '';
+  document.getElementById('mFloat').checked = false;
   document.getElementById('empModal').classList.add('open');
 }
 
@@ -690,6 +698,8 @@ function openEditEmployee(id) {
   document.getElementById('mUnit').value  = emp.unit||'';
   document.getElementById('mRole').value  = emp.role||'';
   document.getElementById('mHire').value  = emp.hire_date||'';
+  document.getElementById('mAgency').value = emp.agency||'';
+  document.getElementById('mFloat').checked = !!emp.works_all_buildings;
   document.getElementById('empModal').classList.add('open');
 }
 
@@ -711,11 +721,21 @@ async function saveEmployee() {
     isFree = years >= 20;
   }
 
-  const payload = { first_name:first, last_name:last, employee_number:empNo, unit:unit||null, role:role||null, hire_date:hire||null, is_free_meal_eligible:isFree, facility_id:facilityId };
+  const agency = document.getElementById('mAgency').value.trim();
+  const floats = document.getElementById('mFloat').checked;
+  const payload = { first_name:first, last_name:last, employee_number:empNo, unit:unit||null, role:role||null, hire_date:hire||null, is_free_meal_eligible:isFree, facility_id:facilityId,
+    agency: agency || null, works_all_buildings: floats };
 
   try {
     const btn = document.getElementById('modalSaveBtn');
     btn.disabled = true; btn.textContent = 'Saving…';
+    // An ID that works in every building must not belong to anyone else in another building.
+    const clash = await idClashElsewhere(empNo, floats);
+    if (clash) {
+      btn.disabled = false; btn.textContent = 'Save';
+      showToast(clash);
+      return;
+    }
     if (editingEmpId) {
       await sb(`employees?id=eq.${editingEmpId}`, { method:'PATCH', body: JSON.stringify(payload) });
       showToast('Employee updated');
@@ -727,6 +747,19 @@ async function saveEmployee() {
     await loadEmployees();
     btn.disabled = false; btn.textContent = 'Save';
   } catch(e) { showToast('Error: '+e.message); document.getElementById('modalSaveBtn').disabled=false; document.getElementById('modalSaveBtn').textContent='Save'; }
+}
+
+/** Message when this ID would scan as the wrong person in another building, else ''. */
+async function idClashElsewhere(empNo, floats) {
+  const num = encodeURIComponent(empNo);
+  const other = `&facility_id=neq.${facilityId}&is_active=eq.true&select=id&limit=1`;
+  const rows = floats
+    ? await sb(`employees?employee_number=eq.${num}${other}`)
+    : await sb(`employees?employee_number=eq.${num}&works_all_buildings=eq.true${other}`);
+  if (!rows.length) return '';
+  return floats
+    ? `ID ${empNo} is already used by someone at another building. Pick a different ID to let this person work in all buildings.`
+    : `ID ${empNo} already belongs to someone who works in all buildings. Pick a different ID.`;
 }
 
 // ─── MEAL LOGS ─────────────────────────────────────────────

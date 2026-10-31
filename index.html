@@ -523,6 +523,19 @@ async function getBundleCredits(employeeId, config) {
   return Math.max(0, totalEntitlement - totalUsed);
 }
 
+// ─── Employees who work in all buildings (floats, agency) ───
+// Not found at this building → look for someone whose ID works everywhere.
+// The meal is still saved under this building (where they ate).
+async function findFloatEmployee(id) {
+  try {
+    return await sbFetch(
+      `employees?works_all_buildings=eq.true&employee_number=eq.${encodeURIComponent(id)}&is_active=eq.true&select=*`
+    );
+  } catch (e) {
+    return []; // before the meals database has the works_all_buildings column
+  }
+}
+
 // ─── Lookup employee (Step 1 → Step 2) ──────────────────────
 async function lookup() {
   const id = document.getElementById('empId').value.trim().toUpperCase();
@@ -536,9 +549,17 @@ async function lookup() {
     if (!facilityId) throw new Error('Facility not available. Please try again.');
 
     // Look up employee
-    const employees = await sbFetch(
+    let employees = await sbFetch(
       `employees?facility_id=eq.${facilityId}&employee_number=eq.${encodeURIComponent(id)}&is_active=eq.true&select=*`
     );
+    if (!employees.length) employees = await findFloatEmployee(id);
+    if (employees.length > 1) {
+      const el = document.getElementById('idErr');
+      el.textContent = 'This ID belongs to more than one person. Please ask the meal admin to fix it.';
+      el.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Continue →';
+      return;
+    }
     if (!employees.length) {
       const el = document.getElementById('idErr');
       el.textContent = 'Employee ID not found. Please check and try again.';
