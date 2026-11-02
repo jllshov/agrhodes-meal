@@ -228,12 +228,23 @@
       </table>
     </div>
     <div class="section-title">Bulk add employees</div>
-    <div class="toolbar">
-      <select class="filter-input" id="bulkEmpFacility"></select>
+    <div class="toolbar" style="flex-wrap:wrap">
+      <label class="bulk-hint" style="margin:0">Building
+        <select class="filter-input" id="bulkEmpFacility" onchange="previewBulkEmployees()"></select></label>
+      <label class="bulk-hint" style="margin:0">Upload a CSV file
+        <input type="file" id="bulkEmpFile" accept=".csv,text/csv,.txt" onchange="loadBulkFile(this)" class="filter-input"/></label>
+    </div>
+    <div class="toolbar" style="flex-wrap:wrap">
+      <label class="bulk-hint" style="margin:0;display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="bulkEmpFloat" onchange="previewBulkEmployees()" style="width:18px;height:18px"/>
+        Everyone in this list works in all buildings (floating / Care Solutions)</label>
+      <label class="bulk-hint" style="margin:0">Agency <span style="opacity:.7">(blank = our own payroll)</span>
+        <input type="text" class="filter-input" id="bulkEmpAgency" placeholder="e.g. Care Solutions" autocomplete="off" oninput="previewBulkEmployees()"/></label>
     </div>
     <div class="bulk-hint">
       One employee per line &mdash; <strong>Last Name, First Name, Employee ID, Unit, Role, Hire Date</strong> (Unit/Role/Hire Date optional).
-      Paste directly from a spreadsheet (tab-separated) or type comma-separated. A header row is detected and skipped automatically.
+      Upload a CSV, paste from a spreadsheet, or type comma-separated. A header row is skipped automatically.
+      People already in the list for this building are updated: blank cells and their free-meal setting are left as they are.
     </div>
     <textarea class="bulk-textarea" id="bulkEmpInput" placeholder="Smith, Jane, 10234, Taylor, CNA, 2019-03-01&#10;Doe, John, 10235, Garden, LPN" oninput="previewBulkEmployees()"></textarea>
     <div class="toolbar">
@@ -491,103 +502,242 @@ function facilityNameById(id) {
 }
 
 // ─── Bulk add employees ─────────────────────────────────────
+// New people are added; people already at this building are updated (only the cells that have a value,
+// and their free-meal setting is kept). IDs that would scan as the wrong person in another building are skipped.
 let bulkEmpParsedRows = [];
+let bulkCheckSeq = 0;
+let bulkCheckTimer = null;
+
+function escB(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 
 function populateBulkFacilitySelect() {
   const sel = document.getElementById('bulkEmpFacility');
   const prev = sel.value;
-  sel.innerHTML = allFacilities.map(f => `<option value="${f.id}">${f.display_name || f.name}</option>`).join('');
+  sel.innerHTML = allFacilities.map(f => `<option value="${escB(f.id)}">${escB(f.display_name || f.name)}</option>`).join('');
   if (prev && allFacilities.some(f => f.id === prev)) sel.value = prev;
 }
 
+/** One line of a spreadsheet: tabs (pasted from Excel) or commas, with "quoted, values" allowed. */
 function parseBulkEmployeeLine(line) {
-  const delim = line.includes('\t') ? '\t' : ',';
-  return line.split(delim).map(s => s.trim());
+  if (line.includes('\t')) return line.split('\t').map(s => s.trim());
+  const out = []; let cur = ''; let q = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (q) {
+      if (c === '"' && line[i+1] === '"') { cur += '"'; i++; }
+      else if (c === '"') q = false;
+      else cur += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { out.push(cur.trim()); cur = ''; }
+    else cur += c;
+  }
+  out.push(cur.trim());
+  return out;
+}
+
+function loadBulkFile(input) {
+  const f = input.files && input.files[0];
+  if (!f) return;
+  if (/\.xlsx?$/i.test(f.name)) {
+    document.getElementById('bulkEmpSummary').textContent = 'Excel files: open the file, select the rows, copy and paste them into the box below (or save it as CSV first).';
+    input.value = ''; return;
+  }
+  if (f.size > 2 * 1024 * 1024) {
+    document.getElementById('bulkEmpSummary').textContent = 'That file is too large (over 2 MB).';
+    input.value = ''; return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    document.getElementById('bulkEmpInput').value = String(reader.result || '').replace(/^﻿/, '');
+    input.value = '';
+    previewBulkEmployees();
+  };
+  reader.readAsText(f);
+}
+
+function bulkBatchSettings() {
+  return {
+    facilityId: document.getElementById('bulkEmpFacility').value,
+    floats: document.getElementById('bulkEmpFloat').checked,
+    agency: document.getElementById('bulkEmpAgency').value.trim().slice(0, 120),
+  };
 }
 
 function previewBulkEmployees() {
   const raw = document.getElementById('bulkEmpInput').value;
-  const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length);
+  const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l.length && l.replace(/[,\t\s]/g, '').length);
   const wrap = document.getElementById('bulkEmpPreviewWrap');
   const summary = document.getElementById('bulkEmpSummary');
   const submitBtn = document.getElementById('bulkEmpSubmitBtn');
+  submitBtn.disabled = true;
 
   if (!lines.length) {
     wrap.style.display = 'none';
     summary.textContent = '';
-    submitBtn.disabled = true;
     bulkEmpParsedRows = [];
     return;
   }
 
   // Skip a header row if the first cell looks like a column label, not a name
   let startIdx = 0;
-  const firstCell = (parseBulkEmployeeLine(lines[0])[0] || '').toLowerCase();
-  if (firstCell === 'last name' || firstCell === 'last' || firstCell === 'lastname') startIdx = 1;
+  const firstCell = (parseBulkEmployeeLine(lines[0])[0] || '').toLowerCase().replace(/[^a-z]/g, '');
+  if (['lastname', 'last', 'surname', 'name', 'employeename'].includes(firstCell)) startIdx = 1;
 
+  const seen = {};
   bulkEmpParsedRows = lines.slice(startIdx).map(line => {
     const [lastName, firstName, empId, unit, role, hire] = parseBulkEmployeeLine(line);
-    const valid = !!(lastName && firstName && empId);
     let hireISO = null;
     if (hire) {
       const d = new Date(hire);
       if (!isNaN(d)) hireISO = d.toISOString().split('T')[0];
     }
-    return { lastName: lastName || '', firstName: firstName || '', empId: empId || '', unit: unit || '', role: role || '', hireISO, valid };
+    const r = { lastName: lastName || '', firstName: firstName || '', empId: (empId || '').slice(0, 40), unit: unit || '', role: role || '', hireISO, status: 'checking' };
+    if (!(r.lastName && r.firstName && r.empId)) r.status = 'missing';
+    else if (seen[r.empId]) r.status = 'dup';
+    seen[r.empId] = true;
+    return r;
   });
+  renderBulkPreview();
+  clearTimeout(bulkCheckTimer);
+  bulkCheckTimer = setTimeout(checkBulkAgainstList, 400);
+}
 
-  const validCount = bulkEmpParsedRows.filter(r => r.valid).length;
-  wrap.style.display = 'block';
-  document.getElementById('bulkEmpPreviewBody').innerHTML = bulkEmpParsedRows.map(r => `
-    <tr>
-      <td>${r.lastName || '&mdash;'}</td>
-      <td>${r.firstName || '&mdash;'}</td>
-      <td class="num-cell">${r.empId || '&mdash;'}</td>
-      <td>${r.unit}</td>
-      <td>${r.role}</td>
-      <td class="num-cell">${r.hireISO || ''}</td>
-      <td>${r.valid ? '<span class="row-valid">OK</span>' : '<span class="row-invalid">Missing name/ID</span>'}</td>
-    </tr>`).join('');
+const BULK_STATUS = {
+  checking: ['row-valid', 'Checking…'],
+  new:      ['row-valid', 'New'],
+  update:   ['row-valid', 'Update'],
+  inactive: ['row-valid', 'Update (inactive, stays inactive)'],
+  missing:  ['row-invalid', 'Missing name/ID'],
+  dup:      ['row-invalid', 'ID listed twice — skipped'],
+  clash:    ['row-invalid', 'ID used at another building — skipped'],
+  error:    ['row-invalid', 'Could not check'],
+};
 
-  summary.textContent = `${bulkEmpParsedRows.length} row${bulkEmpParsedRows.length===1?'':'s'} parsed · ${validCount} ready to add` +
-    (validCount !== bulkEmpParsedRows.length ? ` · ${bulkEmpParsedRows.length-validCount} need Last Name, First Name, and Employee ID` : '');
-  submitBtn.disabled = validCount === 0;
+function renderBulkPreview() {
+  const rows = bulkEmpParsedRows;
+  const n = k => rows.filter(r => r.status === k).length;
+  document.getElementById('bulkEmpPreviewWrap').style.display = 'block';
+  document.getElementById('bulkEmpPreviewBody').innerHTML = rows.map(r => {
+    const st = BULK_STATUS[r.status] || BULK_STATUS.error;
+    return `<tr>
+      <td>${escB(r.lastName) || '&mdash;'}</td>
+      <td>${escB(r.firstName) || '&mdash;'}</td>
+      <td class="num-cell">${escB(r.empId) || '&mdash;'}</td>
+      <td>${escB(r.unit)}</td>
+      <td>${escB(r.role)}</td>
+      <td class="num-cell">${escB(r.hireISO || '')}</td>
+      <td><span class="${st[0]}">${st[1]}</span></td>
+    </tr>`;
+  }).join('');
+  const adds = n('new'), ups = n('update') + n('inactive'), skip = n('missing') + n('dup') + n('clash') + n('error');
+  const s = bulkBatchSettings();
+  const fac = s.facilityId ? facilityNameById(s.facilityId) : '';
+  document.getElementById('bulkEmpSummary').textContent = n('checking')
+    ? `${rows.length} row${rows.length===1?'':'s'} read · checking against ${fac}…`
+    : `${rows.length} row${rows.length===1?'':'s'} · ${adds} new · ${ups} update · ${skip} skipped` +
+      (s.floats ? ' · will work in all buildings' : '') + (s.agency ? ` · agency: ${s.agency}` : '');
+  const btn = document.getElementById('bulkEmpSubmitBtn');
+  btn.disabled = n('checking') > 0 || adds + ups === 0;
+  btn.textContent = adds + ups ? `Add ${adds} · update ${ups}` : 'Add employees';
+}
+
+/** Marks each row New / Update / clash by looking up the IDs in the employee list. */
+async function checkBulkAgainstList() {
+  const seq = ++bulkCheckSeq;
+  const s = bulkBatchSettings();
+  const rows = bulkEmpParsedRows.filter(r => r.status === 'checking');
+  if (!rows.length || !s.facilityId) { renderBulkPreview(); return; }
+  const ids = [...new Set(rows.map(r => r.empId))];
+  const quote = v => '"' + String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+  const here = {}, elsewhere = {}, floatElsewhere = {};
+  try {
+    for (let i = 0; i < ids.length; i += 80) {
+      const list = encodeURIComponent('(' + ids.slice(i, i + 80).map(quote).join(',') + ')');
+      const found = await sb(`employees?employee_number=in.${list}&select=id,facility_id,employee_number,is_active,works_all_buildings`);
+      found.forEach(e => {
+        if (e.facility_id === s.facilityId) here[e.employee_number] = e;
+        else if (e.is_active) {
+          elsewhere[e.employee_number] = true;
+          if (e.works_all_buildings) floatElsewhere[e.employee_number] = true;
+        }
+      });
+    }
+  } catch (e) {
+    if (seq !== bulkCheckSeq) return;
+    rows.forEach(r => { r.status = 'error'; });
+    renderBulkPreview(); return;
+  }
+  if (seq !== bulkCheckSeq) return; // the list or settings changed while checking
+  rows.forEach(r => {
+    const mine = here[r.empId];
+    const floats = s.floats || (mine && mine.works_all_buildings);
+    if (floatElsewhere[r.empId] || (floats && elsewhere[r.empId])) r.status = 'clash';
+    else if (mine) { r.status = mine.is_active ? 'update' : 'inactive'; r.existingId = mine.id; }
+    else r.status = 'new';
+  });
+  renderBulkPreview();
 }
 
 async function submitBulkEmployees() {
-  const facilityId = document.getElementById('bulkEmpFacility').value;
-  const validRows = bulkEmpParsedRows.filter(r => r.valid);
-  if (!facilityId || !validRows.length) return;
-  if (!confirm(`Add/update ${validRows.length} employee(s) at ${facilityNameById(facilityId)}?`)) return;
+  const s = bulkBatchSettings();
+  const adds = bulkEmpParsedRows.filter(r => r.status === 'new');
+  const ups = bulkEmpParsedRows.filter(r => (r.status === 'update' || r.status === 'inactive') && r.existingId);
+  if (!s.facilityId || !(adds.length + ups.length)) return;
+  const extra = (s.floats ? '\nThey will work in all buildings.' : '') + (s.agency ? `\nAgency: ${s.agency}` : '');
+  if (!confirm(`${facilityNameById(s.facilityId)}: add ${adds.length} and update ${ups.length} employee(s)?${extra}`)) return;
 
   const btn = document.getElementById('bulkEmpSubmitBtn');
-  btn.disabled = true; btn.textContent = 'Adding…';
-
-  const payload = validRows.map(r => {
-    let isFree = false;
-    if (r.hireISO) {
-      const years = (Date.now() - new Date(r.hireISO).getTime()) / (1000*60*60*24*365.25);
-      isFree = years >= 20;
-    }
-    return {
-      facility_id: facilityId, first_name: r.firstName, last_name: r.lastName,
-      employee_number: r.empId, unit: r.unit || null, role: r.role || null,
-      hire_date: r.hireISO || null, is_free_meal_eligible: isFree
-    };
-  });
-
+  btn.disabled = true; btn.textContent = 'Saving…';
+  let added = 0, updated = 0;
+  const failed = [];
   try {
-    await sb('employees?on_conflict=facility_id,employee_number', {
-      method: 'POST',
-      headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify(payload)
-    });
-    document.getElementById('bulkEmpSummary').textContent = `✓ Added/updated ${payload.length} employee(s) at ${facilityNameById(facilityId)}.`;
+    if (adds.length) {
+      const payload = adds.map(r => {
+        let isFree = false;
+        if (r.hireISO) {
+          const years = (Date.now() - new Date(r.hireISO).getTime()) / (1000*60*60*24*365.25);
+          isFree = years >= 20;
+        }
+        return {
+          facility_id: s.facilityId, first_name: r.firstName, last_name: r.lastName,
+          employee_number: r.empId, unit: r.unit || null, role: r.role || null,
+          hire_date: r.hireISO || null, is_free_meal_eligible: isFree, is_active: true,
+          works_all_buildings: s.floats, agency: s.agency || null
+        };
+      });
+      for (let i = 0; i < payload.length; i += 200) {
+        await sb('employees', {
+          method: 'POST', headers: { 'Prefer': 'return=minimal' }, body: JSON.stringify(payload.slice(i, i + 200))
+        });
+        added += Math.min(200, payload.length - i);
+      }
+    }
+    // Updates: only the cells that have a value; free-meal setting and active status are kept.
+    for (const r of ups) {
+      const body = { first_name: r.firstName, last_name: r.lastName };
+      if (r.unit) body.unit = r.unit;
+      if (r.role) body.role = r.role;
+      if (r.hireISO) body.hire_date = r.hireISO;
+      if (s.floats) body.works_all_buildings = true;
+      if (s.agency) body.agency = s.agency;
+      try {
+        await sb(`employees?id=eq.${encodeURIComponent(r.existingId)}`, {
+          method: 'PATCH', headers: { 'Prefer': 'return=minimal' }, body: JSON.stringify(body)
+        });
+        updated++;
+      } catch (e) { failed.push(r.empId); }
+    }
+    document.getElementById('bulkEmpSummary').textContent =
+      `✓ ${facilityNameById(s.facilityId)}: added ${added}, updated ${updated}.` +
+      (failed.length ? ` Could not update: ${failed.slice(0, 20).join(', ')}${failed.length > 20 ? '…' : ''}.` : '');
     document.getElementById('bulkEmpInput').value = '';
     document.getElementById('bulkEmpPreviewWrap').style.display = 'none';
     bulkEmpParsedRows = [];
   } catch (e) {
-    document.getElementById('bulkEmpSummary').textContent = `Error: ${e.message}`;
+    document.getElementById('bulkEmpSummary').textContent =
+      `Error after adding ${added} and updating ${updated}: ${e.message}. Paste the list again to see what is left.`;
   }
   btn.disabled = true; btn.textContent = 'Add employees';
 }
