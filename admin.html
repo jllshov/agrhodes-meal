@@ -794,21 +794,47 @@ function filterLogs() {
       <td style="font-size:.78rem;color:var(--text2)">${time}</td>
       <td>${voided?'<span class="badge badge-voided">voided</span>':badgeHTML(l.meal_type)}</td>
       <td>${l.is_free_meal?'Free':'$'+parseFloat(l.amount_charged).toFixed(2)}</td>
-      <td>${voided?'<span style="font-size:.72rem;color:var(--text2)">Voided</span>':'<span style="font-size:.72rem;color:var(--success);font-weight:700">✓ Valid</span>'}</td>
+      <td>${voided?`<span style="font-size:.72rem;color:var(--text2)" title="${escHtml(voidNote(l))}">Voided${voidNote(l)?'<br>'+escHtml(voidNote(l)):''}</span>`:'<span style="font-size:.72rem;color:var(--success);font-weight:700">✓ Valid</span>'}</td>
       <td>${!voided?`<button class="btn-danger-sm" onclick="voidLog('${l.id}')">Void</button>`:''}
       </td>
     </tr>`;
   }).join('\n');
 }
 
+// Voiding keeps the check-in (marked voided) so it stays in the history for reports.
+// Voided meals are left out of totals, daily limits and prepaid-meal counts.
 async function voidLog(id) {
-  if (!confirm('Delete this check-in? This cannot be undone.')) return;
+  const reason = (prompt('Why is this check-in being voided? (for example: scanned twice)') || '').trim();
+  if (!reason) { showToast('Not voided: a reason is needed'); return; }
+  const who = (prompt('Your name (saved with the void)') || '').trim();
+  if (!who) { showToast('Not voided: your name is needed'); return; }
+  const note = `Voided by ${who.slice(0,80)}: ${reason.slice(0,300)}`;
   try {
-    await sb(`meal_logs?id=eq.${id}`, { method:'DELETE' });
-    showToast('Check-in deleted');
+    // Re-read the record: guest meals keep the guest's name and payment in void_reason,
+    // so the note goes after it instead of replacing it.
+    const cur = await sb(`meal_logs?id=eq.${id}&select=void_reason,is_voided`);
+    if (!cur.length) { showToast('Check-in not found'); return; }
+    if (cur[0].is_voided) { showToast('Already voided'); await loadLogs(); return; }
+    const prev = cur[0].void_reason ? String(cur[0].void_reason) : '';
+    const voidReason = prev ? `${prev} | ${note}` : note;
+    const rows = await sb(`meal_logs?id=eq.${id}&is_voided=eq.false`, {
+      method:'PATCH',
+      body: JSON.stringify({ is_voided: true, voided_at: new Date().toISOString(), void_reason: voidReason })
+    });
+    showToast(rows.length ? 'Check-in voided' : 'Already voided');
     await loadLogs();
     await loadDashboard();
-  } catch(e) { showToast('Error deleting log'); console.error(e); }
+  } catch(e) { showToast('Error voiding check-in'); console.error(e); }
+}
+
+// The "Voided by …: reason" part of void_reason (guest rows have guest info before it).
+function voidNote(l) {
+  const parts = String(l.void_reason || '').split('|').map(x => x.trim());
+  return parts.filter(x => x.startsWith('Voided by')).pop() || '';
+}
+
+function escHtml(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 // ─── REPORTS ───────────────────────────────────────────────
@@ -1010,8 +1036,9 @@ async function loadGuests() {
     const payment = parts[1]?.replace('Payment:','').trim()||'—';
     const time    = new Date(l.checked_in_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
     const date    = new Date(l.checked_in_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    return `<tr>
-      <td><strong>${gName}</strong></td>
+    const gVoided = l.is_voided;
+    return `<tr style="${gVoided?'opacity:.5':''}">
+      <td><strong>${escHtml(gName)}</strong>${gVoided?` <span class="badge badge-voided">voided</span><div style="font-size:.72rem;color:var(--text2)">${escHtml(voidNote(l))}</div>`:''}</td>
       <td style="font-size:.78rem;color:var(--text2)">${date}</td>
       <td style="font-size:.78rem;color:var(--text2)">${time}</td>
       <td style="font-weight:800">$${parseFloat(l.amount_charged).toFixed(2)}</td>
