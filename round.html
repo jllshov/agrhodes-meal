@@ -803,10 +803,13 @@ function setStoredEmployee(emp) {
 /** Re-read the remembered employee so a role change (e.g. made an admin) applies on the next scan. */
 async function refreshStoredEmployee() {
   try {
-    var { data: emp, error } = await sb.from('employees').select('*')
-      .eq('facility_id', FACILITY_ID).eq('employee_number', currentEmployee.employee_number).maybeSingle();
+    var { data: emp, error } = currentEmployee.facility_id && currentEmployee.facility_id !== FACILITY_ID
+      ? await sb.from('employees').select('*').eq('id', currentEmployee.id).maybeSingle()
+      : await sb.from('employees').select('*')
+        .eq('facility_id', FACILITY_ID).eq('employee_number', currentEmployee.employee_number).maybeSingle();
     if (error) return;                       // offline / hiccup: keep the remembered record
-    if (!emp || emp.is_active === false) {   // removed or deactivated: sign in again
+    var away = emp && emp.facility_id !== FACILITY_ID;
+    if (!emp || emp.is_active === false || (away && !emp.works_all_buildings)) {   // removed, deactivated or no longer floating: sign in again
       sessionStorage.removeItem('agrhodes_employee_session');
       currentEmployee = null;
       return;
@@ -876,6 +879,7 @@ async function submitEmployeeGate() {
     .eq('facility_id', FACILITY_ID).eq('employee_number', employeeId).eq('is_active', true).maybeSingle();
 
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  if (!emp) emp = await findFloatingEmployee(employeeId);
   if (!emp) { showToast('Employee ID not found — check with your administrator.', 'error'); return; }
 
   localStorage.setItem('agrhodes_last_employee_id', employeeId);
@@ -885,8 +889,24 @@ async function submitEmployeeGate() {
   routeToContent();
 }
 
+/** Floating staff (works in all buildings, e.g. Care Solutions) are listed at their home building. */
+async function findFloatingEmployee(employeeId) {
+  try {
+    var { data, error } = await sb.from('employees').select('*')
+      .eq('employee_number', employeeId).eq('is_active', true).eq('works_all_buildings', true)
+      .neq('facility_id', FACILITY_ID).limit(2);
+    if (error || !data || data.length !== 1) return null; // none, or the same ID floats in two buildings
+    return data[0];
+  } catch (_) { return null; }
+}
+
+/** Floating staff can report issues anywhere but do no rounds, cleanings or assignments. */
+function isReportOnly() {
+  return !!currentEmployee && currentEmployee.works_all_buildings === true;
+}
+
 async function loadSurveyPrepAssignment() {
-  if (!currentEmployee) { currentSurveyPrepDept = null; return; }
+  if (!currentEmployee || isReportOnly()) { currentSurveyPrepDept = null; return; }
   var { data } = await sb.from('survey_prep_dept_assignments').select('*')
     .eq('facility_id', FACILITY_ID).eq('employee_id', currentEmployee.employee_number).maybeSingle();
   currentSurveyPrepDept = data || null;
@@ -1045,12 +1065,13 @@ async function renderLanding() {
   var isResidentRoom = loc.location_type === 'room';
   // Zone Defense (the nursing round) is restricted to Manager/Admin for resident rooms.
   // EOC area rounds are left open, since that's a separate, pre-existing feature.
-  var canShowZoneRound = isResidentRoom ? canDoZoneRound() : true;
+  var reportOnly = isReportOnly();
+  var canShowZoneRound = reportOnly ? false : isResidentRoom ? canDoZoneRound() : true;
   // A plain Manager's view is intentionally minimal: Zone Round, Report an Issue,
   // My Assigned Rooms, and Survey Prep (if assigned) — nothing housekeeping-related.
   // Staff, Housekeeping Manager, and Admin still see the full cleaning-related set.
-  var showHousekeepingLinks = isResidentRoom && !isZoneRoundOnlyManager();
-  var showRoomTools = showHousekeepingLinks || (!isResidentRoom && loc.location_type !== 'eoc_area');
+  var showHousekeepingLinks = !reportOnly && isResidentRoom && !isZoneRoundOnlyManager();
+  var showRoomTools = !reportOnly && (showHousekeepingLinks || (!isResidentRoom && loc.location_type !== 'eoc_area'));
 
   app.innerHTML = '<div class="center-msg">Loading room…</div>';
   var stats = await loadLandingStats(loc);
@@ -1096,8 +1117,8 @@ async function renderLanding() {
         '<span class="chev">›</span></button>';
   }
   actionsHtml +=
-    '<button class="action" type="button" onclick="reportIssueForm()">' +
-      '<span class="icon">' + svgIcon('wrench') + '</span>' +
+    '<button class="action' + (reportOnly ? ' primary' : '') + '" type="button" onclick="reportIssueForm()">' +
+      '<span class="icon">' + svgIcon('wrench', reportOnly ? '#fff' : '#0fb5c9') + '</span>' +
       '<span class="txt"><span class="t">Report an Issue</span>' +
         '<div class="sub">30 seconds · no checklist needed</div></span>' +
       '<span class="chev">›</span></button>';
@@ -1149,7 +1170,7 @@ async function renderLanding() {
         '<span class="ric">' + svgIcon('calendar', '#5b6b7f') + '</span>Deep Clean Calendar<span class="chev">›</span></button>';
   }
   // Department heads: every open problem reported for their department
-  var deptPerm = currentEmployee && currentEmployee.zone_rounds_permission;
+  var deptPerm = !reportOnly && currentEmployee && currentEmployee.zone_rounds_permission;
   if (deptPerm === 'maintenance_director' || deptPerm === 'housekeeping_manager') {
     manage +=
       '<button class="row" type="button" onclick="openMyDepartmentList()">' +
@@ -1186,6 +1207,7 @@ async function renderLanding() {
       (manage ? '<section class="sect"><h3>Manage <span class="soft">· supervisors</span></h3><div class="list">' + manage + '</div></section>' : '') +
       '<p class="foot">Signed in as ' +
         escapeAttr(((currentEmployee.first_name || '') + ' ' + (currentEmployee.last_name || '')).trim()) +
+        (reportOnly ? ' (' + escapeAttr(currentEmployee.agency || 'all buildings') + ' · issue reports only)' : '') +
         ' · <button type="button" onclick="switchEmployee()" style="background:none;border:none;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer">Not you? Switch</button>' +
         '<br>Zone Rounds · ' + facilityLabel + '</p>' +
     '</div>';
@@ -1206,7 +1228,7 @@ function escapeAttr(v) {
 }
 
 function isZoneAdmin() {
-  return !!currentEmployee && currentEmployee.zone_rounds_permission === 'admin';
+  return !!currentEmployee && !isReportOnly() && currentEmployee.zone_rounds_permission === 'admin';
 }
 
 /** Walking Rounds by Hall lives in Nursiao (Nursiao sign-in); hand it this hall, room and building. */
@@ -1221,6 +1243,7 @@ function openWalkingRound() {
 
 // Zone Round on resident rooms: managers, housekeeping managers (who are assigned rooms too) and admins.
 function canDoZoneRound() {
+  if (isReportOnly()) return false;
   var perm = currentEmployee && currentEmployee.zone_rounds_permission;
   return perm === 'manager' || perm === 'housekeeping_manager' || perm === 'admin';
 }
@@ -1233,7 +1256,7 @@ function isZoneRoundOnlyManager() {
 
 // Housekeeping Manager and Admin only — plain Manager no longer gets these.
 function canManageHousekeepingStaff() {
-  if (!currentEmployee) return false;
+  if (!currentEmployee || isReportOnly()) return false;
   var perm = currentEmployee.zone_rounds_permission;
   return perm === 'housekeeping_manager' || perm === 'admin';
 }
@@ -1259,6 +1282,7 @@ function backToLanding() {
 
 /* ── Checklist flow ── */
 function startRound() {
+  if (isReportOnly()) { showToast('You can report issues here. Rounds are done by building staff.', 'error'); return; }
   if (currentLoc.location_type === 'room' && !canDoZoneRound()) {
     showToast('Only managers and housekeeping managers can complete Zone Defense rounds.', 'error');
     return;
@@ -1270,6 +1294,7 @@ function startRound() {
 }
 
 function startRoomCleaning() {
+  if (isReportOnly()) { showToast('You can report issues here. Cleaning is done by building staff.', 'error'); return; }
   if (currentLoc.location_type === 'room' && isZoneRoundOnlyManager()) {
     showToast('Managers handle Zone Rounds — cleaning tasks go to Housekeeping.', 'error');
     return;
@@ -2240,7 +2265,7 @@ async function assignHousekeepersView() {
 
   var { data: emps } = await sb.from('employees').select('*')
     .eq('facility_id', FACILITY_ID).eq('is_active', true).order('last_name');
-  lastAllEmployees = emps || [];
+  lastAllEmployees = (emps || []).filter(function(e) { return !e.works_all_buildings; }); // floating staff do no rounds
 
   renderAssignHousekeepersScreen();
 }
