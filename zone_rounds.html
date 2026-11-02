@@ -2474,7 +2474,8 @@ function renderEmployeeRow(e) {
   return '<div class="inv-saved-row" style="cursor:default;">' +
     '<div style="flex:1;min-width:0;">' +
       '<div style="font-weight:700;font-size:13px;">' + e.first_name + ' ' + e.last_name + ' <span style="color:var(--gray);font-weight:600;font-size:11.5px;">· ID ' + e.employee_number + '</span></div>' +
-      '<div style="font-size:11.5px;color:var(--gray);margin-top:2px;">' + (e.role||'') + (e.unit?' · '+e.unit:'') + '</div>' +
+      '<div style="font-size:11.5px;color:var(--gray);margin-top:2px;">' + (e.role||'') + (e.unit?' · '+e.unit:'') +
+        (e.works_all_buildings ? ' · <b>All buildings · report issues only, no rounds</b>' : '') + '</div>' +
     '</div>' +
     '<select style="font-size:11px;padding:5px 8px;border:none;border-radius:8px;background:' + badgeColor + ';font-weight:700;margin-right:8px;" onchange="updateEmployeePermission(\''+e.id+'\',this.value)">' +
       '<option value="staff"' + (perm==='staff'?' selected':'') + '>Staff</option>' +
@@ -2726,6 +2727,7 @@ document.addEventListener('input', function(e){
     var resultsEl = document.getElementById('autoZoneResults-' + i);
     if (!term) { resultsEl.innerHTML = ''; return; }
     var matches = lastEmployees.filter(function(emp){
+      if (emp.works_all_buildings) return false; // floating staff report issues only, no rounds
       var haystack = (emp.first_name + ' ' + emp.last_name + ' ' + emp.employee_number).toLowerCase();
       return haystack.indexOf(term) > -1;
     }).slice(0, 10);
@@ -2822,6 +2824,7 @@ document.addEventListener('input', function(e){
     var resultsEl = document.getElementById('zrEmpSearchResults');
     if (!term) { resultsEl.innerHTML = ''; return; }
     var matches = lastEmployees.filter(function(emp){
+      if (emp.works_all_buildings) return false; // floating staff report issues only, no rounds
       var haystack = (emp.first_name + ' ' + emp.last_name + ' ' + emp.employee_number).toLowerCase();
       return haystack.indexOf(term) > -1;
     }).slice(0, 15);
@@ -2944,7 +2947,7 @@ var lastHkAdminAssignments = [];
 async function initHkAssignPanel() {
   await loadEmployeesList();
   document.getElementById('hk-employee-select').innerHTML = '<option value="">Select a housekeeper…</option>' +
-    lastEmployees.map(function(e){ return '<option value="'+e.employee_number+'">'+e.first_name+' '+e.last_name+' (' + e.employee_number + ')</option>'; }).join('');
+    lastEmployees.filter(function(e){ return !e.works_all_buildings; }).map(function(e){ return '<option value="'+e.employee_number+'">'+e.first_name+' '+e.last_name+' (' + e.employee_number + ')</option>'; }).join('');
 
   var { data: rooms } = await sb.from('room_qr_codes').select('*')
     .eq('facility_id', FACILITY_ID).eq('location_type','room').eq('is_active', true);
@@ -4969,6 +4972,7 @@ document.addEventListener('input', function(e){
     var resultsEl = document.getElementById('spAssignResults-' + deptKey);
     if (!term) { resultsEl.innerHTML = ''; return; }
     var matches = lastEmployees.filter(function(emp){
+      if (emp.works_all_buildings) return false; // floating staff report issues only, no rounds
       var haystack = (emp.first_name + ' ' + emp.last_name + ' ' + emp.employee_number).toLowerCase();
       return haystack.indexOf(term) > -1;
     }).slice(0, 10);
