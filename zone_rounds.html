@@ -5731,8 +5731,9 @@ async function deptSetStatus(issueId, status) {
     update.resolved_at = new Date().toISOString();
     update.resolved_by = localStorage.getItem('agrhodes_round_staff') || 'Staff';
   }
-  var { error } = await sb.from('zone_issues').update(update).eq('id', issueId);
+  var { data, error } = await sb.from('zone_issues').update(update).eq('id', issueId).eq('facility_id', FACILITY_ID).select('id');
   if (error) { alert('Could not update: ' + error.message); return; }
+  if (!data || !data.length) { alert('That change did not save. Please try again, or tell your administrator.'); return; }
   loadRestrictedDeptList();
 }
 
