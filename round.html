@@ -216,6 +216,13 @@ body:not(.landing-mode):not(.login-mode) #app{padding:16px 16px calc(28px + env(
 
 .issue-card{background:#f6f9fb;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;}
 .issue-card-title{font-size:13.5px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.pest-pick{margin-bottom:10px;}
+.pest-pick-q{font-size:12.5px;color:var(--ink-2);margin-bottom:8px;font-weight:600;}
+.pest-chip{
+  display:inline-block;margin:0 6px 6px 0;padding:8px 12px;border-radius:999px;border:1.5px solid var(--line);
+  background:#fff;color:var(--ink);font:inherit;font-size:13px;font-weight:600;cursor:pointer;
+}
+.pest-chip.on{background:var(--navy);border-color:var(--navy);color:#fff;}
 .issue-card textarea,.issue-card input,.issue-card select,
 .card textarea,.card input,.card select,
 .field input,.field select,.field textarea,
@@ -353,6 +360,11 @@ body.login-mode{min-height:100vh;padding-bottom:0;display:flex;align-items:cente
 }
 .login-signin-btn:active{transform:scale(.98);}
 .login-facility{text-align:center;color:var(--ink-2);font-size:12px;margin-top:16px;}
+.login-pest-link{
+  display:block;width:100%;margin-top:18px;background:rgba(255,255,255,.92);color:var(--navy);
+  border:none;border-radius:14px;padding:13px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;
+  box-shadow:0 6px 16px rgba(0,0,0,.18);
+}
 
 .back-link{
   display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;
@@ -552,7 +564,8 @@ var OFFICE_SECTIONS = [
     { key:'surfaces_wiped', label:'Desk / Surfaces Wiped Down', ftag:'F880' },
     { key:'floor_cleaned', label:'Floor Vacuumed or Mopped', ftag:'F584' },
     { key:'glass_cleaned', label:'Windows / Glass Cleaned' },
-    { key:'odor_free', label:'No Odors', ftag:'F584' }
+    { key:'odor_free', label:'No Odors', ftag:'F584' },
+    { key:'no_pests', label:'No Signs of Pests (Insects, Rodents, Droppings)', dept:'Pest Control', ftag:'F925' }
   ]},
   { title:'Additional Tasks', dept:'Housekeeping', type:'passfail', items: ADDITIONAL_CLEANING_ITEMS }
 ];
@@ -564,7 +577,8 @@ var BATHROOM_SECTIONS = [
     { key:'floor_mopped', label:'Floor Mopped', ftag:'F584' },
     { key:'trash_emptied', label:'Trash Emptied & Liner Replaced', ftag:'F584' },
     { key:'fixtures_wiped', label:'Grab Bars / Fixtures Wiped Down', ftag:'F880' },
-    { key:'odor_free', label:'No Odors', ftag:'F584' }
+    { key:'odor_free', label:'No Odors', ftag:'F584' },
+    { key:'no_pests', label:'No Signs of Pests (Insects, Rodents, Droppings)', dept:'Pest Control', ftag:'F925' }
   ]},
   { title:'Supplies', dept:'Housekeeping', type:'passfail', items:[
     { key:'soap_stocked', label:'Soap Dispenser Stocked', ftag:'F880' },
@@ -598,7 +612,8 @@ var ROOM_CLEANING_SECTIONS = [
   { title:'Floors & Curtain', dept:'Housekeeping', type:'passfail', items:[
     { key:'room_floor_mopped', label:'Room Floor Swept & Mopped', ftag:'F584' },
     { key:'restroom_floor_mopped', label:'Restroom Floor Mopped', ftag:'F584' },
-    { key:'privacy_curtain_checked', label:'Privacy Curtain Inspected / Cleaned / Replaced', ftag:'F880' }
+    { key:'privacy_curtain_checked', label:'Privacy Curtain Inspected / Cleaned / Replaced', ftag:'F880' },
+    { key:'no_pests', label:'No Signs of Pests (Insects, Rodents, Droppings)', dept:'Pest Control', ftag:'F925' }
   ]},
   { title:'Trash & Supplies', dept:'Housekeeping', type:'passfail', items:[
     { key:'trash_clean_before_liner', label:'Trash Cans Clean Inside/Out Before New Liner', ftag:'F584' },
@@ -615,7 +630,8 @@ var LOCATION_CONFIG = {
   room:     { icon:'🚪', roundTitle:'Complete Zone Round', roundSub:'Run the checklist and log any issues', idLabel:'Your Name', idKey:'agrhodes_round_staff', idPlaceholder:'Enter your name' },
   eoc_area: { icon:'📋', roundTitle:'Complete Zone Round', roundSub:'Run the checklist and log any issues', idLabel:'Your Name', idKey:'agrhodes_round_staff', idPlaceholder:'Enter your name' },
   office:   { icon:'🏢', roundTitle:'Complete Cleaning Task', roundSub:'Run the cleaning checklist for this office', idLabel:'Employee ID', idKey:'agrhodes_employee_id', idPlaceholder:'Enter your employee ID' },
-  bathroom: { icon:'🚻', roundTitle:'Complete Cleaning Task', roundSub:'Run the cleaning checklist for this restroom', idLabel:'Employee ID', idKey:'agrhodes_employee_id', idPlaceholder:'Enter your employee ID' }
+  bathroom: { icon:'🚻', roundTitle:'Complete Cleaning Task', roundSub:'Run the cleaning checklist for this restroom', idLabel:'Employee ID', idKey:'agrhodes_employee_id', idPlaceholder:'Enter your employee ID' },
+  nurses_station: { icon:'🩺', roundTitle:'Complete Station Round', roundSub:'Nursing station checklist and issue log', idLabel:'Your Name', idKey:'agrhodes_round_staff', idPlaceholder:'Enter your name' }
 };
 var ROOM_CLEANING_CONFIG = { icon:'🧹', roundTitle:'Complete Room Cleaning', roundSub:'Run the housekeeping cleaning checklist', idLabel:'Employee ID', idKey:'agrhodes_employee_id', idPlaceholder:'Enter your employee ID' };
 
@@ -648,7 +664,8 @@ var ROOM_SECTIONS = [
   { title:'Environment', dept:'Housekeeping', type:'passfail', items:[
     { key:'curtains_clean', label:'Curtains Clean', ftag:'F584' },
     { key:'odor_free', label:'No Odors', ftag:'F584' },
-    { key:'lighting', label:'Lighting Adequate', ftag:'F584' }
+    { key:'lighting', label:'Lighting Adequate', ftag:'F584' },
+    { key:'no_pests', label:'No Signs of Pests (Insects, Rodents, Droppings)', dept:'Pest Control', ftag:'F925' }
   ]},
   { title:'Equipment', dept:'Maintenance', type:'passfail', items:[
     { key:'furniture_intact', label:'Furniture Intact', ftag:'F584' },
@@ -666,9 +683,30 @@ var EOC_SECTIONS = [
     { key:'signage_visible', label:'Required Signage Visible' },
     { key:'equipment_functioning', label:'Equipment Functioning', ftag:'F908' },
     { key:'safety_compliant', label:'Safety Requirements Met', ftag:'F689' },
-    { key:'documentation_current', label:'Documentation Current' }
+    { key:'documentation_current', label:'Documentation Current' },
+    { key:'no_pests', label:'No Signs of Pests (Insects, Rodents, Droppings)', dept:'Pest Control', ftag:'F925' }
   ]}
 ];
+
+// Nursing station round (one QR per hall's station). Stored as JSON in zone_rounds.eoc_scores.
+var NURSES_STATION_SECTIONS = [
+  { title:'Medications & Sharps', dept:'Nursing', type:'passfail', items:[
+    { key:'med_cart_locked', label:'Med Cart Locked When Unattended', ftag:'F761' },
+    { key:'meds_stored', label:'Medications Labeled, Dated & Stored Properly', ftag:'F761' },
+    { key:'sharps_safe', label:'Sharps Container Below Fill Line & Secured', ftag:'F880' }
+  ]},
+  { title:'Privacy & Communication', dept:'Nursing', type:'passfail', items:[
+    { key:'charts_private', label:'Charts & Screens Not Visible to Visitors', ftag:'F583' },
+    { key:'call_board_working', label:'Call Light Board Working', dept:'Maintenance', ftag:'F919' }
+  ]},
+  { title:'Environment', dept:'Housekeeping', type:'passfail', items:[
+    { key:'station_clean', label:'Station Clean & Organized', ftag:'F584' },
+    { key:'hand_hygiene_stocked', label:'Hand Sanitizer & Gloves Stocked', dept:'Infection Control', ftag:'F880' },
+    { key:'exits_clear', label:'Hallway & Exits Clear Around Station', dept:'Safety', ftag:'F689' },
+    { key:'no_pests', label:'No Signs of Pests (Insects, Rodents, Droppings)', dept:'Pest Control', ftag:'F925' }
+  ]}
+];
+var PEST_TYPES = ['Roaches', 'Ants', 'Bed bugs', 'Rodents', 'Flies', 'Other'];
 
 var ASSET_ICONS = {
   'TV':'📺','Bed':'🛏','Wheelchair':'🦽','Recliner':'🛋','Dresser':'🗄',
@@ -866,7 +904,20 @@ function renderEmployeeGate() {
         '<button class="login-signin-btn" onclick="submitEmployeeGate()">Sign In</button>' +
         '<div class="login-facility">' + (FACILITY_NAME || 'A.G. Rhodes') + '</div>' +
       '</div>' +
+      (isStationQr()
+        ? '<button type="button" class="login-pest-link" onclick="openPestControl()">🐜 Pest control service? Sign in with your PIN</button>'
+        : '') +
     '</div>';
+}
+
+/** Nursing station QR codes look like <prefix>-nurses_station-<hall>. */
+function isStationQr() {
+  return /-nurses_station-/.test(getQrIdentifier() || '');
+}
+
+/** The pest control report lives on nursiao.com (PIN checked by the server), for every building. */
+function openPestControl() {
+  window.location.href = 'https://nursiao.com/meal/pest.html#fac=' + encodeURIComponent(FACILITY_ID || '');
 }
 
 var currentSurveyPrepDept = null; // this employee's assigned Survey Prep department, if any
@@ -968,7 +1019,8 @@ function svgIcon(name, stroke) {
     check: '<path d="m5 13 4 4L19 7"/>',
     users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
     calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
-    layers: '<path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>'
+    layers: '<path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
+    bug: '<path d="M8 2l1.9 1.9M16 2l-1.9 1.9"/><path d="M9 7.1V6a3 3 0 1 1 6 0v1.1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6Z"/><path d="M12 20v-9M6 13H2M22 13h-4M6.5 8.5 3 6M17.5 8.5 21 6M6 17l-3 2M18 17l3 2"/>'
   };
   return '<svg viewBox="0 0 24 24" fill="none" stroke="' + s + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (icons[name] || '') + '</svg>';
 }
@@ -990,7 +1042,7 @@ async function loadLandingStats(loc) {
 
   try {
     var roundQ = sb.from('zone_rounds').select('rounded_at')
-      .eq('facility_id', FACILITY_ID).eq('qr_identifier', qr).eq('round_type', 'room')
+      .eq('facility_id', FACILITY_ID).eq('qr_identifier', qr).eq('round_type', loc.location_type === 'nurses_station' ? 'nurses_station' : 'room')
       .order('rounded_at', { ascending: false }).limit(1);
     // Resident rooms save housekeeping as room_cleaning; offices/bathrooms save as their location type.
     var cleanType = 'room_cleaning';
@@ -1063,15 +1115,17 @@ async function renderLanding() {
   currentChecklistMode = 'round';
   var cfg = getLocConfig(loc);
   var isResidentRoom = loc.location_type === 'room';
+  var isStation = loc.location_type === 'nurses_station';
+  var hasDailyRound = isResidentRoom || isStation;
   // Zone Defense (the nursing round) is restricted to Manager/Admin for resident rooms.
   // EOC area rounds are left open, since that's a separate, pre-existing feature.
   var reportOnly = isReportOnly();
-  var canShowZoneRound = reportOnly ? false : isResidentRoom ? canDoZoneRound() : true;
+  var canShowZoneRound = reportOnly ? false : hasDailyRound ? canDoZoneRound() : true;
   // A plain Manager's view is intentionally minimal: Zone Round, Report an Issue,
   // My Assigned Rooms, and Survey Prep (if assigned) — nothing housekeeping-related.
   // Staff, Housekeeping Manager, and Admin still see the full cleaning-related set.
   var showHousekeepingLinks = !reportOnly && isResidentRoom && !isZoneRoundOnlyManager();
-  var showRoomTools = !reportOnly && (showHousekeepingLinks || (!isResidentRoom && loc.location_type !== 'eoc_area'));
+  var showRoomTools = !reportOnly && (showHousekeepingLinks || (!isResidentRoom && !isStation && loc.location_type !== 'eoc_area'));
 
   app.innerHTML = '<div class="center-msg">Loading room…</div>';
   var stats = await loadLandingStats(loc);
@@ -1079,7 +1133,7 @@ async function renderLanding() {
 
   var facilityLabel = (FACILITY_NAME || 'A.G. Rhodes');
   var subLine = [locSubtitle(loc), facilityLabel].filter(Boolean).join(' · ');
-  var roundDue = isResidentRoom ? !stats.roundToday : false;
+  var roundDue = hasDailyRound ? !stats.roundToday : false;
   var roundVal = roundDue
     ? '<span style="color:#ffb27a">Due</span><small>Last: ' + (stats.roundAt ? formatLandingWhen(stats.roundAt) : 'None yet') + '</small>'
     : '<span style="color:#7fe0b2">Done</span><small>' + (stats.roundAt ? formatLandingWhen(stats.roundAt) : '—') + '</small>';
@@ -1140,6 +1194,13 @@ async function renderLanding() {
         '<span class="chev">›</span></button>';
   }
 
+  if (isStation) {
+    roomList +=
+      '<button class="row" type="button" onclick="openPestControl()">' +
+        '<span class="ric">' + svgIcon('bug', '#5b6b7f') + '</span>Pest Control Report' +
+        '<span class="badge">PIN</span><span class="chev">›</span></button>';
+  }
+
   var myWork = '';
   if (isResidentRoom && canDoZoneRound()) {
     myWork +=
@@ -1175,7 +1236,7 @@ async function renderLanding() {
     manage +=
       '<button class="row" type="button" onclick="openMyDepartmentList()">' +
         '<span class="ric">' + svgIcon('wrench', '#5b6b7f') + '</span>' +
-        (deptPerm === 'maintenance_director' ? 'Open Maintenance & Safety Problems' : 'Open Housekeeping Problems') +
+        (deptPerm === 'maintenance_director' ? 'Open Maintenance, Safety & Pest Problems' : 'Open Housekeeping Problems') +
         '<span class="chev">›</span></button>';
   }
   if (currentSurveyPrepDept) {
@@ -1195,14 +1256,14 @@ async function renderLanding() {
       '<h2>' + loc.display_name + '</h2>' +
       '<p class="sub">' + subLine + '</p>' +
       '<div class="today">' +
-        '<div class="stat"><div class="k">Zone round</div><div class="v">' + (isResidentRoom ? roundVal : '—<small>N/A</small>') + '</div></div>' +
+        '<div class="stat"><div class="k">Zone round</div><div class="v">' + (hasDailyRound ? roundVal : '—<small>N/A</small>') + '</div></div>' +
         '<div class="stat"><div class="k">Cleaning</div><div class="v">' + (isResidentRoom || isCleaningCapableLocation(loc) ? cleanVal : '—<small>N/A</small>') + '</div></div>' +
         '<div class="stat"><div class="k">Open issues</div><div class="v">' + issueVal + '</div></div>' +
       '</div>' +
     '</div>' +
     '<div class="wrap">' +
       '<section class="sect"><h3>Start a task</h3>' + actionsHtml + '</section>' +
-      (roomList ? '<section class="sect"><h3>This room</h3><div class="list">' + roomList + '</div></section>' : '') +
+      (roomList ? '<section class="sect"><h3>' + (isStation ? 'This station' : 'This room') + '</h3><div class="list">' + roomList + '</div></section>' : '') +
       (myWork ? '<section class="sect"><h3>My work today</h3><div class="list">' + myWork + '</div></section>' : '') +
       (manage ? '<section class="sect"><h3>Manage <span class="soft">· supervisors</span></h3><div class="list">' + manage + '</div></section>' : '') +
       '<p class="foot">Signed in as ' +
@@ -1360,6 +1421,7 @@ function getSections() {
   }
   if (t === 'office') return OFFICE_SECTIONS;
   if (t === 'bathroom') return BATHROOM_SECTIONS;
+  if (t === 'nurses_station') return NURSES_STATION_SECTIONS;
   return EOC_SECTIONS;
 }
 function totalItems() {
@@ -1480,11 +1542,19 @@ function renderIssueSlot(key) {
   if (!slot) return;
   var draft = issueDrafts[key];
   if (!draft) { slot.innerHTML = ''; return; }
+  var pestPick = draft.dept === 'Pest Control'
+    ? '<div class="pest-pick"><div class="pest-pick-q">What did you see?</div>' +
+        PEST_TYPES.map(function(p) {
+          var on = (draft.pests || []).indexOf(p) >= 0;
+          return '<button type="button" class="pest-chip' + (on ? ' on' : '') + '" aria-pressed="' + on + '" onclick="togglePest(\'' + key + '\',\'' + p + '\')">' + p + '</button>';
+        }).join('') + '</div>'
+    : '';
   slot.innerHTML =
     '<div class="issue-card" style="margin-top:10px;">' +
       '<div class="issue-card-title">⚠ Issue detected</div>' +
       ftagCiteHTML(draft.ftag) +
-      '<textarea rows="2" onchange="updateIssueDraft(\''+key+'\',\'description\',this.value)">' + draft.description + '</textarea>' +
+      pestPick +
+      '<textarea rows="2" onchange="updateIssueDraft(\''+key+'\',\'description\',this.value)">' + escapeAttr(draft.description) + '</textarea>' +
       '<div class="priority-row">' +
         '<button class="priority-btn' + (draft.priority==='Low'?' sel-Low':'') + '" onclick="updateIssueDraft(\''+key+'\',\'priority\',\'Low\')">Low</button>' +
         '<button class="priority-btn' + (draft.priority==='Medium'?' sel-Medium':'') + '" onclick="updateIssueDraft(\''+key+'\',\'priority\',\'Medium\')">Medium</button>' +
@@ -1497,6 +1567,18 @@ function ftagCiteHTML(code) {
   var info = ftagInfo(code);
   if (!info) return '';
   return '<div class="ftag-cite">Surveyors could cite <b>' + code + '</b> — ' + info.title + '</div>';
+}
+
+/** Pest sightings: the picked pest types lead the problem's description. */
+function togglePest(key, pest) {
+  var d = issueDrafts[key];
+  if (!d) return;
+  d.pests = d.pests || [];
+  var i = d.pests.indexOf(pest);
+  if (i >= 0) d.pests.splice(i, 1); else d.pests.push(pest);
+  var rest = String(d.description || '').replace(/^(Pests seen: [^.]*\.|No Signs of Pests[^\n]*needs attention)\s*/, '');
+  d.description = (d.pests.length ? 'Pests seen: ' + d.pests.join(', ') + '.' : 'No Signs of Pests (Insects, Rodents, Droppings) needs attention') + (rest ? ' ' + rest : '');
+  renderIssueSlot(key);
 }
 
 function updateIssueDraft(key, field, value) {
@@ -1522,7 +1604,7 @@ function renderExtraIssues() {
   var countEl = document.getElementById('extraIssueCount');
   if (!list) return;
   countEl.textContent = extraIssues.length;
-  var depts = ['Nursing','Housekeeping','Maintenance','Dietary','Social Services','Activities','Infection Control','Safety','Other'];
+  var depts = ISSUE_DEPTS;
   list.innerHTML = extraIssues.map(function(iss, idx){
     return '<div class="issue-card">' +
       '<div class="issue-card-title">Issue #' + (idx+1) + '<button class="issue-remove" onclick="removeExtraIssue(' + idx + ')">✕ remove</button></div>' +
@@ -1623,6 +1705,12 @@ async function submitRound() {
   }
 
   var { data: insertedRound, error: roundErr } = await sb.from('zone_rounds').insert(roundRow).select().single();
+  // Until the zone_rounds.no_pests column exists, save the round without it
+  // (a pest sighting still becomes a Pest Control problem below).
+  if (roundErr && 'no_pests' in roundRow && /no_pests/.test(roundErr.message || '')) {
+    delete roundRow.no_pests;
+    ({ data: insertedRound, error: roundErr } = await sb.from('zone_rounds').insert(roundRow).select().single());
+  }
   if (roundErr) {
     showToast('Error saving round: ' + roundErr.message, 'error');
     if (wrap) { var btn2 = wrap.querySelector('button'); if (btn2) btn2.textContent = 'Review →'; }
@@ -1708,7 +1796,7 @@ function renderSuccess(issueCount) {
 
 /* ── Quick issue report (no checklist required) ── */
 var quickIssue = { dept:'Maintenance', description:'', priority:'Medium' };
-var ISSUE_DEPTS = ['Nursing','Housekeeping','Maintenance','Dietary','Social Services','Activities','Infection Control','Safety','Other'];
+var ISSUE_DEPTS = ['Nursing','Housekeeping','Maintenance','Pest Control','Dietary','Social Services','Activities','Infection Control','Safety','Other'];
 
 function reportIssueForm() {
   enterAppPage();

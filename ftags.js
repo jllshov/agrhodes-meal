@@ -16,6 +16,12 @@ var FTAGS = {
           plain:'Essential resident-care equipment must be maintained in safe operating condition.' },
   F919: { title:'Resident Call System', reg:'§483.90(g)',
           plain:'Each bedside and bathroom must have a working call system the resident can reach.' },
+  F583: { title:'Personal Privacy/Confidentiality of Records', reg:'§483.10(h)',
+          plain:'Resident records and personal information must be kept private.' },
+  F761: { title:'Label/Store Drugs and Biologicals', reg:'§483.45(g)(h)',
+          plain:'Medications must be labeled, stored at the right temperature and locked.' },
+  F925: { title:'Maintains Effective Pest Control Program', reg:'§483.90(i)(4)',
+          plain:'The building must be kept free of insects and rodents.' },
   K920: { title:'Electrical Equipment – Power Cords & Extension Cords', reg:'NFPA 99 / NFPA 70',
           plain:'No daisy-chained power strips or improper extension cords in resident areas.' }
 };

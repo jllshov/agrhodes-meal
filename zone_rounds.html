@@ -845,7 +845,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
     <div class="hall-body">
       <div class="hall-body-inner" style="padding:6px 0 6px 12px;">
         <button class="nav-item" id="drawer-eoc" onclick="drawerNav('eoc')"><span class="nav-icon">📋</span> EOC Areas</button>
-        <button class="nav-item" id="drawer-facilities" onclick="drawerNav('facilities')"><span class="nav-icon">🧹</span> Offices & Bathrooms</button>
+        <button class="nav-item" id="drawer-facilities" onclick="drawerNav('facilities')"><span class="nav-icon">🧹</span> Offices, Bathrooms & Stations</button>
         <button class="nav-item" id="drawer-inventory" onclick="drawerNav('inventory')"><span class="nav-icon">🧳</span> Patient Inventory</button>
         <button class="nav-item" id="drawer-hkassign" onclick="drawerNav('hkassign')"><span class="nav-icon">🧑‍🔧</span> Assign Housekeepers</button>
         <button class="nav-item" id="drawer-dccalendar" onclick="drawerNav('dccalendar')"><span class="nav-icon">📅</span> Deep Clean Calendar</button>
@@ -888,7 +888,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
       </button>
       <div class="nav-dropdown" id="navdrop-manage">
         <button onclick="navigateToSubtab('eoc')"><span class="nav-icon">📋</span> EOC Areas</button>
-        <button onclick="navigateToSubtab('facilities')"><span class="nav-icon">🧹</span> Offices & Bathrooms</button>
+        <button onclick="navigateToSubtab('facilities')"><span class="nav-icon">🧹</span> Offices, Bathrooms & Stations</button>
         <button onclick="navigateToSubtab('inventory')"><span class="nav-icon">🧳</span> Patient Inventory</button>
         <button onclick="navigateToSubtab('hkassign')"><span class="nav-icon">🧑‍🔧</span> Assign Housekeepers</button>
         <button onclick="navigateToSubtab('dccalendar')"><span class="nav-icon">📅</span> Deep Clean Calendar</button>
@@ -1157,7 +1157,16 @@ table.policy-table tr:last-child td { border-bottom: none; }
   <!-- ── Offices & Bathrooms ── -->
   <div id="panel-facilities" style="display:none;">
     <div class="page-header">
-      <div><div class="page-title">Offices & Bathrooms</div><div class="page-sub">Generate QR codes for cleaning task tracking — requires employee ID to complete</div></div>
+      <div><div class="page-title">Offices, Bathrooms & Stations</div><div class="page-sub">Generate QR codes for cleaning task tracking and nursing station rounds — requires employee ID to complete</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title">🩺 Nursing Stations</div>
+      <div class="card-sub">One QR per hall's nursing station. Managers do a station round, anyone can report an issue, and the pest control service signs in here with their PIN to see pest reports.</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px;">
+        <button class="neu-btn primary" onclick="generateNursingStations()">⚡ Create one for every hall</button>
+        <span style="font-size:12px;color:var(--gray)">Or add a single station below with Type "Nursing Station".</span>
+      </div>
     </div>
 
     <div class="card" style="margin-bottom:20px;">
@@ -1168,6 +1177,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
           <select id="fac-single-type">
             <option value="office">Office</option>
             <option value="bathroom">Bathroom</option>
+            <option value="nurses_station">Nursing Station</option>
           </select>
         </div>
         <div class="field"><label>Area / Building</label><input type="text" id="fac-single-area" placeholder="Administration Wing"></div>
@@ -1256,6 +1266,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
             <option value="eoc_area">EOC Areas</option>
             <option value="office">Offices</option>
             <option value="bathroom">Bathrooms</option>
+            <option value="nurses_station">Nursing Stations</option>
           </select>
         </div>
         <button class="neu-btn" onclick="showAllTimeReport()">📚 All Time</button>
@@ -3209,7 +3220,35 @@ function toggleEocDept(dept) {
 }
 
 /* ── Offices & Bathrooms ── */
-var FACILITY_TYPE_ICONS = { 'office':'🏢', 'bathroom':'🚻' };
+var FACILITY_TYPE_ICONS = { 'office':'🏢', 'bathroom':'🚻', 'nurses_station':'🩺' };
+
+/** One nursing station QR per hall that has resident rooms. Existing stations are left as they are. */
+async function generateNursingStations() {
+  if (!canManageQRCodes()) { alert('You do not have permission to generate QR codes.'); return; }
+  var { data: rooms, error: roomsErr } = await sb.from('room_qr_codes').select('unit')
+    .eq('facility_id', FACILITY_ID).eq('location_type', 'room').eq('is_active', true);
+  if (roomsErr) { alert('Error: ' + roomsErr.message); return; }
+  var halls = {};
+  (rooms || []).forEach(function(r){ if (r.unit) halls[r.unit] = true; });
+  var names = Object.keys(halls).sort();
+  if (!names.length) { alert('No halls with resident rooms yet. Add rooms first, or add a single station below.'); return; }
+  var rows = names.map(function(h){
+    var label = h + ' Nursing Station';
+    return { facility_id:FACILITY_ID, location_type:'nurses_station', unit:h, display_name:label, room_number:label,
+      qr_identifier:(FACILITY_QR_PREFIX+'-')+'nurses_station-'+slugifyUnit(h)+'-'+slugifyUnit('Nursing Station') };
+  });
+  var { data: existing } = await sb.from('room_qr_codes').select('qr_identifier')
+    .eq('facility_id', FACILITY_ID).in('qr_identifier', rows.map(function(r){ return r.qr_identifier; }));
+  var have = {};
+  (existing || []).forEach(function(e){ have[e.qr_identifier] = true; });
+  var fresh = rows.filter(function(r){ return !have[r.qr_identifier]; });
+  if (!fresh.length) { alert('Every hall already has a nursing station QR.'); loadFacilities(); return; }
+  if (!confirm('Create ' + fresh.length + ' nursing station QR code' + (fresh.length > 1 ? 's' : '') + ':\n' + fresh.map(function(r){ return '• ' + r.display_name; }).join('\n'))) return;
+  var { error } = await sb.from('room_qr_codes').insert(fresh);
+  if (error) { alert('Error: ' + error.message); return; }
+  alert('✓ Created ' + fresh.length + ' nursing station QR code' + (fresh.length > 1 ? 's' : '') + '. Print them from the list below.');
+  loadFacilities();
+}
 var facilityAreaOpenState = JSON.parse(localStorage.getItem('agrhodes_facility_open') || '{}');
 
 async function generateSingleFacility() {
@@ -3228,6 +3267,7 @@ async function generateSingleFacility() {
   }
 
   var row = { facility_id:FACILITY_ID, location_type:type, unit:area, display_name:label, qr_identifier:qrId };
+  if (type === 'nurses_station') row.room_number = label;
   var { data: inserted, error } = await sb.from('room_qr_codes')
     .upsert([row], {onConflict:'facility_id,qr_identifier'}).select().single();
   if (error) { alert('Error: '+error.message); return; }
@@ -3269,7 +3309,7 @@ async function loadFacilities() {
   var grid = document.getElementById('facilitiesGrid');
   grid.innerHTML = '<div style="padding:20px;color:var(--gray)">Loading…</div>';
   var { data: rows } = await sb.from('room_qr_codes').select('*')
-    .eq('facility_id', FACILITY_ID).in('location_type', ['office','bathroom']).eq('is_active', true);
+    .eq('facility_id', FACILITY_ID).in('location_type', ['office','bathroom','nurses_station']).eq('is_active', true);
 
   var byArea = {};
   (rows||[]).forEach(function(r){ (byArea[r.unit||'Unassigned']=byArea[r.unit||'Unassigned']||[]).push(r); });
@@ -3277,7 +3317,7 @@ async function loadFacilities() {
   grid.innerHTML = '';
   var areas = Object.keys(byArea).sort();
   if (!areas.length) {
-    grid.innerHTML = '<div style="padding:16px;color:var(--gray-light);font-size:12.5px;text-align:center;">No offices or bathrooms generated yet — use the forms above.</div>';
+    grid.innerHTML = '<div style="padding:16px;color:var(--gray-light);font-size:12.5px;text-align:center;">No offices, bathrooms or nursing stations generated yet — use the forms above.</div>';
     return;
   }
 
@@ -3285,6 +3325,7 @@ async function loadFacilities() {
     var items = byArea[area].sort(function(a,b){ return a.display_name.localeCompare(b.display_name); });
     var officeCount = items.filter(function(i){return i.location_type==='office';}).length;
     var bathroomCount = items.filter(function(i){return i.location_type==='bathroom';}).length;
+    var stationCount = items.filter(function(i){return i.location_type==='nurses_station';}).length;
     var isOpen = facilityAreaOpenState[area] !== false;
 
     var section = document.createElement('div');
@@ -3297,6 +3338,7 @@ async function loadFacilities() {
     var subParts = [];
     if (officeCount) subParts.push(officeCount + ' office' + (officeCount>1?'s':''));
     if (bathroomCount) subParts.push(bathroomCount + ' bathroom' + (bathroomCount>1?'s':''));
+    if (stationCount) subParts.push(stationCount + ' nursing station' + (stationCount>1?'s':''));
     header.innerHTML =
       '<div class="hall-icon">🧹</div>' +
       '<div class="hall-title-wrap">' +
@@ -3386,7 +3428,7 @@ function renderQRTile(loc, container) {
 
 /* ── Issues panel ── */
 var DEPT_ICONS = {
-  'Nursing':'🩺','Housekeeping':'🧹','Maintenance':'🔧','Dietary':'🍽',
+  'Nursing':'🩺','Housekeeping':'🧹','Maintenance':'🔧','Pest Control':'🐜','Dietary':'🍽',
   'Social Services':'🤝','Activities':'🎨','Infection Control':'🦠','Safety':'⚠','Other':'📋'
 };
 
@@ -3610,12 +3652,13 @@ function openRoundModal(loc, round, issues) {
     floor_clean:'Floor Clean', bathroom_clean:'Bathroom Clean', trash_removed:'Trash Removed',
     curtains_clean:'Curtains Clean', odor_free:'No Odors', lighting:'Lighting',
     furniture_intact:'Furniture Intact', equipment_functioning:'Equipment OK', no_maintenance:'No Maintenance Issues',
+    no_pests:'No Signs of Pests',
   };
   var SECTIONS = {
     'Resident Status':['resident_contacted','satisfaction','no_concerns'],
     'Safety':['call_light','bed_low_locked','room_clutter','no_chemicals','cords_safe'],
     'Cleanliness':['floor_clean','bathroom_clean','trash_removed'],
-    'Environment':['curtains_clean','odor_free','lighting'],
+    'Environment':['curtains_clean','odor_free','lighting','no_pests'],
     'Equipment':['furniture_intact','equipment_functioning','no_maintenance'],
   };
 
@@ -5225,9 +5268,9 @@ function openSurveyPrepDetail(idx) {
 var ROOM_CHECK_KEYS = [
   'resident_contacted','satisfaction','no_concerns','call_light','bed_low_locked','room_clutter',
   'no_chemicals','cords_safe','floor_clean','bathroom_clean','trash_removed','curtains_clean','odor_free','lighting',
-  'furniture_intact','equipment_functioning','no_maintenance'
+  'furniture_intact','equipment_functioning','no_maintenance','no_pests'
 ];
-var REPORT_TYPE_LABELS = { room:'Resident Room', eoc_area:'EOC Area', office:'Office', bathroom:'Bathroom' };
+var REPORT_TYPE_LABELS = { room:'Resident Room', eoc_area:'EOC Area', office:'Office', bathroom:'Bathroom', nurses_station:'Nursing Station' };
 var lastReportRows = [];
 
 function initReportsPanel() {
@@ -5590,7 +5633,7 @@ async function bootRestrictedSurveyPrep(emp) {
    Report an Issue, cleanings, EOC), newest first, refreshed every minute.
    They can mark one In Progress or Fixed. */
 var DEPT_VIEWS = {
-  maintenance:  { icon: '🔧', title: 'Maintenance & Safety', types: ['Maintenance', 'Safety'] },
+  maintenance:  { icon: '🔧', title: 'Maintenance, Safety & Pests', types: ['Maintenance', 'Safety', 'Pest Control'] },
   housekeeping: { icon: '🧹', title: 'Housekeeping', types: ['Housekeeping'] }
 };
 var deptState = { dept: null, emp: null, timer: null, firstLoad: true };
