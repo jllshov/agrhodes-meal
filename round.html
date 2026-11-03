@@ -1058,9 +1058,9 @@ async function loadLandingStats(loc) {
     var issueLatestQ = null;
     if (roomNum) {
       issueCountQ = sb.from('zone_issues').select('id', { count: 'exact', head: true })
-        .eq('facility_id', FACILITY_ID).eq('room_number', String(roomNum)).eq('status', 'Open');
+        .eq('facility_id', FACILITY_ID).eq('room_number', String(roomNum)).in('status', ['Open', 'In Progress']);
       issueLatestQ = sb.from('zone_issues').select('created_at')
-        .eq('facility_id', FACILITY_ID).eq('room_number', String(roomNum)).eq('status', 'Open')
+        .eq('facility_id', FACILITY_ID).eq('room_number', String(roomNum)).in('status', ['Open', 'In Progress'])
         .order('created_at', { ascending: false }).limit(1);
     }
 
@@ -1302,17 +1302,31 @@ function openWalkingRound() {
   location.href = (onNursiao ? location.origin : 'https://nursiao.com') + '/rounds/walk?' + q;
 }
 
-// Zone Round on resident rooms: managers, housekeeping managers (who are assigned rooms too) and admins.
+// Zone Round on resident rooms: managers, housekeeping managers, the Maintenance Director and admins.
 function canDoZoneRound() {
   if (isReportOnly()) return false;
   var perm = currentEmployee && currentEmployee.zone_rounds_permission;
-  return perm === 'manager' || perm === 'housekeeping_manager' || perm === 'admin';
+  return perm === 'manager' || perm === 'housekeeping_manager' || perm === 'maintenance_director' || perm === 'admin';
 }
 
-// True for the plain "Manager" tier specifically — not Staff, not Housekeeping Manager, not Admin.
-// Used to strip housekeeping-related options down to just their four essentials.
+// Managers and the Maintenance Director: Zone Round plus the essentials, nothing housekeeping-related.
 function isZoneRoundOnlyManager() {
-  return currentEmployee && currentEmployee.zone_rounds_permission === 'manager';
+  var perm = currentEmployee && currentEmployee.zone_rounds_permission;
+  return perm === 'manager' || perm === 'maintenance_director';
+}
+
+/** Problem types this person can Start / mark Fixed from a room's Issue History. */
+function fixableIssueTypes() {
+  if (!currentEmployee || isReportOnly()) return [];
+  var perm = currentEmployee.zone_rounds_permission;
+  if (perm === 'admin') return null;   // every type
+  if (perm === 'maintenance_director') return ['Maintenance', 'Safety', 'Pest Control'];
+  if (perm === 'housekeeping_manager') return ['Housekeeping'];
+  return [];
+}
+function canFixIssue(iss) {
+  var types = fixableIssueTypes();
+  return types === null || types.indexOf(iss.issue_type) >= 0;
 }
 
 // Housekeeping Manager and Admin only — plain Manager no longer gets these.
@@ -1345,7 +1359,7 @@ function backToLanding() {
 function startRound() {
   if (isReportOnly()) { showToast('You can report issues here. Rounds are done by building staff.', 'error'); return; }
   if (currentLoc.location_type === 'room' && !canDoZoneRound()) {
-    showToast('Only managers and housekeeping managers can complete Zone Defense rounds.', 'error');
+    showToast('Only managers, the Maintenance Director and housekeeping managers can complete Zone Defense rounds.', 'error');
     return;
   }
   enterAppPage();
@@ -1898,7 +1912,7 @@ async function viewOpenIssues() {
     '<div class="card"><div class="section-title">Open Issues</div><div id="openIssuesList">Loading…</div></div>';
 
   var q = sb.from('zone_issues').select('*')
-    .eq('facility_id', FACILITY_ID).eq('status', 'Open')
+    .eq('facility_id', FACILITY_ID).in('status', ['Open', 'In Progress'])
     .order('created_at', { ascending: false }).limit(40);
   if (loc.room_number) q = q.eq('room_number', String(loc.room_number));
   var { data: issues, error } = await q;
@@ -1910,13 +1924,37 @@ async function viewOpenIssues() {
     return;
   }
   list.innerHTML = issues.map(function(iss){
+    var started = iss.status === 'In Progress';
+    var buttons = canFixIssue(iss)
+      ? '<div style="display:flex;gap:8px;margin-top:10px;">' +
+          (started ? '' : '<button class="neu-btn" style="flex:1" onclick="setRoomIssueStatus(\'' + escapeAttr(iss.id) + '\',\'In Progress\')">Start</button>') +
+          '<button class="neu-btn primary" style="flex:1" onclick="setRoomIssueStatus(\'' + escapeAttr(iss.id) + '\',\'Resolved\')">✓ Fixed</button>' +
+        '</div>'
+      : '';
     return '<div class="issue-card">' +
-      '<div class="issue-card-title">' + (iss.issue_type || 'Issue') +
-        '<span class="badge' + (iss.priority==='High'?' warn':'') + '" style="margin-left:auto;">' + (iss.priority || '') + '</span></div>' +
-      '<div style="font-size:13.5px;line-height:1.45;white-space:pre-wrap;">' + (iss.issue_description || '') + '</div>' +
+      '<div class="issue-card-title">' + escapeAttr(iss.issue_type || 'Issue') +
+        (started ? '<span class="badge" style="margin-left:8px;">In progress</span>' : '') +
+        '<span class="badge' + (iss.priority==='High'?' warn':'') + '" style="margin-left:auto;">' + escapeAttr(iss.priority || '') + '</span></div>' +
+      '<div style="font-size:13.5px;line-height:1.45;white-space:pre-wrap;">' + escapeAttr(iss.issue_description || '') + '</div>' +
       '<div style="font-size:11.5px;color:var(--ink-2);margin-top:8px;">' + formatLandingWhen(iss.created_at) + '</div>' +
+      buttons +
     '</div>';
   }).join('');
+}
+
+/** Start or close a problem from the room's Issue History (department heads and admins). */
+async function setRoomIssueStatus(issueId, status) {
+  var update = { status: status };
+  if (status === 'Resolved') {
+    update.resolved_at = new Date().toISOString();
+    update.resolved_by = ((currentEmployee.first_name || '') + ' ' + (currentEmployee.last_name || '')).trim() || 'Staff';
+  }
+  var { data, error } = await sb.from('zone_issues').update(update)
+    .eq('id', issueId).eq('facility_id', FACILITY_ID).select('id');
+  if (error) { showToast('Could not update: ' + error.message, 'error'); return; }
+  if (!data || !data.length) { showToast('That change did not save. Please try again, or tell your administrator.', 'error'); return; }
+  showToast(status === 'Resolved' ? 'Marked fixed' : 'Marked in progress', 'success');
+  viewOpenIssues();
 }
 
 /* ── Assets view (read-only) ── */
