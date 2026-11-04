@@ -1126,6 +1126,8 @@ async function renderLanding() {
   // Staff, Housekeeping Manager, and Admin still see the full cleaning-related set.
   var showHousekeepingLinks = !reportOnly && isResidentRoom && !isZoneRoundOnlyManager();
   var showRoomTools = !reportOnly && (showHousekeepingLinks || (!isResidentRoom && !isStation && loc.location_type !== 'eoc_area'));
+  // Equipment is maintenance's job, so the Maintenance Director always sees a room's assets.
+  var showAssets = showRoomTools || (!reportOnly && isMaintenanceDirector());
 
   app.innerHTML = '<div class="center-msg">Loading room…</div>';
   var stats = await loadLandingStats(loc);
@@ -1178,7 +1180,7 @@ async function renderLanding() {
       '<span class="chev">›</span></button>';
 
   var roomList = '';
-  if (showHousekeepingLinks || showRoomTools) {
+  if (showAssets) {
     roomList +=
       '<button class="row" type="button" onclick="viewAssets()">' +
         '<span class="ric">' + svgIcon('box', '#5b6b7f') + '</span>Assets on File' +
@@ -1313,6 +1315,10 @@ function canDoZoneRound() {
 function isZoneRoundOnlyManager() {
   var perm = currentEmployee && currentEmployee.zone_rounds_permission;
   return perm === 'manager' || perm === 'maintenance_director';
+}
+
+function isMaintenanceDirector() {
+  return !!currentEmployee && currentEmployee.zone_rounds_permission === 'maintenance_director';
 }
 
 /** Problem types this person can Start / mark Fixed from a room's Issue History. */
