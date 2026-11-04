@@ -255,6 +255,18 @@ body:not(.landing-mode):not(.login-mode) #app{padding:16px 16px calc(28px + env(
 .asset-name{font-size:15px;font-weight:800;}
 .asset-meta{font-size:12.5px;color:var(--ink-2);margin-top:3px;}
 .asset-condition{font-size:11px;font-weight:700;padding:5px 12px;border-radius:999px;flex-shrink:0;}
+.chk-card{border:1.5px solid var(--cyan);}
+.chk-meta{font-size:12.5px;color:var(--ink-2);margin:-6px 0 8px;}
+.chk-details{font-size:13px;color:var(--ink);background:#f6f9fb;border-radius:10px;padding:8px 10px;margin-bottom:10px;}
+.check-btns.chk-btns{grid-template-columns:1fr 1fr;}
+.chk-pill{display:inline-block;margin-left:8px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--cyan-soft);color:#08707c;vertical-align:2px;}
+.action.primary .chk-pill{background:rgba(255,255,255,.22);color:#fff;}
+.chk-remove{background:none;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font:inherit;font-size:12px;font-weight:700;color:var(--ink-2);cursor:pointer;flex-shrink:0;}
+.chk-empty{font-size:12.5px;color:var(--ink-2);padding:6px 0 4px;}
+.chk-sub{font-size:12px;font-weight:700;color:var(--ink-2);text-transform:uppercase;letter-spacing:.04em;margin:16px 0 8px;}
+.chk-result{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin-bottom:6px;}
+.chk-dot{flex-shrink:0;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;}
+.chk-dot.ok{background:var(--green);} .chk-dot.bad{background:var(--red);}
 .asset-tag-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
 .asset-tag{font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:999px;background:#eef3f6;color:var(--ink-2);}
 
@@ -1130,8 +1142,11 @@ async function renderLanding() {
   var showAssets = showRoomTools || (!reportOnly && isMaintenanceDirector());
 
   app.innerHTML = '<div class="center-msg">Loading room…</div>';
-  var stats = await loadLandingStats(loc);
+  var loaded = await Promise.all([loadLandingStats(loc), canShowZoneRound ? loadChecksForLoc(loc) : Promise.resolve([])]);
+  var stats = loaded[0];
   if (currentLoc !== loc) return;
+  landingChecks = { qr: loc.qr_identifier, list: loaded[1] };
+  var nChecks = loaded[1].length;
 
   var facilityLabel = (FACILITY_NAME || 'A.G. Rhodes');
   var subLine = [locSubtitle(loc), facilityLabel].filter(Boolean).join(' · ');
@@ -1151,7 +1166,8 @@ async function renderLanding() {
     actionsHtml +=
       '<button class="action' + (primaryIsRound ? ' primary' : '') + '" type="button" onclick="startRound()">' +
         '<span class="icon">' + svgIcon('checklist', primaryIsRound ? '#fff' : '#0fb5c9') + '</span>' +
-        '<span class="txt"><span class="t">' + cfg.roundTitle + '</span>' +
+        '<span class="txt"><span class="t">' + cfg.roundTitle +
+          (nChecks ? '<span class="chk-pill">' + nChecks + ' extra check' + (nChecks > 1 ? 's' : '') + '</span>' : '') + '</span>' +
           '<div class="sub">' + (roundDue ? 'Checklist + issue log · round due' : cfg.roundSub) + '</div></span>' +
         '<span class="chev">›</span></button>';
   }
@@ -1352,7 +1368,7 @@ var admissionPhotoFile = null;       // File object staged for upload
 var admissionPhotoPreviewUrl = null; // local object URL for on-page preview
 
 function backToLanding() {
-  roundValues = {}; issueDrafts = {}; extraIssues = [];
+  roundValues = {}; issueDrafts = {}; extraIssues = []; checkValues = {}; roundChecks = [];
   cleaningPurpose = null;
   if (admissionPhotoPreviewUrl) { URL.revokeObjectURL(admissionPhotoPreviewUrl); }
   admissionPhotoFile = null; admissionPhotoPreviewUrl = null;
@@ -1362,7 +1378,7 @@ function backToLanding() {
 }
 
 /* ── Checklist flow ── */
-function startRound() {
+async function startRound() {
   if (isReportOnly()) { showToast('You can report issues here. Rounds are done by building staff.', 'error'); return; }
   if (currentLoc.location_type === 'room' && !canDoZoneRound()) {
     showToast('Only managers, the Maintenance Director and housekeeping managers can complete Zone Defense rounds.', 'error');
@@ -1370,7 +1386,8 @@ function startRound() {
   }
   enterAppPage();
   currentChecklistMode = 'round';
-  roundValues = {}; issueDrafts = {};
+  roundValues = {}; issueDrafts = {}; checkValues = {};
+  roundChecks = landingChecks.qr === currentLoc.qr_identifier ? landingChecks.list : await loadChecksForLoc(currentLoc);
   renderChecklist();
 }
 
@@ -1382,7 +1399,7 @@ function startRoomCleaning() {
   }
   enterAppPage();
   currentChecklistMode = 'cleaning';
-  roundValues = {}; issueDrafts = {};
+  roundValues = {}; issueDrafts = {}; checkValues = {}; roundChecks = [];
   cleaningPurpose = null;
   admissionPhotoFile = null; admissionPhotoPreviewUrl = null;
   renderCleaningPurposeChoice();
@@ -1445,10 +1462,12 @@ function getSections() {
   return EOC_SECTIONS;
 }
 function totalItems() {
-  return getSections().reduce(function(sum, s){ return sum + s.items.length; }, 0);
+  var checks = currentChecklistMode === 'round' ? roundChecks.length : 0;
+  return checks + getSections().reduce(function(sum, s){ return sum + s.items.length; }, 0);
 }
 function answeredCount() {
-  return Object.keys(roundValues).length;
+  var checks = currentChecklistMode === 'round' ? Object.keys(checkValues).length : 0;
+  return checks + Object.keys(roundValues).length;
 }
 
 function renderChecklist() {
@@ -1458,6 +1477,7 @@ function renderChecklist() {
   html += '<div class="rr-header" style="padding:16px 18px;"><div class="rr-name" style="font-size:16px;">' + currentLoc.display_name + '</div>' +
     '<div class="rr-meta">' + locSubtitle(currentLoc) + '</div></div>';
   html += identifierFieldHTML();
+  html += extraChecksHTML();
   if (currentLoc.location_type === 'office' || currentLoc.location_type === 'bathroom' ||
       (currentLoc.location_type === 'room' && currentChecklistMode === 'cleaning')) {
     html += '<button class="neu-btn block" style="margin-bottom:14px;" onclick="showTipsModal()">💡 View Cleaning Instructions</button>';
@@ -1737,6 +1757,11 @@ async function submitRound() {
     return;
   }
 
+  var checksSaved = true;
+  if (currentChecklistMode === 'round' && roundChecks.length) {
+    checksSaved = await saveCheckResults(insertedRound.id, loc, employeeDisplayName() || staffName);
+  }
+
   // Build the full list of issues: auto-flagged from failed items + manually added
   var allIssues = [];
   Object.keys(issueDrafts).forEach(function(key){
@@ -1779,6 +1804,7 @@ async function submitRound() {
   var barEl = document.getElementById('progressBarWrap');
   if (barEl) barEl.remove();
   renderSuccess(allIssues.length);
+  if (!checksSaved) showToast('The round was saved, but the extra checks did not save. Please tell your administrator.', 'error');
 }
 
 /** Upload the staged admission photo; returns its public link, or null (and says so) on failure. */
@@ -2121,7 +2147,240 @@ async function renderAssetDetail(assetId) {
       '<div class="asset-item"><div class="asset-icon">🗓</div><div class="asset-info"><div class="asset-name">Added</div>' +
         '<div class="asset-meta">' + new Date(asset.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) + '</div></div></div>' +
     '</div>' +
+    '<div id="assetChecks"></div>' +
     (loc ? '<div style="text-align:center;"><button class="neu-btn" onclick="window.location.hash=\'round='+loc.qr_identifier+'\';init();">← Go to ' + loc.display_name + '</button></div>' : '');
+  var checksHtml = await assetChecksHTML(asset);
+  var slot = document.getElementById('assetChecks');
+  if (slot && getAssetId() === assetId) slot.innerHTML = checksHtml;
+}
+
+/* ── Manager checks ─────────────────────────────────────────────────────────
+   Extra items the Administrator or a department head asks managers to check:
+   one asset, or every resident room in the building; once, or on every round.
+   They are stored in round_checks; answers go to round_check_results.
+   If those tables don't exist yet, everything here quietly does nothing. */
+var roundChecks = [];          // checks shown in the current round
+var checkValues = {};          // check id -> 'pass' | 'fail'
+var landingChecks = { qr: null, list: [] };
+
+function canPostChecks() {
+  if (!currentEmployee || isReportOnly()) return false;
+  var p = currentEmployee.zone_rounds_permission;
+  return p === 'admin' || p === 'maintenance_director' || p === 'housekeeping_manager';
+}
+/** Department heads post checks for their own department only. */
+function lockedCheckDept() {
+  var p = currentEmployee && currentEmployee.zone_rounds_permission;
+  return p === 'maintenance_director' ? 'Maintenance' : p === 'housekeeping_manager' ? 'Housekeeping' : null;
+}
+function employeeDisplayName() {
+  if (!currentEmployee) return '';
+  return ((currentEmployee.first_name || '') + ' ' + (currentEmployee.last_name || '')).trim() || String(currentEmployee.employee_number || '');
+}
+
+/** Checks open for these rooms: { [qr]: [check, …] }. Asset checks for the room, plus building checks for resident rooms. */
+async function loadOpenChecksForRooms(locs) {
+  var out = {};
+  if (!FACILITY_ID || !locs || !locs.length) return out;
+  try {
+    var qrs = locs.map(function(l){ return l.qr_identifier; });
+    var { data: checks, error } = await sb.from('round_checks').select('*')
+      .eq('facility_id', FACILITY_ID).eq('is_active', true);
+    if (error || !checks || !checks.length) return out;
+    var hasRoom = locs.some(function(l){ return l.location_type === 'room'; });
+    checks = checks.filter(function(c){
+      return c.scope === 'building' ? hasRoom : qrs.indexOf(c.qr_identifier) >= 0;
+    });
+    if (!checks.length) return out;
+
+    // One-time building checks: each room answers once.
+    var onceIds = checks.filter(function(c){ return c.scope === 'building' && !c.repeat; }).map(function(c){ return c.id; });
+    var answered = {};
+    if (onceIds.length) {
+      var { data: res } = await sb.from('round_check_results').select('check_id,qr_identifier')
+        .in('check_id', onceIds).in('qr_identifier', qrs);
+      (res || []).forEach(function(r){ answered[r.check_id + '|' + r.qr_identifier] = true; });
+    }
+    var assetIds = checks.filter(function(c){ return c.asset_id; }).map(function(c){ return c.asset_id; });
+    var assetById = {};
+    if (assetIds.length) {
+      var { data: assets } = await sb.from('room_assets').select('id,asset_name,asset_type').in('id', assetIds);
+      (assets || []).forEach(function(a){ assetById[a.id] = a; });
+    }
+    locs.forEach(function(l){
+      var list = checks.filter(function(c){
+        if (c.scope === 'building') return l.location_type === 'room' && !answered[c.id + '|' + l.qr_identifier];
+        return c.qr_identifier === l.qr_identifier;
+      }).map(function(c){ return Object.assign({}, c, { asset: c.asset_id ? assetById[c.asset_id] || null : null }); });
+      if (list.length) out[l.qr_identifier] = list;
+    });
+  } catch (e) { console.warn('Checks not loaded:', e); }
+  return out;
+}
+async function loadChecksForLoc(loc) {
+  var map = await loadOpenChecksForRooms([loc]);
+  return map[loc.qr_identifier] || [];
+}
+
+function checkWhere(c) {
+  if (c.scope === 'building') return 'Every room';
+  return c.asset ? (ASSET_ICONS[c.asset.asset_type] || '📦') + ' ' + c.asset.asset_name : 'This room';
+}
+function checkFailText(c) {
+  return 'Check failed: ' + c.label + (c.asset ? ' — ' + c.asset.asset_name : '');
+}
+
+function extraChecksHTML() {
+  if (currentChecklistMode !== 'round' || !roundChecks.length) return '';
+  var html = '<div class="card chk-card"><div class="section-title"><span>Extra checks</span>' +
+    '<span class="section-count">' + roundChecks.length + '</span></div>';
+  roundChecks.forEach(function(c) {
+    var v = checkValues[c.id];
+    html +=
+      '<div class="check-row">' +
+        '<div class="check-label">' + escapeAttr(c.label) + '</div>' +
+        '<div class="chk-meta">' + escapeAttr(checkWhere(c)) + ' · ' + (c.repeat ? 'Every round' : 'One time') +
+          (c.created_by ? ' · from ' + escapeAttr(c.created_by) : '') + '</div>' +
+        (c.details ? '<div class="chk-details">' + escapeAttr(c.details) + '</div>' : '') +
+        '<div class="check-btns chk-btns">' +
+          '<button type="button" class="check-btn' + (v === 'pass' ? ' sel-pass' : '') + '" onclick="setCheckResult(\'' + c.id + '\',\'pass\')">✓ OK</button>' +
+          '<button type="button" class="check-btn' + (v === 'fail' ? ' sel-fail' : '') + '" onclick="setCheckResult(\'' + c.id + '\',\'fail\')">✕ Problem</button>' +
+        '</div>' +
+        '<div id="issue-slot-chk_' + c.id + '"></div>' +
+      '</div>';
+  });
+  return html + '</div>';
+}
+
+function setCheckResult(id, val) {
+  var c = roundChecks.find(function(x){ return x.id === id; });
+  if (!c) return;
+  checkValues[id] = val;
+  var key = 'chk_' + id;
+  if (val === 'fail' && !issueDrafts[key]) {
+    issueDrafts[key] = { dept: c.dept || 'Maintenance', description: checkFailText(c), priority: 'Medium', ftag: null };
+  } else if (val !== 'fail') {
+    delete issueDrafts[key];
+  }
+  renderChecklist();
+}
+
+/** After the round is saved: record each answered check and close the ones that are finished. */
+async function saveCheckResults(roundId, loc, who) {
+  var answered = roundChecks.filter(function(c){ return checkValues[c.id]; });
+  if (!answered.length) return true;
+  var now = new Date().toISOString();
+  var rows = answered.map(function(c){
+    var d = issueDrafts['chk_' + c.id];
+    return {
+      check_id: c.id, facility_id: FACILITY_ID, qr_identifier: loc.qr_identifier, round_id: roundId,
+      result: checkValues[c.id], note: checkValues[c.id] === 'fail' && d ? d.description : null,
+      checked_by: who, checked_at: now
+    };
+  });
+  var { error } = await sb.from('round_check_results').insert(rows);
+  if (error) { console.warn('Check results not saved:', error); return false; }
+
+  var closer = { is_active: false, closed_at: now, closed_by: who };
+  var onceAsset = answered.filter(function(c){ return c.scope !== 'building' && !c.repeat; }).map(function(c){ return c.id; });
+  if (onceAsset.length) await sb.from('round_checks').update(closer).in('id', onceAsset);
+  // One-time building checks close once every active resident room has an answer.
+  var onceBuilding = answered.filter(function(c){ return c.scope === 'building' && !c.repeat; });
+  if (onceBuilding.length) {
+    var { count: roomCount } = await sb.from('room_qr_codes').select('id', { count: 'exact', head: true })
+      .eq('facility_id', FACILITY_ID).eq('location_type', 'room').eq('is_active', true);
+    for (var i = 0; i < onceBuilding.length; i++) {
+      var { data: done } = await sb.from('round_check_results').select('qr_identifier').eq('check_id', onceBuilding[i].id);
+      var distinct = new Set((done || []).map(function(r){ return r.qr_identifier; })).size;
+      if (roomCount && distinct >= roomCount) {
+        await sb.from('round_checks').update(Object.assign({}, closer, { closed_by: 'All rooms checked' })).eq('id', onceBuilding[i].id);
+      }
+    }
+  }
+  return true;
+}
+
+/* Asset page: open checks, recent answers, and (for Administrator / department heads) a form to add one. */
+async function assetChecksHTML(asset) {
+  try {
+    var { data: checks, error } = await sb.from('round_checks').select('*')
+      .eq('facility_id', FACILITY_ID).eq('asset_id', asset.id).order('created_at', { ascending: false }).limit(50);
+    if (error) return '';   // tables not set up yet
+    var open = (checks || []).filter(function(c){ return c.is_active; });
+    var ids = (checks || []).map(function(c){ return c.id; });
+    var results = [];
+    if (ids.length) {
+      var { data: res } = await sb.from('round_check_results').select('*').in('check_id', ids)
+        .order('checked_at', { ascending: false }).limit(5);
+      results = res || [];
+    }
+    var byId = {};
+    (checks || []).forEach(function(c){ byId[c.id] = c; });
+    var html = '<div class="card"><div class="section-title"><span>Checks</span><span class="section-count">' + open.length + ' open</span></div>';
+    html += open.length
+      ? open.map(function(c){
+          return '<div class="asset-item"><div class="asset-icon">🔎</div><div class="asset-info"><div class="asset-name">' + escapeAttr(c.label) + '</div>' +
+            '<div class="asset-meta">' + (c.repeat ? 'Every round' : 'One time') + ' · ' + escapeAttr(c.dept || '') +
+            (c.created_by ? ' · from ' + escapeAttr(c.created_by) : '') + '</div></div>' +
+            (canRemoveCheck(c) ? '<button type="button" class="chk-remove" onclick="removeAssetCheck(\'' + c.id + '\',\'' + asset.id + '\')">Remove</button>' : '') +
+          '</div>';
+        }).join('')
+      : '<div class="chk-empty">No open checks on this asset.</div>';
+    if (results.length) {
+      html += '<div class="chk-sub">Last checked</div>' + results.map(function(r){
+        var c = byId[r.check_id] || {};
+        return '<div class="chk-result"><span class="chk-dot ' + (r.result === 'fail' ? 'bad' : 'ok') + '">' + (r.result === 'fail' ? '✕' : '✓') + '</span>' +
+          '<span>' + escapeAttr(c.label || 'Check') + ' — ' + escapeAttr(r.checked_by || '') + ', ' + formatLandingWhen(r.checked_at) + '</span></div>';
+      }).join('');
+    }
+    if (canPostChecks()) {
+      var locked = lockedCheckDept();
+      html += '<div class="chk-sub">Add a check for this asset</div>' +
+        '<div class="field"><label for="ac-label">What should the manager check?</label><input type="text" id="ac-label" maxlength="120" placeholder="e.g. Bed alarm turns on"></div>' +
+        '<div class="field"><label for="ac-details">Details (optional)</label><textarea id="ac-details" rows="2" maxlength="500"></textarea></div>' +
+        '<div class="field"><label for="ac-repeat">How often</label><select id="ac-repeat"><option value="once">One time — until someone checks it</option><option value="repeat">Every round — until removed</option></select></div>' +
+        '<div class="field"><label for="ac-dept">If there\'s a problem, send it to</label>' +
+          (locked
+            ? '<input type="text" id="ac-dept" value="' + locked + '" disabled>'
+            : '<select id="ac-dept">' + ISSUE_DEPTS.map(function(d){ return '<option' + (d === 'Maintenance' ? ' selected' : '') + '>' + d + '</option>'; }).join('') + '</select>') +
+        '</div>' +
+        '<button type="button" class="neu-btn primary block" onclick="saveAssetCheck(\'' + asset.id + '\')">+ Add check</button>';
+    }
+    return html + '</div>';
+  } catch (e) { return ''; }
+}
+
+function canRemoveCheck(c) {
+  if (!canPostChecks()) return false;
+  var locked = lockedCheckDept();
+  return !locked || c.dept === locked;
+}
+
+async function saveAssetCheck(assetId) {
+  if (!canPostChecks()) return;
+  var label = (document.getElementById('ac-label').value || '').trim();
+  if (!label) { showToast('Say what the manager should check.', 'error'); return; }
+  var { data: asset } = await sb.from('room_assets').select('id,qr_identifier').eq('id', assetId).maybeSingle();
+  if (!asset) { showToast('This asset was not found.', 'error'); return; }
+  var row = {
+    facility_id: FACILITY_ID, scope: 'asset', asset_id: asset.id, qr_identifier: asset.qr_identifier,
+    label: label, details: (document.getElementById('ac-details').value || '').trim() || null,
+    repeat: document.getElementById('ac-repeat').value === 'repeat',
+    dept: lockedCheckDept() || document.getElementById('ac-dept').value,
+    created_by: employeeDisplayName(), is_active: true
+  };
+  var { error } = await sb.from('round_checks').insert(row);
+  if (error) { showToast('Could not add the check: ' + error.message, 'error'); return; }
+  showToast('Check added. The manager for this room will see it on their next round.', 'success');
+  renderAssetDetail(assetId);
+}
+
+async function removeAssetCheck(checkId, assetId) {
+  if (!(await showConfirm('Remove this check? Managers will stop seeing it.'))) return;
+  var { error } = await sb.from('round_checks').update({ is_active: false, closed_at: new Date().toISOString(), closed_by: employeeDisplayName() })
+    .eq('id', checkId);
+  if (error) { showToast('Could not remove it: ' + error.message, 'error'); return; }
+  renderAssetDetail(assetId);
 }
 
 /* ── My Completed Cleanings Today (housekeeping self-check) ── */
@@ -2207,6 +2466,7 @@ function viewMyAssignedRooms() {
 
 var lastMyAssignedRooms = [];
 var lastMyAssignedDoneQrs = new Set();
+var lastMyAssignedChecks = {};
 var myAssignedFilter = 'all';
 
 async function loadMyAssignedRooms() {
@@ -2237,6 +2497,11 @@ async function loadMyAssignedRooms() {
 
   lastMyAssignedRooms = qrIds.map(function(qr){ return locByQr[qr]; }).filter(Boolean)
     .sort(function(a,b){ return (+a.room_number||0) - (+b.room_number||0); });
+  // A room with a one-time check still waiting isn't done yet, even if its round is.
+  lastMyAssignedChecks = await loadOpenChecksForRooms(lastMyAssignedRooms);
+  Object.keys(lastMyAssignedChecks).forEach(function(qr){
+    if (lastMyAssignedChecks[qr].some(function(c){ return !c.repeat; })) doneQrs.delete(qr);
+  });
   lastMyAssignedDoneQrs = doneQrs;
   myAssignedFilter = 'all';
 
@@ -2295,6 +2560,8 @@ function renderMyAssignedRoomsPage() {
           '<div class="assign-row-main">' +
             '<div class="assign-row-title-line">' +
               '<span class="assign-row-title">' + r.display_name + '</span>' +
+              ((lastMyAssignedChecks[r.qr_identifier] || []).length
+                ? '<span class="chk-pill">' + lastMyAssignedChecks[r.qr_identifier].length + ' check' + (lastMyAssignedChecks[r.qr_identifier].length > 1 ? 's' : '') + '</span>' : '') +
             '</div>' +
             '<div class="assign-row-sub">' + (r.unit||'') + '</div>' +
           '</div>' +
