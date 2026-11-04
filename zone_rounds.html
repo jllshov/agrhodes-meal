@@ -153,9 +153,6 @@ body.restricted-mode .app-shell { display: block; }
 
 /* ── Main ── */
 .main { flex: 1; padding: 28px 32px; overflow-y: auto; }
-.main:has(#panel-dashboard:not([style*="display: none"])) { padding-top: 0; padding-left: 0; padding-right: 0; }
-#panel-dashboard .today-hero { margin: 0 0 18px; border-radius: 0 0 26px 26px; }
-#panel-dashboard > div[style*="padding:0 4px"] { padding-left: 32px !important; padding-right: 32px !important; }
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; }
 .page-title { font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
 .page-sub { font-size: 13px; color: var(--gray); margin-top: 3px; }
@@ -748,6 +745,124 @@ table.policy-table tr:last-child td { border-bottom: none; }
 
 
 /* ── Today queue (redesign) ── */
+/* ── Today dashboard (bento) ── */
+.main:has(#panel-dashboard:not([style*="display: none"])) { padding: 24px 28px 32px; }
+.zb { max-width: 1440px; margin: 0 auto; }
+.zb-head { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+.zb-date { display: flex; align-items: center; gap: 12px; }
+.zb-day { width: 64px; height: 64px; border-radius: 50%; background: var(--surface); border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800; color: var(--ink); }
+.zb-date-txt { font-size: 14px; font-weight: 700; line-height: 1.25; color: var(--ink); }
+.zb-sep { width: 1px; height: 36px; background: var(--line); }
+.zb-cta { display: inline-flex; align-items: center; gap: 14px; border: none; cursor: pointer; text-align: left;
+  background: var(--orange); color: #fff; border-radius: 999px; padding: 10px 12px 10px 22px; font: inherit;
+  box-shadow: 0 8px 20px rgba(255,107,26,.28); max-width: 100%; }
+.zb-cta:hover:not(:disabled) { background: var(--orange-dark); }
+.zb-cta:disabled { opacity: .6; cursor: default; box-shadow: none; }
+.zb-cta-txt { display: flex; flex-direction: column; min-width: 0; }
+.zb-cta .t { font-size: 14px; font-weight: 800; }
+.zb-cta .s { font-size: 12px; opacity: .88; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zb-cta-arr { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.zb-icon-btn { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); cursor: pointer; color: var(--ink-2); display: inline-flex; align-items: center; justify-content: center; }
+.zb-icon-btn:hover { color: var(--ink); }
+.zb-greet { margin-left: auto; text-align: right; min-width: 0; }
+.zb-hello { font-size: 30px; font-weight: 800; letter-spacing: -.02em; color: var(--ink); line-height: 1.1; }
+.zb-hello-sub { font-size: 20px; font-weight: 600; color: var(--gray-light); letter-spacing: -.01em; margin-top: 2px; }
+
+.zb-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; }
+.zb-c2 { grid-column: span 2; } .zb-c3 { grid-column: span 3; } .zb-c4 { grid-column: span 4; } .zb-c5 { grid-column: span 5; }
+.zb-stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.zb-card { background: var(--surface); border: 1px solid var(--line); border-radius: 24px; padding: 18px 20px; min-width: 0; box-shadow: var(--shadow-out); }
+.zb-stack > .zb-card { flex: 1; }
+.zb-card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.zb-tag { font-size: 13px; font-weight: 800; letter-spacing: .02em; color: var(--ink); }
+.zb-title { font-size: 15px; font-weight: 800; color: var(--ink); }
+.zb-chip { font-size: 11.5px; font-weight: 700; color: var(--ink-2); background: var(--surface-dim); border-radius: 999px; padding: 5px 11px; border: none; }
+.zb-chip-btn { cursor: pointer; font-family: inherit; }
+.zb-chip-btn:hover { color: var(--ink); }
+.zb-ico { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); display: inline-flex; align-items: center; justify-content: center; font-size: 15px; }
+.zb-label { font-size: 11.5px; font-weight: 600; color: var(--gray); margin-bottom: 4px; }
+.zb-big { font-size: 40px; font-weight: 800; letter-spacing: -.03em; color: var(--ink); line-height: 1; }
+.zb-big small { font-size: 18px; font-weight: 700; color: var(--gray-light); letter-spacing: 0; }
+.zb-mid { font-size: 26px; font-weight: 800; letter-spacing: -.02em; color: var(--ink); line-height: 1.1; }
+.zb-mid small { display: block; font-size: 11.5px; font-weight: 600; color: var(--gray); letter-spacing: 0; margin-top: 3px; }
+.zb-sub { font-size: 12px; color: var(--gray); margin-top: 4px; }
+.zb-bar { height: 8px; border-radius: 999px; background: var(--surface-dim); margin: 14px 0 16px; overflow: hidden; }
+.zb-bar i { display: block; height: 100%; width: 0; border-radius: 999px; background: var(--orange); transition: width .8s ease; }
+.zb-split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 14px; border-radius: 16px; background: var(--bg); }
+.zb-foot { margin-top: 14px; font-size: 12px; color: var(--gray); }
+.zb-foot b { color: var(--ink); }
+.zb-mini { display: flex; flex-direction: column; }
+.zb-mini .zb-card-top { margin-bottom: 10px; }
+
+.zb-gauge-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 8px 0; }
+.zb-gauge { position: relative; width: 100%; max-width: 168px; aspect-ratio: 1; border-radius: 50%; background: var(--navy);
+  box-shadow: 0 14px 30px rgba(11,42,74,.25); }
+.zb-gauge svg { position: absolute; inset: 8%; width: 84%; height: 84%; }
+.zb-gauge-txt { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; }
+.zb-gauge-txt b { font-size: 28px; font-weight: 800; letter-spacing: -.02em; }
+.zb-gauge-txt span { font-size: 11px; color: #9fb4c9; margin-top: 2px; }
+.zb-gauge-cap { font-size: 12px; font-weight: 700; color: var(--ink-2); text-align: center; }
+
+.zb-dots { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 14px; }
+.zb-dots i { width: 11px; height: 11px; border-radius: 50%; background: var(--surface-dim); }
+.zb-dots i.on { background: var(--orange); }
+.zb-dots em { font-style: normal; font-size: 11px; color: var(--gray); margin-left: 4px; align-self: center; }
+
+.zb-halls { display: flex; flex-direction: column; gap: 12px; }
+.zb-hall-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: baseline; }
+.zb-hall-name { font-size: 13px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zb-hall-num { font-size: 12px; font-weight: 700; color: var(--ink-2); }
+.zb-hall-bar { grid-column: 1 / -1; height: 8px; border-radius: 999px; background: var(--surface-dim); overflow: hidden; }
+.zb-hall-bar i { display: block; height: 100%; border-radius: 999px; background: var(--orange); }
+.zb-hall-bar i.full { background: var(--green); }
+
+.zb-tabs { display: inline-flex; gap: 4px; background: var(--surface-dim); padding: 4px; border-radius: 999px; }
+.zb-tab { border: none; background: transparent; border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--ink-2); cursor: pointer; }
+.zb-tab.on { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-out); }
+.zb-tab b { font-weight: 800; color: var(--orange-dark); margin-left: 4px; }
+.zb-unit-chips { margin-bottom: 12px; }
+.zb-unit-chips .today-chip { padding: 6px 12px; font-size: 12px; }
+.zb-list { max-height: 360px; overflow-y: auto; border-radius: 16px; }
+.zb-list .today-row { padding: 11px 14px; }
+.zb-list .today-row .title { font-size: 13.5px; }
+
+.zb-delta { font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-2); }
+.zb-delta.up { color: var(--green); } .zb-delta.down { color: var(--red); }
+.zb-spark { margin-top: 10px; }
+.zb-spark svg { width: 100%; height: auto; display: block; overflow: visible; }
+
+.zb-issues { display: flex; flex-direction: column; gap: 10px; }
+.zb-issue { display: flex; gap: 10px; align-items: flex-start; }
+.zb-issue-dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; background: var(--amber); }
+.zb-issue-dot.High { background: var(--red); } .zb-issue-dot.Low { background: var(--green); }
+.zb-issue-t { font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.zb-issue-s { font-size: 12px; color: var(--gray); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.zb-empty { font-size: 12.5px; color: var(--gray); padding: 6px 0; }
+.zb-empty.ok { color: var(--green); font-weight: 700; }
+
+.zb-overview { margin-top: 16px; }
+.zb-overview summary { cursor: pointer; font-size: 14px; font-weight: 800; color: var(--ink); list-style: none; display: flex; align-items: center; gap: 8px; }
+.zb-overview summary::-webkit-details-marker { display: none; }
+.zb-overview summary::after { content: '▾'; margin-left: auto; color: var(--gray); }
+.zb-overview[open] summary::after { content: '▴'; }
+
+@media (max-width: 1199px) {
+  .zb-c2, .zb-c3, .zb-c4, .zb-c5 { grid-column: span 6; }
+  .zb-hello { font-size: 24px; } .zb-hello-sub { font-size: 16px; }
+}
+@media (max-width: 760px) {
+  .main:has(#panel-dashboard:not([style*="display: none"])) { padding: 16px; }
+  .zb-c2, .zb-c3, .zb-c4, .zb-c5 { grid-column: 1 / -1; }
+  .zb-greet { margin-left: 0; text-align: left; width: 100%; order: -1; }
+  .zb-sep { display: none; }
+  .zb-date { width: 100%; }
+  .zb-cta { flex: 1 1 0; min-width: 0; }
+  .zb-icon-btn { flex-shrink: 0; }
+  .zb-gauge { max-width: 150px; }
+}
+@media print { .zb-cta, .zb-icon-btn { display: none; } }
+
 .today-hero{
   background:linear-gradient(160deg,var(--navy) 0%,var(--navy-2) 70%,#155a7a 100%);
   color:#fff; padding:8px 20px 22px; border-radius:0 0 26px 26px; margin: -8px -8px 18px;
@@ -934,123 +1049,117 @@ table.policy-table tr:last-child td { border-bottom: none; }
 
   <!-- ── Today (was Dashboard) ── -->
   <div id="panel-dashboard">
-    <div class="today-hero" id="todayHero">
-      <div class="today-status-row">
-        <span class="today-dot" id="todayDot"></span>
-        <div>
-          <div style="font-size:17px;font-weight:700;" id="todayTopTitle">Today</div>
-          <div style="font-size:12px;color:#b9c9da;" id="dash-date">Today's rounding overview</div>
-        </div>
-        <span class="today-pill" id="todayPill">—</span>
+   <div class="zb">
+    <div class="zb-head">
+      <div class="zb-date">
+        <div class="zb-day" id="zbDay">—</div>
+        <div class="zb-date-txt" id="dash-date">Today</div>
       </div>
-      <h3 id="todayHeroTitle">My rooms today</h3>
-      <p class="sub">Finish due rounds first — one tap opens the room QR flow.</p>
-      <div class="today-stats" id="todayStats">
-        <div class="today-stat"><div class="k">Due</div><div class="v" id="todayStatDue">—</div></div>
-        <div class="today-stat"><div class="k">Done</div><div class="v" id="todayStatDone">—</div></div>
-        <div class="today-stat"><div class="k">Open issues</div><div class="v" id="todayStatIssues">—</div></div>
+      <span class="zb-sep" aria-hidden="true"></span>
+      <button class="zb-cta" type="button" id="todayNextCta" disabled>
+        <span class="zb-cta-txt"><span class="t" id="todayNextTitle">Loading next room…</span><span class="s" id="todayNextSub">Checking today's assignments</span></span>
+        <span class="zb-cta-arr" aria-hidden="true">→</span>
+      </button>
+      <button class="zb-icon-btn no-print" type="button" onclick="loadDashboard()" aria-label="Refresh" title="Refresh"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button>
+      <div class="zb-greet">
+        <div class="zb-hello" id="zbHello">Hello</div>
+        <div class="zb-hello-sub" id="zbHelloSub">Loading today's rounds…</div>
       </div>
     </div>
 
-    <div style="padding:0 4px 8px;">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:8px;" class="no-print">
-        <button class="neu-btn" onclick="loadDashboard()">↻ Refresh</button>
+    <div class="zb-grid">
+      <section class="zb-card zb-c4">
+        <div class="zb-card-top"><span class="zb-tag">Zone rounds</span><span class="zb-chip">Today</span></div>
+        <div class="zb-label">Resident rooms rounded</div>
+        <div class="zb-big" id="zbRoundedBig">—</div>
+        <div class="zb-bar" aria-hidden="true"><i id="zbRoundedBar"></i></div>
+        <div class="zb-split">
+          <div><div class="zb-label">Still due</div><div class="zb-mid" id="todayStatDue">—</div></div>
+          <div><div class="zb-label">Done</div><div class="zb-mid" id="todayStatDone">—</div></div>
+        </div>
+        <div class="zb-foot" id="zbLastRound">—</div>
+      </section>
+
+      <div class="zb-c3 zb-stack">
+        <section class="zb-card zb-mini">
+          <div class="zb-card-top"><span class="zb-ico" aria-hidden="true">⚠</span><button class="zb-chip zb-chip-btn" type="button" onclick="switchTab_direct('issues')">Open list ↗</button></div>
+          <div class="zb-label">Open issues</div>
+          <div class="zb-mid" id="todayStatIssues">—</div>
+        </section>
+        <section class="zb-card zb-mini">
+          <div class="zb-card-top"><span class="zb-ico" aria-hidden="true">🔎</span><button class="zb-chip zb-chip-btn" type="button" onclick="navigateToSubtab('checks')">Manage ↗</button></div>
+          <div class="zb-label">Manager checks open</div>
+          <div class="zb-mid" id="zbChecks">—</div>
+        </section>
       </div>
 
-      <button class="today-cta" type="button" id="todayNextCta" disabled>
-        <span class="ic">📋</span>
-        <span style="flex:1;min-width:0;">
-          <div class="t" id="todayNextTitle">Loading next room…</div>
-          <div class="s" id="todayNextSub">Checking today's assignments</div>
-        </span>
-        <span class="chev">›</span>
-      </button>
+      <section class="zb-c2 zb-gauge-tile">
+        <div class="zb-gauge" role="img" id="zbGauge" aria-label="Completion">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle cx="60" cy="60" r="46" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="10"/>
+            <circle id="zbGaugeArc" cx="60" cy="60" r="46" fill="none" stroke="var(--orange)" stroke-width="10" stroke-linecap="round"
+              stroke-dasharray="289" stroke-dashoffset="289" transform="rotate(-90 60 60)" style="transition:stroke-dashoffset .8s ease"/>
+          </svg>
+          <div class="zb-gauge-txt"><b id="zbGaugePct">—</b><span>All spaces</span></div>
+        </div>
+        <div class="zb-gauge-cap" id="zbGaugeCap">Rounded today</div>
+      </section>
 
-      <div class="today-sect">
-        <h4>Due now</h4>
-        <div class="today-chips" id="todayUnitChips">
+      <section class="zb-card zb-c3">
+        <div class="zb-card-top"><span class="zb-ico" aria-hidden="true">🗂</span><button class="zb-chip zb-chip-btn" type="button" onclick="switchTab_direct('rooms')">Assign ↗</button></div>
+        <div class="zb-mid" id="zbCoverageNum">—</div>
+        <div class="zb-sub" id="zbCoverageSub">Assigned rooms checked today</div>
+        <div class="zb-dots" id="zbCoverageDots"></div>
+      </section>
+
+      <section class="zb-card zb-c4">
+        <div class="zb-card-top"><span class="zb-title">Progress by hall</span><span class="zb-chip">Today</span></div>
+        <div id="zbHalls" class="zb-halls"><div class="zb-empty">Loading…</div></div>
+      </section>
+
+      <section class="zb-card zb-c5 zb-activity">
+        <div class="zb-card-top">
+          <span class="zb-title">Rooms to round</span>
+          <div class="zb-tabs" role="tablist" aria-label="Due or done">
+            <button type="button" role="tab" class="zb-tab on" id="zbTabDue" aria-selected="true" onclick="zbShowList('due')">Due</button>
+            <button type="button" role="tab" class="zb-tab" id="zbTabDone" aria-selected="false" onclick="zbShowList('done')">Done</button>
+          </div>
+        </div>
+        <div class="today-chips zb-unit-chips" id="todayUnitChips">
           <button type="button" class="today-chip sel" data-unit="all" onclick="setTodayUnitFilter('all', this)">All units</button>
           <button type="button" class="today-chip" data-unit="mine" onclick="setTodayUnitFilter('mine', this)">My rooms</button>
         </div>
-        <div class="today-list" id="todayDueList"><div class="today-row"><div class="sub">Loading…</div></div></div>
+        <div class="today-list zb-list" id="todayDueList"><div class="today-row"><div class="sub">Loading…</div></div></div>
+        <div class="today-list zb-list" id="todayDoneList" hidden><div class="today-row"><div class="sub">Loading…</div></div></div>
+      </section>
+
+      <div class="zb-c3 zb-stack">
+        <section class="zb-card">
+          <div class="zb-card-top"><span class="zb-ico" aria-hidden="true">↗</span><span class="zb-delta" id="zbTrendDelta"></span></div>
+          <div class="zb-mid" id="zbTrendNum">—</div>
+          <div class="zb-sub">Zone rounds, last 7 days</div>
+          <div class="zb-spark" id="zbTrend" aria-hidden="true"></div>
+        </section>
+        <section class="zb-card">
+          <div class="zb-card-top"><span class="zb-title">Needs attention</span></div>
+          <div id="recentIssuesList" class="zb-issues"><div class="zb-empty">Loading…</div></div>
+        </section>
       </div>
-
-      <div class="today-sect">
-        <h4>Done today</h4>
-        <div class="today-list" id="todayDoneList"><div class="today-row"><div class="sub">Loading…</div></div></div>
-      </div>
-
-      <details class="today-overview" id="todayOverview">
-        <summary>Overview · heatmap &amp; activity</summary>
-        <div class="today-overview-body">
-          <div class="dash-hero" id="dashHero" style="display:none;"></div>
-
-          <div class="filter-row" id="heatmapFilterRow">
-            <button class="filter-pill active" onclick="setHeatmapFilter('all', this)">All</button>
-            <button class="filter-pill" onclick="setHeatmapFilter('room', this)">Resident Rooms</button>
-            <button class="filter-pill" onclick="setHeatmapFilter('eoc_area', this)">EOC Areas</button>
-            <button class="filter-pill" onclick="setHeatmapFilter('office', this)">Offices</button>
-            <button class="filter-pill" onclick="setHeatmapFilter('bathroom', this)">Bathrooms</button>
-          </div>
-
-          <div class="content-grid">
-            <div style="display:flex;flex-direction:column;gap:16px;">
-              <div class="card heatmap-card" style="max-height:460px;">
-                <div class="card-title">Rounding Heat Map</div>
-                <div class="card-sub">Click any tile to view round details</div>
-                <div id="heatmapGrid"></div>
-              </div>
-
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                <div class="card lead-card" id="leadCardAttention"></div>
-                <div class="card lead-card" id="leadCardLatest"></div>
-              </div>
-
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                <div class="card lead-card" id="leadCardIntake"></div>
-                <div class="card lead-card" id="leadCardAssignments"></div>
-              </div>
-            </div>
-
-            <div style="display:flex;flex-direction:column;gap:16px;">
-              <div class="card">
-                <div class="card-title">Completion</div>
-                <div class="card-sub">Today's progress</div>
-                <div class="donut-wrap">
-                  <svg width="110" height="110" viewBox="0 0 110 110">
-                    <circle cx="55" cy="55" r="42" fill="none" stroke="#E5E7EB" stroke-width="14"/>
-                    <circle id="donutArc" cx="55" cy="55" r="42" fill="none" stroke="#ff6b1a" stroke-width="14"
-                      stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="264"
-                      transform="rotate(-90 55 55)" style="transition:stroke-dashoffset .8s ease"/>
-                  </svg>
-                  <div class="donut-legend">
-                    <div style="font-size:28px;font-weight:700" id="donut-pct">—</div>
-                    <div style="font-size:11px;color:var(--gray)">Complete</div>
-                    <div class="legend-item" style="margin-top:8px"><div class="legend-dot" style="background:var(--orange)"></div><span>Rounded</span></div>
-                    <div class="legend-item"><div class="legend-dot" style="background:#E5E7EB"></div><span>Remaining</span></div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="card" id="maintAttentionCard">
-                <div class="card-title">🔧 Maintenance Attention Needed</div>
-                <div class="card-sub">Open items assigned to Maintenance — from failed zone round checks</div>
-                <div id="maintAttentionList"><div class="no-round-msg" style="padding:16px">Loading…</div></div>
-                <button class="neu-btn block" style="margin-top:10px;" onclick="switchTab_direct('issues')" id="maintAttentionViewAll">View All in Issues →</button>
-              </div>
-
-              <div class="card" id="recentIssuesCard">
-                <div class="card-title">Recent Issues</div>
-                <div class="card-sub">Open items needing attention</div>
-                <div id="recentIssuesList"><div class="no-round-msg" style="padding:16px">Loading…</div></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="activity-scrubber" id="activityScrubber"></div>
-        </div>
-      </details>
     </div>
+
+    <details class="zb-card zb-overview" id="todayOverview">
+      <summary>Heat map · every room and area today</summary>
+      <div class="filter-row" id="heatmapFilterRow" style="margin-top:14px">
+        <button class="filter-pill active" onclick="setHeatmapFilter('all', this)">All</button>
+        <button class="filter-pill" onclick="setHeatmapFilter('room', this)">Resident Rooms</button>
+        <button class="filter-pill" onclick="setHeatmapFilter('eoc_area', this)">EOC Areas</button>
+        <button class="filter-pill" onclick="setHeatmapFilter('office', this)">Offices</button>
+        <button class="filter-pill" onclick="setHeatmapFilter('bathroom', this)">Bathrooms</button>
+      </div>
+      <div class="card-sub" style="margin:6px 0 10px">Click any tile to view round details</div>
+      <div id="heatmapGrid"></div>
+    </details>
+   </div>
   </div>
 
   <!-- ── Rooms ── -->
@@ -1682,132 +1791,6 @@ function setHeatmapFilter(type, btn) {
 
 var heatmapGroupOpenState = JSON.parse(localStorage.getItem('agrhodes_heatmap_open') || '{}');
 
-// Two compact "lead-style" cards under the heat map: highest-priority open issue,
-// and the most recently completed round — same visual shape as the reference (avatar,
-// bold title, subtitle, tag row, status dots).
-function renderLeadCards(locations, roundsToday, openIssues) {
-  var locByQr = {};
-  locations.forEach(function(l){ locByQr[l.qr_identifier] = l; });
-
-  // Card 1 — highest priority open issue right now
-  var attnEl = document.getElementById('leadCardAttention');
-  var sortedIssues = openIssues.slice().sort(function(a,b){
-    var rank = { High:0, Medium:1, Low:2 };
-    return (rank[a.priority] ?? 3) - (rank[b.priority] ?? 3);
-  });
-  var topIssue = sortedIssues[0];
-  if (!topIssue) {
-    attnEl.innerHTML =
-      '<div class="lead-card-header"><div class="lead-card-avatar">✓</div></div>' +
-      '<div class="lead-card-empty">✓ No open issues right now</div>';
-  } else {
-    var loc2 = topIssue.room_number ? 'Room ' + topIssue.room_number : (topIssue.eoc_section||'').replace(/_/g,' ') || 'Facility';
-    var prColor = topIssue.priority==='High' ? 'var(--red)' : topIssue.priority==='Medium' ? 'var(--amber)' : 'var(--green)';
-    attnEl.innerHTML =
-      '<div class="lead-card-header">' +
-        '<div class="lead-card-avatar">⚠</div>' +
-        '<button class="lead-card-action" onclick="navigateToSubtab(\'issues\')" title="View in Issues">↗</button>' +
-      '</div>' +
-      '<div class="lead-card-name">' + loc2 + '</div>' +
-      '<div class="lead-card-sub">' + (topIssue.issue_description || 'No description').slice(0,44) + '</div>' +
-      '<div class="lead-card-tags">' +
-        '<span class="lead-card-tag">' + topIssue.issue_type + '</span>' +
-      '</div>' +
-      '<div class="lead-card-dots">' +
-        '<span class="lead-card-dot" style="background:' + prColor + '"></span>' +
-        '<span style="font-size:10px;color:var(--gray);font-weight:700;">' + topIssue.priority + ' priority · ' + openIssues.length + ' open total</span>' +
-      '</div>';
-  }
-
-  // Card 2 — most recently completed round today
-  var latestEl = document.getElementById('leadCardLatest');
-  var sortedRounds = roundsToday.slice().sort(function(a,b){ return new Date(b.rounded_at) - new Date(a.rounded_at); });
-  var latest = sortedRounds[0];
-  if (!latest) {
-    latestEl.innerHTML =
-      '<div class="lead-card-header"><div class="lead-card-avatar">🕐</div></div>' +
-      '<div class="lead-card-empty">No rounds completed yet today</div>';
-  } else {
-    var loc3 = locByQr[latest.qr_identifier];
-    var time = new Date(latest.rounded_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-    var typeLabels2 = { room:'Zone Round', room_cleaning:'Cleaning', eoc:'EOC Round', office:'Office Clean', bathroom:'Bathroom Clean' };
-    latestEl.innerHTML =
-      '<div class="lead-card-header">' +
-        '<div class="lead-card-avatar" style="background:var(--accent-dim);">✅</div>' +
-        '<button class="lead-card-action" onclick="navigateToSubtab(\'reports\')" title="View in Reports">↗</button>' +
-      '</div>' +
-      '<div class="lead-card-name">' + (loc3 ? loc3.display_name : latest.qr_identifier) + '</div>' +
-      '<div class="lead-card-sub">' + (latest.rounded_by || 'Staff') + ' · ' + time + '</div>' +
-      '<div class="lead-card-tags">' +
-        '<span class="lead-card-tag">' + (typeLabels2[latest.round_type] || latest.round_type) + '</span>' +
-      '</div>' +
-      '<div class="lead-card-dots">' +
-        '<span class="lead-card-dot" style="background:var(--green)"></span>' +
-        '<span style="font-size:10px;color:var(--gray);font-weight:700;">' + roundsToday.length + ' rounded today</span>' +
-      '</div>';
-  }
-}
-
-// Second row — latest resident intake, and how managers are tracking against
-// their assigned rooms today. Neither is shown anywhere else on the Dashboard.
-async function loadLeadCardsRow2() {
-  // Card 3 — most recent Patient Inventory intake
-  var intakeEl = document.getElementById('leadCardIntake');
-  var { data: intakes } = await sb.from('patient_inventory').select('*')
-    .eq('facility_id', FACILITY_ID).order('created_at', {ascending:false}).limit(1);
-  var latestIntake = (intakes||[])[0];
-  if (!latestIntake) {
-    intakeEl.innerHTML =
-      '<div class="lead-card-header"><div class="lead-card-avatar">🧳</div></div>' +
-      '<div class="lead-card-empty">No intakes logged yet</div>';
-  } else {
-    var itemCount = (latestIntake.items||[]).length;
-    var dt = new Date(latestIntake.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    intakeEl.innerHTML =
-      '<div class="lead-card-header">' +
-        '<div class="lead-card-avatar">🧳</div>' +
-        '<button class="lead-card-action" onclick="navigateToSubtab(\'inventory\')" title="View in Patient Inventory">↗</button>' +
-      '</div>' +
-      '<div class="lead-card-name">' + escHtml(latestIntake.resident_name) + '</div>' +
-      '<div class="lead-card-sub">' + escHtml(latestIntake.room_number||'') + ' · ' + escHtml(latestIntake.completed_by) + '</div>' +
-      '<div class="lead-card-tags"><span class="lead-card-tag">Latest Intake</span></div>' +
-      '<div class="lead-card-dots">' +
-        '<span class="lead-card-dot" style="background:var(--accent)"></span>' +
-        '<span style="font-size:10px;color:var(--gray);font-weight:700;">' + itemCount + ' items · ' + dt + '</span>' +
-      '</div>';
-  }
-
-  // Card 4 — manager assignment coverage today
-  var assignEl = document.getElementById('leadCardAssignments');
-  var { data: assignments } = await sb.from('room_assignments').select('*').eq('facility_id', FACILITY_ID);
-  if (!assignments || !assignments.length) {
-    assignEl.innerHTML =
-      '<div class="lead-card-header"><div class="lead-card-avatar">🗂</div></div>' +
-      '<div class="lead-card-empty">No rooms assigned yet</div>';
-  } else {
-    var todayStart = new Date(); todayStart.setHours(0,0,0,0);
-    var { data: roundsToday2 } = await sb.from('zone_rounds').select('qr_identifier')
-      .eq('facility_id', FACILITY_ID).eq('round_type','room').gte('rounded_at', todayStart.toISOString());
-    var doneQrs2 = new Set((roundsToday2||[]).map(function(r){ return r.qr_identifier; }));
-    var doneCount2 = assignments.filter(function(a){ return doneQrs2.has(a.qr_identifier); }).length;
-    var managerCount = new Set(assignments.map(function(a){ return a.manager_name; })).size;
-    var pct2 = Math.round((doneCount2/assignments.length)*100);
-    var color2 = pct2 === 100 ? 'var(--green)' : pct2 === 0 ? 'var(--red)' : 'var(--amber)';
-    assignEl.innerHTML =
-      '<div class="lead-card-header">' +
-        '<div class="lead-card-avatar" style="background:var(--accent-dim);">🗂</div>' +
-        '<button class="lead-card-action" onclick="navigateToSubtab(\'rooms\')" title="View Assignments">↗</button>' +
-      '</div>' +
-      '<div class="lead-card-name">' + doneCount2 + ' / ' + assignments.length + ' Checked</div>' +
-      '<div class="lead-card-sub">Across ' + managerCount + ' manager' + (managerCount!==1?'s':'') + '</div>' +
-      '<div class="lead-card-tags"><span class="lead-card-tag">Assignment Coverage</span></div>' +
-      '<div class="lead-card-dots">' +
-        '<span class="lead-card-dot" style="background:' + color2 + '"></span>' +
-        '<span style="font-size:10px;color:var(--gray);font-weight:700;">' + pct2 + '% complete today</span>' +
-      '</div>';
-  }
-}
-
 function renderHeatmap(filterType) {
   var hmGrid = document.getElementById('heatmapGrid');
   if (!hmGrid) return;
@@ -2045,6 +2028,8 @@ function renderTodayQueueLists() {
 
   var dueCount = due.length;
   var doneCount = done.length;
+  zbSet('zbTabDue', 'Due<b>' + dueCount + '</b>');
+  zbSet('zbTabDone', 'Done<b>' + doneCount + '</b>');
   var issueCount = Object.keys(todayQueueCache.issueRooms).length;
   var highCount = todayQueueCache.highPriority || 0;
   var dueStat = document.getElementById('todayStatDue');
@@ -2071,14 +2056,153 @@ async function hydrateTodayAssignments() {
   todayQueueCache.assigns = new Set((assigns || []).map(function(a){ return a.qr_identifier; }));
 }
 
+/* ── Today dashboard (bento) ── */
+function zbShowList(which) {
+  var due = which !== 'done';
+  var dueEl = document.getElementById('todayDueList'), doneEl = document.getElementById('todayDoneList');
+  if (dueEl) dueEl.hidden = !due;
+  if (doneEl) doneEl.hidden = due;
+  var a = document.getElementById('zbTabDue'), b = document.getElementById('zbTabDone');
+  if (a) { a.classList.toggle('on', due); a.setAttribute('aria-selected', String(due)); }
+  if (b) { b.classList.toggle('on', !due); b.setAttribute('aria-selected', String(!due)); }
+}
+
+function zbSet(id, html) { var el = document.getElementById(id); if (el) el.innerHTML = html; }
+
+function zbRender(d) {
+  var rooms = todayQueueCache.rooms || [];
+  var zoneDone = todayQueueCache.zoneDone || {};
+  var doneRooms = rooms.filter(function(r) { return zoneDone[r.qr_identifier]; }).length;
+  var duePct = rooms.length ? Math.round(doneRooms / rooms.length * 100) : 0;
+
+  // Header: date + greeting
+  var now = new Date();
+  zbSet('zbDay', String(now.getDate()));
+  zbSet('dash-date', escHtml(now.toLocaleDateString('en-US', { weekday: 'short' })) + ',<br>' + escHtml(now.toLocaleDateString('en-US', { month: 'long' })));
+  var admin = getAdminSession();
+  var h = now.getHours();
+  var hello = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  zbSet('zbHello', escHtml(hello + (admin && admin.first_name ? ', ' + admin.first_name : '')) + ' 👋');
+  var left = rooms.length - doneRooms;
+  zbSet('zbHelloSub', !rooms.length ? 'No resident rooms set up yet'
+    : left ? left + ' room' + (left !== 1 ? 's' : '') + ' still need a round today' : 'Every room has been rounded today');
+
+  // Rounds card
+  zbSet('zbRoundedBig', doneRooms + '<small> / ' + rooms.length + '</small>');
+  var bar = document.getElementById('zbRoundedBar');
+  if (bar) bar.style.width = duePct + '%';
+  var latest = (d.roundsToday || []).slice().sort(function(a, b) { return new Date(b.rounded_at) - new Date(a.rounded_at); })[0];
+  if (latest) {
+    var loc = (d.locations || []).find(function(l) { return l.qr_identifier === latest.qr_identifier; });
+    zbSet('zbLastRound', 'Last round <b>' + escHtml(new Date(latest.rounded_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })) + '</b> · ' +
+      escHtml(loc ? loc.display_name : latest.qr_identifier) + (latest.rounded_by ? ' · ' + escHtml(latest.rounded_by) : ''));
+  } else {
+    zbSet('zbLastRound', 'No rounds yet today');
+  }
+
+  // Gauge: every space (rooms, EOC areas, offices, bathrooms, stations)
+  var locs = d.locations || [];
+  var roundedIds = new Set((d.roundsToday || []).map(function(r) { return r.qr_identifier; }));
+  var allPct = locs.length ? Math.round(locs.filter(function(l) { return roundedIds.has(l.qr_identifier); }).length / locs.length * 100) : 0;
+  var arc = document.getElementById('zbGaugeArc');
+  if (arc) arc.style.strokeDashoffset = String(289 - 289 * allPct / 100);
+  zbSet('zbGaugePct', allPct + '%');
+  var g = document.getElementById('zbGauge');
+  if (g) g.setAttribute('aria-label', allPct + '% of all spaces rounded today');
+  zbSet('zbGaugeCap', roundedIds.size + ' of ' + locs.length + ' spaces');
+
+  // Progress by hall (resident rooms)
+  var halls = {}, order = [];
+  rooms.forEach(function(r) {
+    var u = r.unit || 'Other';
+    if (!halls[u]) { halls[u] = { total: 0, done: 0 }; order.push(u); }
+    halls[u].total++;
+    if (zoneDone[r.qr_identifier]) halls[u].done++;
+  });
+  order = HALLS.filter(function(x) { return halls[x]; }).concat(order.filter(function(x) { return HALLS.indexOf(x) < 0; }).sort());
+  zbSet('zbHalls', order.length ? order.map(function(u) {
+    var x = halls[u], p = Math.round(x.done / x.total * 100);
+    return '<div class="zb-hall-row" title="' + escHtml(u + ': ' + x.done + ' of ' + x.total + ' rounded') + '">' +
+      '<span class="zb-hall-name">' + escHtml(u) + '</span><span class="zb-hall-num">' + x.done + ' / ' + x.total + '</span>' +
+      '<span class="zb-hall-bar"><i class="' + (p === 100 ? 'full' : '') + '" style="width:' + Math.max(p, x.done ? 3 : 0) + '%"></i></span></div>';
+  }).join('') : '<div class="zb-empty">No resident rooms set up yet</div>');
+
+  zbLoadCoverage(zoneDone);
+  zbLoadChecks();
+  zbLoadTrend();
+}
+
+async function zbLoadCoverage(zoneDone) {
+  var { data: assigns, error } = await sb.from('room_assignments').select('qr_identifier,employee_id')
+    .eq('facility_id', FACILITY_ID).eq('assignment_type', 'zone_round');
+  if (error || !assigns || !assigns.length) {
+    zbSet('zbCoverageNum', '0');
+    zbSet('zbCoverageSub', error ? 'Could not load assignments' : 'No rooms assigned to managers yet');
+    zbSet('zbCoverageDots', '');
+    return;
+  }
+  var done = assigns.filter(function(a) { return zoneDone[a.qr_identifier]; }).length;
+  var managers = new Set(assigns.map(function(a) { return a.employee_id; })).size;
+  zbSet('zbCoverageNum', done + '<small style="display:inline;font-size:16px;color:var(--gray-light)"> / ' + assigns.length + '</small>');
+  zbSet('zbCoverageSub', 'Assigned rooms checked today · ' + managers + ' manager' + (managers !== 1 ? 's' : ''));
+  var cap = 60, shown = Math.min(assigns.length, cap), onDots = Math.round(done / assigns.length * shown);
+  var dots = '';
+  for (var i = 0; i < shown; i++) dots += '<i class="' + (i < onDots ? 'on' : '') + '"></i>';
+  if (assigns.length > cap) dots += '<em>each dot ≈ ' + (assigns.length / cap).toFixed(1) + ' rooms</em>';
+  zbSet('zbCoverageDots', dots);
+}
+
+async function zbLoadChecks() {
+  var { count, error } = await sb.from('round_checks').select('id', { count: 'exact', head: true })
+    .eq('facility_id', FACILITY_ID).eq('is_active', true);
+  if (error) { zbSet('zbChecks', '—<small>Not set up</small>'); return; }
+  zbSet('zbChecks', (count || 0) + '<small>' + (count ? 'Waiting on managers' : 'Nothing waiting') + '</small>');
+}
+
+async function zbLoadTrend() {
+  var days = 14, start = new Date(); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - (days - 1));
+  var { data, error } = await sb.from('zone_rounds').select('rounded_at')
+    .eq('facility_id', FACILITY_ID).eq('round_type', 'room').gte('rounded_at', start.toISOString()).limit(5000);
+  if (error) { zbSet('zbTrendNum', '—'); return; }
+  var buckets = [];
+  for (var i = 0; i < days; i++) { var dd = new Date(start); dd.setDate(start.getDate() + i); buckets.push({ day: dd, n: 0 }); }
+  (data || []).forEach(function(r) {
+    var t = new Date(r.rounded_at); t.setHours(0, 0, 0, 0);
+    var idx = Math.round((t - start) / 86400000);
+    if (idx >= 0 && idx < days) buckets[idx].n++;
+  });
+  var last7 = buckets.slice(7).reduce(function(s, b) { return s + b.n; }, 0);
+  var prev7 = buckets.slice(0, 7).reduce(function(s, b) { return s + b.n; }, 0);
+  zbSet('zbTrendNum', String(last7));
+  var delta = document.getElementById('zbTrendDelta');
+  if (delta) {
+    if (prev7) {
+      var ch = Math.round((last7 - prev7) / prev7 * 100);
+      delta.textContent = (ch > 0 ? '+' : '') + ch + '% vs prior week';
+      delta.className = 'zb-delta ' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '');
+    } else { delta.textContent = ''; delta.className = 'zb-delta'; delta.style.display = 'none'; }
+    if (prev7) delta.style.display = '';
+  }
+  var W = 240, H = 64, pad = 5, max = Math.max.apply(null, buckets.map(function(b) { return b.n; }).concat([1]));
+  var pts = buckets.map(function(b, i) { return [pad + i * (W - pad * 2) / (days - 1), H - pad - b.n / max * (H - pad * 2)]; });
+  var line = pts.map(function(p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ');
+  var area = 'M' + pts[0][0].toFixed(1) + ',' + (H - pad) + ' L' + line.replace(/ /g, ' L') + ' L' + pts[days - 1][0].toFixed(1) + ',' + (H - pad) + ' Z';
+  var colW = (W - pad * 2) / (days - 1);
+  var hits = buckets.map(function(b, i) {
+    return '<rect x="' + (pts[i][0] - colW / 2).toFixed(1) + '" y="0" width="' + colW.toFixed(1) + '" height="' + H + '" fill="transparent"><title>' +
+      escHtml(b.day.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ': ' + b.n + ' round' + (b.n !== 1 ? 's' : '')) + '</title></rect>';
+  }).join('');
+  var lp = pts[days - 1];
+  zbSet('zbTrend', '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Zone rounds per day, last 14 days">' +
+    '<path d="' + area + '" fill="rgba(255,107,26,.10)"/>' +
+    '<polyline points="' + line + '" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
+    '<circle cx="' + lp[0].toFixed(1) + '" cy="' + lp[1].toFixed(1) + '" r="3.5" fill="var(--orange)" stroke="#fff" stroke-width="2" vector-effect="non-scaling-stroke"/>' +
+    hits + '</svg>');
+}
+
 /* ── Dashboard ── */
 async function loadDashboard() {
   var today = new Date();
-  var dashDate = document.getElementById('dash-date');
-  if (dashDate) dashDate.textContent =
-    today.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
-
-  loadActivityScrubber();
 
   var { data: locations } = await sb.from('room_qr_codes').select('*')
     .eq('facility_id', FACILITY_ID).eq('is_active', true);
@@ -2099,80 +2223,28 @@ async function loadDashboard() {
     ? Math.round((roundedIds.size / locations.length) * 100) : 0;
   var remaining = (locations||[]).length - roundedIds.size;
 
-  // Facility profile card (kept for overview section)
-  var dashHero = document.getElementById('dashHero');
-  if (dashHero) dashHero.innerHTML =
-    '<div class="facility-card">' +
-      '<div class="facility-avatar">AG</div>' +
-      '<div><div class="facility-name">' + (FACILITY_NAME || 'A.G. Rhodes') + '</div>' +
-      '<div class="facility-sub">Skilled Nursing Facility</div></div>' +
-    '</div>' +
-    '<div class="stat-strip">' +
-      statReadout('Rounded Today', roundedIds.size, remaining>0?'gray':'green') +
-      statReadout('Remaining', remaining, remaining>0?'amber':'green') +
-      statReadout('Issues Open', (openIssues||[]).length, (openIssues||[]).length>0?'amber':'green') +
-      statReadout('High Priority', highPriority, highPriority>0?'red':'green') +
-      statReadout('Completion', completionRate+'%', 'accent') +
-    '</div>';
-
-  // Donut
-  var arc = document.getElementById('donutArc');
-  var circumference = 264;
-  if (arc) arc.style.strokeDashoffset = circumference - (completionRate/100)*circumference;
-  var donutPct = document.getElementById('donut-pct');
-  if (donutPct) donutPct.textContent = completionRate + '%';
-
   // Heat map — grouped by hall/area for readability
   lastDashLocations = locations || [];
   lastDashRoundsToday = roundsToday || [];
   lastDashOpenIssues = openIssues || [];
   renderHeatmap(currentHeatmapFilter);
-  renderLeadCards(locations || [], roundsToday || [], openIssues || []);
-  loadLeadCardsRow2();
 
-  // Maintenance attention widget — the specific items a maintenance director needs to act on
-  var maintList = document.getElementById('maintAttentionList');
-  var maintItems = (openIssues||[]).filter(function(i){ return i.issue_type === 'Maintenance'; });
-  if (maintList) {
-    if (!maintItems.length) {
-      maintList.innerHTML = '<div class="no-round-msg" style="padding:16px;font-size:12px;color:var(--green)">✓ Nothing needs maintenance right now</div>';
-      var maintBtn = document.getElementById('maintAttentionViewAll');
-      if (maintBtn) maintBtn.style.display = 'none';
-    } else {
-      var maintBtn2 = document.getElementById('maintAttentionViewAll');
-      if (maintBtn2) maintBtn2.style.display = 'block';
-      maintList.innerHTML = maintItems.slice(0,5).map(function(i){
-        var location = i.room_number ? 'Room ' + i.room_number : (i.eoc_section||'').replace(/_/g,' ');
-        return '<div class="issue-item" style="cursor:pointer;" onclick="openMaintIssueDetail(\''+i.id+'\')">' +
-          '<div class="issue-dot '+i.priority+'"></div>' +
-          '<div class="issue-info">' +
-            '<div class="issue-type-label">' + (location || 'Facility') + '</div>' +
-            '<div class="issue-desc-label">'+(i.issue_description||'—')+'</div>' +
-          '</div>' +
-          '<button class="neu-btn primary" style="font-size:10.5px;padding:6px 10px;flex-shrink:0;" onclick="event.stopPropagation();resolveIssue(\''+i.id+'\');setTimeout(loadDashboard,400);">✓ Fixed</button>' +
-          '</div>';
-      }).join('');
-    }
-  }
-
-  // Recent issues sidebar
+  // Needs attention: highest priority first, then newest
   var issueList = document.getElementById('recentIssuesList');
-  var recent = (openIssues||[]).slice(0,5);
+  var rank = { High: 0, Medium: 1, Low: 2 };
+  var recent = (openIssues || []).slice().sort(function(a, b) {
+    return ((rank[a.priority] ?? 3) - (rank[b.priority] ?? 3)) || (new Date(b.created_at) - new Date(a.created_at));
+  }).slice(0, 4);
   if (issueList) {
-    if (!recent.length) {
-      issueList.innerHTML = '<div class="no-round-msg" style="padding:16px;font-size:12px;color:var(--green)">✓ No open issues</div>';
-    } else {
-      issueList.innerHTML = recent.map(function(i){
-        return '<div class="issue-item">' +
-          '<div class="issue-dot '+i.priority+'"></div>' +
-          '<div class="issue-info">' +
-            '<div class="issue-type-label">'+i.issue_type+(i.ftag ? ' · <span title="'+((ftagInfo(i.ftag)||{}).title||'')+'">'+i.ftag+'</span>' : '')+'</div>' +
-            '<div class="issue-desc-label">'+(i.issue_description||'—')+'</div>' +
-          '</div>' +
-          '<span class="issue-badge badge-'+i.priority+'">'+i.priority+'</span>' +
-          '</div>';
-      }).join('');
-    }
+    issueList.innerHTML = !recent.length
+      ? '<div class="zb-empty ok">✓ No open issues</div>'
+      : recent.map(function(i) {
+          var where = i.room_number ? 'Room ' + i.room_number : (i.eoc_section || '').replace(/_/g, ' ') || 'Facility';
+          return '<div class="zb-issue"><span class="zb-issue-dot ' + escHtml(i.priority) + '" title="' + escHtml(i.priority) + ' priority"></span>' +
+            '<div style="min-width:0"><div class="zb-issue-t">' + escHtml(where) + ' · ' + escHtml(i.issue_type) + '</div>' +
+            '<div class="zb-issue-s">' + escHtml(i.issue_description || '—') + '</div></div></div>';
+        }).join('') +
+        ((openIssues || []).length > 4 ? '<button class="zb-chip zb-chip-btn" type="button" style="align-self:flex-start" onclick="switchTab_direct(\'issues\')">All ' + openIssues.length + ' open ↗</button>' : '');
   }
 
   // Populate Today queue
@@ -2199,42 +2271,7 @@ async function loadDashboard() {
   await hydrateTodayAssignments();
   buildTodayUnitChips(rooms);
   renderTodayQueueLists();
-}
-
-async function loadActivityScrubber() {
-  var el = document.getElementById('activityScrubber');
-  if (!el) return;
-  var now = new Date();
-  var weeks = [];
-  // Build the last 8 week buckets, oldest first, each starting on a Sunday
-  var currentSunday = new Date(now);
-  currentSunday.setDate(currentSunday.getDate() - currentSunday.getDay());
-  for (var i = 7; i >= 0; i--) {
-    var start = new Date(currentSunday);
-    start.setDate(start.getDate() - i*7);
-    var end = new Date(start);
-    end.setDate(end.getDate() + 7);
-    weeks.push({ start: start, end: end });
-  }
-  var earliest = weeks[0].start.toISOString();
-  var { data: rounds } = await sb.from('zone_rounds').select('rounded_at')
-    .eq('facility_id', FACILITY_ID).gte('rounded_at', earliest);
-
-  el.innerHTML = weeks.map(function(w){
-    var count = (rounds||[]).filter(function(r){
-      var d = new Date(r.rounded_at);
-      return d >= w.start && d < w.end;
-    }).length;
-    var isCurrent = i_current(w, now);
-    var label = w.start.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    return '<div class="scrubber-week' + (isCurrent?' current':'') + '">' +
-      (count>0 ? '<span class="scrubber-badge">'+count+'</span>' : '') +
-      '<span class="scrubber-dot"></span>' +
-      '<span>' + label + '</span>' +
-    '</div>';
-  }).join('');
-
-  function i_current(w, now) { return now >= w.start && now < w.end; }
+  zbRender({ locations: locations || [], roundsToday: roundsToday || [] });
 }
 
 function statReadout(label, value, colorKey) {
