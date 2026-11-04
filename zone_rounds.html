@@ -321,6 +321,15 @@ body.restricted-mode .app-shell { display: block; }
   padding: 12px 14px; border-radius: var(--r-sm); margin-bottom: 8px;
   background: var(--bg); box-shadow: var(--shadow-out);
 }
+.chk-scope { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-bottom: 14px; font-size: 13px; font-weight: 600; }
+.chk-scope label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.chk-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px; margin-bottom: 14px; }
+.chk-grid .chk-wide { grid-column: 1 / -1; }
+.chk-grid select[size] { height: auto; padding: 6px; }
+.chk-line { font-size: 12px; color: var(--ink-2); margin-top: 3px; }
+.chk-muted { color: var(--gray-light); font-size: 11.5px; }
+.chk-fail-note { margin-top: 4px; font-size: 12px; color: var(--red); }
+@media (max-width: 640px) { .chk-grid { grid-template-columns: minmax(0,1fr); } }
 .issue-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
 .issue-dot.High { background: var(--red); box-shadow: 0 0 6px rgba(239,68,68,.5); }
 .issue-dot.Medium { background: var(--amber); }
@@ -853,6 +862,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
         <button class="nav-item" id="drawer-reports" onclick="drawerNav('reports')"><span class="nav-icon">📄</span> Reports</button>
         <button class="nav-item" id="drawer-policies" onclick="drawerNav('policies')"><span class="nav-icon">📚</span> Policies & Procedures</button>
         <button class="nav-item" id="drawer-surveyprep" onclick="drawerNav('surveyprep')"><span class="nav-icon">🔍</span> Survey Prep</button>
+        <button class="nav-item" id="drawer-checks" onclick="drawerNav('checks')"><span class="nav-icon">🔎</span> Manager Checks</button>
         <button class="nav-item" onclick="window.print();closeDrawer();"><span class="nav-icon">🖨</span> Print QR Codes</button>
       </div>
     </div>
@@ -896,6 +906,7 @@ table.policy-table tr:last-child td { border-bottom: none; }
         <button onclick="navigateToSubtab('reports')"><span class="nav-icon">📄</span> Reports</button>
         <button onclick="navigateToSubtab('policies')"><span class="nav-icon">📚</span> Policies & Procedures</button>
         <button onclick="navigateToSubtab('surveyprep')"><span class="nav-icon">🔍</span> Survey Prep</button>
+        <button onclick="navigateToSubtab('checks')"><span class="nav-icon">🔎</span> Manager Checks</button>
       </div>
     </div>
   </div>
@@ -1473,6 +1484,14 @@ table.policy-table tr:last-child td { border-bottom: none; }
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- ── Manager Checks ── -->
+  <div class="panel" id="panel-checks" style="display:none;">
+    <div class="page-header">
+      <div><div class="page-title">Manager Checks</div><div class="page-sub">Extra things for managers to check on their rounds — one asset, or every room</div></div>
+    </div>
+    <div id="checksManager"></div>
   </div>
 
   <!-- ── Survey Prep ── -->
@@ -3876,11 +3895,11 @@ var NAV_GROUP_MAP = {
   eoc: 'manage', facilities: 'manage', inventory: 'manage',
   hkassign: 'manage', dccalendar: 'manage',
   compliance: 'manage',
-  reports: 'manage', policies: 'manage', surveyprep: 'manage'
+  reports: 'manage', policies: 'manage', surveyprep: 'manage', checks: 'manage'
 };
 
 function switchTab_direct(tab) {
-  ['dashboard','rooms','eoc','facilities','issues','compliance','reports','policies','inventory','surveyprep','hkassign','dccalendar'].forEach(function(p){
+  ['dashboard','rooms','eoc','facilities','issues','compliance','reports','policies','inventory','surveyprep','hkassign','dccalendar','checks'].forEach(function(p){
     document.getElementById('panel-'+p).style.display = p===tab ? 'block' : 'none';
   });
   currentPanel = tab;
@@ -3896,6 +3915,7 @@ function switchTab_direct(tab) {
   if (tab==='surveyprep') initSurveyPrepPanel();
   if (tab==='hkassign') initHkAssignPanel();
   if (tab==='dccalendar') initDcCalendarPanel();
+  if (tab==='checks') initChecksPanel();
 }
 
 function updateNavActiveState(tab) {
@@ -5628,6 +5648,231 @@ async function bootRestrictedSurveyPrep(emp) {
   startSurveyPrepAssessment(assignment.department_key, true);
 }
 
+/* ── Manager Checks ──────────────────────────────────────────────────────────
+   Administrator (Manage → Manager Checks) and department heads (their own
+   department only) post extra items for managers to check on their rounds:
+   one asset, or every resident room; once, or on every round.
+   Tables: round_checks + round_check_results (sql/2026-11-04_round_checks.sql). */
+var CHECK_DEPTS = ['Maintenance','Housekeeping','Nursing','Pest Control','Safety','Infection Control','Dietary','Social Services','Activities','Other'];
+var chkState = { el: null, lockedDept: null, by: '', assets: [], locByQr: {} };
+
+function chkEsc(v) {
+  return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function chkWhen(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+    new Date(ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+function chkLocLabel(l) {
+  if (!l) return '';
+  return (l.location_type === 'room' ? 'Room ' + (l.room_number || l.display_name) : l.display_name) + (l.unit ? ' · ' + l.unit : '');
+}
+
+function initChecksPanel() {
+  var s = getAdminSession();
+  renderChecksManager('checksManager', { lockedDept: null, by: s ? (s.first_name + ' ' + s.last_name) : 'Administrator' });
+}
+
+async function renderChecksManager(containerId, opts) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  chkState = { el: el, lockedDept: opts.lockedDept || null, by: opts.by || '', assets: [], locByQr: {} };
+  el.innerHTML = '<div class="no-round-msg">Loading…</div>';
+
+  var probe = await sb.from('round_checks').select('id').limit(1);
+  if (probe.error) {
+    el.innerHTML = '<div class="card"><div class="card-title">Manager Checks are not set up yet</div>' +
+      '<div class="card-sub" style="margin-bottom:0">Run the setup SQL (sql/2026-11-04_round_checks.sql) in the Zone Defense Supabase project, then reload this page.</div></div>';
+    return;
+  }
+  var got = await Promise.all([
+    sb.from('room_assets').select('id,asset_name,asset_type,qr_identifier').eq('facility_id', FACILITY_ID).eq('is_active', true),
+    sb.from('room_qr_codes').select('qr_identifier,display_name,room_number,unit,location_type').eq('facility_id', FACILITY_ID).eq('is_active', true)
+  ]);
+  (got[1].data || []).forEach(function(l) { chkState.locByQr[l.qr_identifier] = l; });
+  chkState.assets = (got[0].data || []).filter(function(a) { return chkState.locByQr[a.qr_identifier]; }).sort(function(a, b) {
+    var la = chkState.locByQr[a.qr_identifier], lb = chkState.locByQr[b.qr_identifier];
+    return String(la.unit || '').localeCompare(String(lb.unit || '')) ||
+      String(la.room_number || la.display_name).localeCompare(String(lb.room_number || lb.display_name), undefined, { numeric: true }) ||
+      a.asset_name.localeCompare(b.asset_name);
+  });
+  chkState.roomCount = (got[1].data || []).filter(function(l) { return l.location_type === 'room'; }).length;
+
+  var deptField = chkState.lockedDept
+    ? '<input type="text" value="' + chkEsc(chkState.lockedDept) + '" disabled>'
+    : '<select id="chk-dept">' + CHECK_DEPTS.map(function(d) { return '<option>' + d + '</option>'; }).join('') + '</select>';
+  el.innerHTML =
+    '<div class="card" style="margin-bottom:20px;">' +
+      '<div class="card-title">Add a check</div>' +
+      '<div class="card-sub">It shows up in the round for the manager assigned to the room. A problem they find goes to ' +
+        (chkState.lockedDept ? chkEsc(chkState.lockedDept) : 'the department you pick') + '.</div>' +
+      '<div class="chk-scope" role="radiogroup" aria-label="Where">' +
+        '<label><input type="radio" name="chk-scope" value="asset" checked onchange="chkScopeChanged()"> A specific asset</label>' +
+        '<label><input type="radio" name="chk-scope" value="building" onchange="chkScopeChanged()"> Every resident room (' + chkState.roomCount + ')</label>' +
+      '</div>' +
+      '<div class="chk-grid">' +
+        '<div class="field chk-wide" id="chk-asset-wrap"><label for="chk-asset-filter">Asset</label>' +
+          '<input type="search" id="chk-asset-filter" placeholder="Search room, hall or asset…" oninput="chkFilterAssets()" style="margin-bottom:8px">' +
+          '<select id="chk-asset" size="6"></select></div>' +
+        '<div class="field chk-wide"><label for="chk-label">What should the manager check?</label>' +
+          '<input type="text" id="chk-label" maxlength="120" placeholder="e.g. Bed alarm turns on"></div>' +
+        '<div class="field chk-wide"><label for="chk-details">Details (optional)</label>' +
+          '<input type="text" id="chk-details" maxlength="500" placeholder="Anything that helps them check it"></div>' +
+        '<div class="field"><label for="chk-repeat">How often</label><select id="chk-repeat">' +
+          '<option value="once">One time — until checked</option><option value="repeat">Every round — until removed</option></select></div>' +
+        '<div class="field"><label for="chk-dept">Problems go to</label>' + deptField + '</div>' +
+      '</div>' +
+      '<button class="neu-btn primary" onclick="chkSave()">+ Add check</button>' +
+    '</div>' +
+    '<div class="card" style="margin-bottom:20px;"><div class="card-title">Open checks</div>' +
+      '<div class="card-sub">What managers are being asked to check right now</div><div id="chk-open"></div></div>' +
+    '<div class="card"><div class="card-title">Finished or removed</div>' +
+      '<div class="card-sub">Last 30 days</div><div id="chk-closed"></div></div>';
+  chkFilterAssets();
+  chkLoadLists();
+}
+
+function chkScopeChanged() {
+  var scope = (document.querySelector('input[name="chk-scope"]:checked') || {}).value;
+  document.getElementById('chk-asset-wrap').style.display = scope === 'building' ? 'none' : '';
+}
+
+function chkFilterAssets() {
+  var sel = document.getElementById('chk-asset');
+  if (!sel) return;
+  var term = (document.getElementById('chk-asset-filter').value || '').trim().toLowerCase();
+  var list = chkState.assets.filter(function(a) {
+    var hay = (chkLocLabel(chkState.locByQr[a.qr_identifier]) + ' ' + a.asset_name + ' ' + (a.asset_type || '')).toLowerCase();
+    return !term || hay.indexOf(term) >= 0;
+  }).slice(0, 300);
+  sel.innerHTML = list.length
+    ? list.map(function(a) {
+        return '<option value="' + chkEsc(a.id) + '">' + chkEsc(chkLocLabel(chkState.locByQr[a.qr_identifier])) + ' — ' +
+          (ASSET_ICONS[a.asset_type] || '📦') + ' ' + chkEsc(a.asset_name) + '</option>';
+      }).join('')
+    : '<option disabled>' + (chkState.assets.length ? 'No assets match' : 'No assets on file yet — add them from a room') + '</option>';
+}
+
+async function chkSave() {
+  var scope = (document.querySelector('input[name="chk-scope"]:checked') || {}).value || 'asset';
+  var label = document.getElementById('chk-label').value.trim();
+  if (!label) { alert('Say what the manager should check.'); return; }
+  var row = {
+    facility_id: FACILITY_ID, scope: scope, label: label,
+    details: document.getElementById('chk-details').value.trim() || null,
+    repeat: document.getElementById('chk-repeat').value === 'repeat',
+    dept: chkState.lockedDept || document.getElementById('chk-dept').value,
+    created_by: chkState.by, is_active: true
+  };
+  if (scope === 'asset') {
+    var id = document.getElementById('chk-asset').value;
+    var asset = chkState.assets.find(function(a) { return a.id === id; });
+    if (!asset) { alert('Pick the asset to check.'); return; }
+    row.asset_id = asset.id;
+    row.qr_identifier = asset.qr_identifier;
+  }
+  var { error } = await sb.from('round_checks').insert(row);
+  if (error) { alert('Could not add the check: ' + error.message); return; }
+  document.getElementById('chk-label').value = '';
+  document.getElementById('chk-details').value = '';
+  chkLoadLists();
+}
+
+async function chkLoadLists() {
+  var openEl = document.getElementById('chk-open'), closedEl = document.getElementById('chk-closed');
+  if (!openEl) return;
+  var since = new Date(Date.now() - 30 * 86400000).toISOString();
+  var q1 = sb.from('round_checks').select('*').eq('facility_id', FACILITY_ID).eq('is_active', true).order('created_at', { ascending: false });
+  var q2 = sb.from('round_checks').select('*').eq('facility_id', FACILITY_ID).eq('is_active', false).gte('closed_at', since).order('closed_at', { ascending: false }).limit(50);
+  if (chkState.lockedDept) { q1 = q1.eq('dept', chkState.lockedDept); q2 = q2.eq('dept', chkState.lockedDept); }
+  var got = await Promise.all([q1, q2]);
+  if (got[0].error) { openEl.innerHTML = '<div style="color:var(--red);font-size:13px">Error: ' + chkEsc(got[0].error.message) + '</div>'; return; }
+  var open = got[0].data || [], closed = got[1].data || [];
+
+  var ids = open.concat(closed).map(function(c) { return c.id; });
+  var results = [];
+  if (ids.length) {
+    var r = await sb.from('round_check_results').select('check_id,qr_identifier,result,note,checked_by,checked_at')
+      .in('check_id', ids).order('checked_at', { ascending: false }).limit(1000);
+    results = r.data || [];
+  }
+  var byCheck = {};
+  results.forEach(function(x) { (byCheck[x.check_id] = byCheck[x.check_id] || []).push(x); });
+  var assetById = {};
+  chkState.assets.forEach(function(a) { assetById[a.id] = a; });
+
+  function where(c) {
+    if (c.scope === 'building') return 'Every resident room';
+    var a = assetById[c.asset_id];
+    return chkLocLabel(chkState.locByQr[c.qr_identifier]) + (a ? ' — ' + (ASSET_ICONS[a.asset_type] || '📦') + ' ' + a.asset_name : '');
+  }
+  function progress(c) {
+    var res = byCheck[c.id] || [];
+    var fails = res.filter(function(x) { return x.result === 'fail'; });
+    var bits = [];
+    if (c.scope === 'building' && !c.repeat) {
+      var rooms = new Set(res.map(function(x) { return x.qr_identifier; })).size;
+      bits.push('<b>' + rooms + ' / ' + chkState.roomCount + '</b> rooms checked');
+    } else if (res.length) {
+      bits.push('Checked ' + res.length + '×, last ' + chkWhen(res[0].checked_at) + ' by ' + chkEsc(res[0].checked_by || '—'));
+    } else {
+      bits.push('Not checked yet');
+    }
+    if (fails.length) bits.push('<span style="color:var(--red);font-weight:700">' + fails.length + ' problem' + (fails.length > 1 ? 's' : '') + '</span>');
+    return bits.join(' · ') +
+      (fails.length ? '<div class="chk-fail-note">Latest problem: ' + chkEsc(fails[0].note || 'No note') +
+        (c.scope === 'building' ? ' (' + chkEsc(chkLocLabel(chkState.locByQr[fails[0].qr_identifier])) + ')' : '') + '</div>' : '');
+  }
+  function row(c, isOpen) {
+    return '<div class="issue-item">' +
+      '<div class="issue-info">' +
+        '<div class="issue-type-label">' + chkEsc(c.label) + '</div>' +
+        '<div class="chk-line">' + chkEsc(where(c)) + ' · ' + (c.repeat ? 'Every round' : 'One time') + ' · ' + chkEsc(c.dept || '') + '</div>' +
+        (c.details ? '<div class="chk-line">' + chkEsc(c.details) + '</div>' : '') +
+        '<div class="chk-line">' + progress(c) + '</div>' +
+        '<div class="chk-line chk-muted">Posted by ' + chkEsc(c.created_by || '—') + ', ' + chkWhen(c.created_at) +
+          (!isOpen ? ' · Closed ' + chkWhen(c.closed_at) + (c.closed_by ? ' (' + chkEsc(c.closed_by) + ')' : '') : '') + '</div>' +
+      '</div>' +
+      (isOpen ? '<button class="neu-btn" style="font-size:11px;padding:7px 12px;flex-shrink:0" onclick="chkRemove(\'' + chkEsc(c.id) + '\')">Remove</button>' : '') +
+    '</div>';
+  }
+  openEl.innerHTML = open.length ? open.map(function(c) { return row(c, true); }).join('')
+    : '<div class="no-round-msg" style="padding:18px">No open checks.</div>';
+  closedEl.innerHTML = closed.length ? closed.map(function(c) { return row(c, false); }).join('')
+    : '<div class="no-round-msg" style="padding:18px">Nothing in the last 30 days.</div>';
+}
+
+async function chkRemove(id) {
+  if (!confirm('Remove this check? Managers will stop seeing it.')) return;
+  var q = sb.from('round_checks').update({ is_active: false, closed_at: new Date().toISOString(), closed_by: 'Removed by ' + chkState.by })
+    .eq('id', id).eq('facility_id', FACILITY_ID);
+  if (chkState.lockedDept) q = q.eq('dept', chkState.lockedDept);
+  var { data, error } = await q.select('id');
+  if (error) { alert('Could not remove it: ' + error.message); return; }
+  if (!data || !data.length) { alert('That change did not save. Please try again.'); return; }
+  chkLoadLists();
+}
+
+/* Department heads: their own department's checks, next to their problem list. */
+function toggleDeptChecks() {
+  var box = document.getElementById('restrictedChecks');
+  var list = document.getElementById('restrictedDeptCard');
+  var btn = document.getElementById('deptChecksBtn');
+  if (!box) return;
+  var show = box.style.display === 'none';
+  box.style.display = show ? 'block' : 'none';
+  list.style.display = show ? 'none' : 'block';
+  btn.textContent = show ? 'Open Problems' : 'Manager Checks';
+  if (show) {
+    var emp = deptState.emp;
+    renderChecksManager('restrictedChecks', {
+      lockedDept: deptState.dept === 'maintenance' ? 'Maintenance' : 'Housekeeping',
+      by: emp.first_name + ' ' + emp.last_name
+    });
+  }
+}
+
 /* ── Department view: Maintenance Director / Housekeeping Manager ──────────
    Every open problem for their department, from any source (room rounds,
    Report an Issue, cleanings, EOC), newest first, refreshed every minute.
@@ -5662,12 +5907,14 @@ async function bootRestrictedDept(emp, dept) {
     '<div class="restricted-banner">' +
       '<div><b>' + deptEsc(emp.first_name + ' ' + emp.last_name) + '</b> — ' + view.icon + ' ' + view.title + '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+        '<button class="neu-btn" id="deptChecksBtn" style="font-size:12px;padding:8px 14px;" onclick="toggleDeptChecks()">Manager Checks</button>' +
         (sp ? '<button class="neu-btn" style="font-size:12px;padding:8px 14px;" onclick="bootRestrictedSurveyPrep(deptState.emp)">Survey Prep</button>' : '') +
         '<button class="neu-btn" style="font-size:12px;padding:8px 14px;" onclick="adminLogOut()">Log Out</button>' +
       '</div>' +
     '</div>' +
     '<div class="panel" style="display:block;padding:24px;max-width:760px;margin:0 auto;">' +
-      '<div class="card"><div id="restrictedDeptList"><div class="no-round-msg" style="padding:16px">Loading…</div></div></div>' +
+      '<div class="card" id="restrictedDeptCard"><div id="restrictedDeptList"><div class="no-round-msg" style="padding:16px">Loading…</div></div></div>' +
+      '<div id="restrictedChecks" style="display:none"></div>' +
     '</div>';
   await loadRestrictedDeptList();
   deptState.timer = setInterval(function() { if (!document.hidden) loadRestrictedDeptList(); }, 60000);
