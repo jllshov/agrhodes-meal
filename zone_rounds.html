@@ -325,7 +325,18 @@ body.restricted-mode .app-shell { display: block; }
 .chk-scope label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .chk-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px; margin-bottom: 14px; }
 .chk-grid .chk-wide { grid-column: 1 / -1; }
-.chk-grid select[size] { height: auto; padding: 6px; }
+.chk-filters { display: grid; grid-template-columns: minmax(0,2fr) minmax(0,1fr) minmax(0,1fr); gap: 8px; margin-bottom: 8px; }
+.chk-pick-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 12.5px; margin-bottom: 8px; }
+.chk-link { background: none; border: none; padding: 0; font: inherit; font-weight: 700; color: var(--navy); text-decoration: underline; cursor: pointer; }
+.chk-pick-list { max-height: 260px; overflow-y: auto; border-radius: var(--r-sm); background: var(--surface); box-shadow: var(--shadow-in); padding: 4px; }
+.field label.chk-pick { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; cursor: pointer; font-size: 13px; text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--ink); margin: 0; }
+.field label.chk-pick:hover { background: var(--surface-dim); }
+.field label.chk-pick.on { background: var(--cyan-soft); }
+.field .chk-pick input { width: 16px; height: 16px; flex-shrink: 0; box-shadow: none; padding: 0; }
+.chk-pick-room { font-weight: 700; min-width: 0; }
+.chk-pick-asset { margin-left: auto; color: var(--ink-2); text-align: right; min-width: 0; }
+.chk-pick-empty { padding: 14px; text-align: center; color: var(--gray); font-size: 12.5px; }
+@media (max-width: 640px) { .chk-filters { grid-template-columns: minmax(0,1fr) minmax(0,1fr); } .chk-filters input { grid-column: 1 / -1; } }
 .chk-line { font-size: 12px; color: var(--ink-2); margin-top: 3px; }
 .chk-muted { color: var(--gray-light); font-size: 11.5px; }
 .chk-fail-note { margin-top: 4px; font-size: 12px; color: var(--red); }
@@ -5654,7 +5665,7 @@ async function bootRestrictedSurveyPrep(emp) {
    one asset, or every resident room; once, or on every round.
    Tables: round_checks + round_check_results (sql/2026-11-04_round_checks.sql). */
 var CHECK_DEPTS = ['Maintenance','Housekeeping','Nursing','Pest Control','Safety','Infection Control','Dietary','Social Services','Activities','Other'];
-var chkState = { el: null, lockedDept: null, by: '', assets: [], locByQr: {} };
+var chkState = { el: null, lockedDept: null, by: '', assets: [], locByQr: {}, selected: new Set(), shown: [], groups: [] };
 
 function chkEsc(v) {
   return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -5677,7 +5688,7 @@ function initChecksPanel() {
 async function renderChecksManager(containerId, opts) {
   var el = document.getElementById(containerId);
   if (!el) return;
-  chkState = { el: el, lockedDept: opts.lockedDept || null, by: opts.by || '', assets: [], locByQr: {} };
+  chkState = { el: el, lockedDept: opts.lockedDept || null, by: opts.by || '', assets: [], locByQr: {}, selected: new Set(), shown: [], groups: [] };
   el.innerHTML = '<div class="no-round-msg">Loading…</div>';
 
   var probe = await sb.from('round_checks').select('id').limit(1);
@@ -5699,6 +5710,10 @@ async function renderChecksManager(containerId, opts) {
   });
   chkState.roomCount = (got[1].data || []).filter(function(l) { return l.location_type === 'room'; }).length;
 
+  var typeOpts = Array.from(new Set(chkState.assets.map(function(a) { return a.asset_type || 'Other'; }))).sort()
+    .map(function(t) { return '<option value="' + chkEsc(t) + '">' + (ASSET_ICONS[t] || '📦') + ' ' + chkEsc(t) + '</option>'; }).join('');
+  var hallOpts = Array.from(new Set(chkState.assets.map(function(a) { return (chkState.locByQr[a.qr_identifier] || {}).unit || ''; }).filter(Boolean))).sort()
+    .map(function(h) { return '<option value="' + chkEsc(h) + '">' + chkEsc(h) + '</option>'; }).join('');
   var deptField = chkState.lockedDept
     ? '<input type="text" value="' + chkEsc(chkState.lockedDept) + '" disabled>'
     : '<select id="chk-dept">' + CHECK_DEPTS.map(function(d) { return '<option>' + d + '</option>'; }).join('') + '</select>';
@@ -5712,9 +5727,16 @@ async function renderChecksManager(containerId, opts) {
         '<label><input type="radio" name="chk-scope" value="building" onchange="chkScopeChanged()"> Every resident room (' + chkState.roomCount + ')</label>' +
       '</div>' +
       '<div class="chk-grid">' +
-        '<div class="field chk-wide" id="chk-asset-wrap"><label for="chk-asset-filter">Asset</label>' +
-          '<input type="search" id="chk-asset-filter" placeholder="Search room, hall or asset…" oninput="chkFilterAssets()" style="margin-bottom:8px">' +
-          '<select id="chk-asset" size="6"></select></div>' +
+        '<div class="field chk-wide" id="chk-asset-wrap"><label for="chk-asset-filter">Assets — tick one or many</label>' +
+          '<div class="chk-filters">' +
+            '<input type="search" id="chk-asset-filter" placeholder="Search room or asset…" oninput="chkFilterAssets()">' +
+            '<select id="chk-asset-type" aria-label="Asset type" onchange="chkFilterAssets()"><option value="">All types</option>' + typeOpts + '</select>' +
+            '<select id="chk-asset-hall" aria-label="Hall" onchange="chkFilterAssets()"><option value="">All halls</option>' + hallOpts + '</select>' +
+          '</div>' +
+          '<div class="chk-pick-bar"><b id="chk-pick-count">0 selected</b>' +
+            '<button type="button" class="chk-link" id="chk-pick-all" onclick="chkSelectShown(true)">Select all shown</button>' +
+            '<button type="button" class="chk-link" onclick="chkSelectShown(false)">Clear</button></div>' +
+          '<div id="chk-asset-list" class="chk-pick-list" role="group" aria-label="Assets"></div></div>' +
         '<div class="field chk-wide"><label for="chk-label">What should the manager check?</label>' +
           '<input type="text" id="chk-label" maxlength="120" placeholder="e.g. Bed alarm turns on"></div>' +
         '<div class="field chk-wide"><label for="chk-details">Details (optional)</label>' +
@@ -5723,7 +5745,7 @@ async function renderChecksManager(containerId, opts) {
           '<option value="once">One time — until checked</option><option value="repeat">Every round — until removed</option></select></div>' +
         '<div class="field"><label for="chk-dept">Problems go to</label>' + deptField + '</div>' +
       '</div>' +
-      '<button class="neu-btn primary" onclick="chkSave()">+ Add check</button>' +
+      '<button class="neu-btn primary" id="chk-save-btn" onclick="chkSave()">+ Add check</button>' +
     '</div>' +
     '<div class="card" style="margin-bottom:20px;"><div class="card-title">Open checks</div>' +
       '<div class="card-sub">What managers are being asked to check right now</div><div id="chk-open"></div></div>' +
@@ -5736,46 +5758,84 @@ async function renderChecksManager(containerId, opts) {
 function chkScopeChanged() {
   var scope = (document.querySelector('input[name="chk-scope"]:checked') || {}).value;
   document.getElementById('chk-asset-wrap').style.display = scope === 'building' ? 'none' : '';
+  chkUpdatePickCount();
 }
 
 function chkFilterAssets() {
-  var sel = document.getElementById('chk-asset');
-  if (!sel) return;
+  var box = document.getElementById('chk-asset-list');
+  if (!box) return;
   var term = (document.getElementById('chk-asset-filter').value || '').trim().toLowerCase();
+  var type = document.getElementById('chk-asset-type').value;
+  var hall = document.getElementById('chk-asset-hall').value;
   var list = chkState.assets.filter(function(a) {
-    var hay = (chkLocLabel(chkState.locByQr[a.qr_identifier]) + ' ' + a.asset_name + ' ' + (a.asset_type || '')).toLowerCase();
+    var loc = chkState.locByQr[a.qr_identifier] || {};
+    if (type && (a.asset_type || 'Other') !== type) return false;
+    if (hall && loc.unit !== hall) return false;
+    var hay = (chkLocLabel(loc) + ' ' + a.asset_name + ' ' + (a.asset_type || '')).toLowerCase();
     return !term || hay.indexOf(term) >= 0;
-  }).slice(0, 300);
-  sel.innerHTML = list.length
+  });
+  chkState.shown = list.map(function(a) { return a.id; });
+  box.innerHTML = list.length
     ? list.map(function(a) {
-        return '<option value="' + chkEsc(a.id) + '">' + chkEsc(chkLocLabel(chkState.locByQr[a.qr_identifier])) + ' — ' +
-          (ASSET_ICONS[a.asset_type] || '📦') + ' ' + chkEsc(a.asset_name) + '</option>';
+        var on = chkState.selected.has(a.id);
+        return '<label class="chk-pick' + (on ? ' on' : '') + '"><input type="checkbox" value="' + chkEsc(a.id) + '"' + (on ? ' checked' : '') +
+          ' onchange="chkToggleAsset(this)"><span class="chk-pick-room">' + chkEsc(chkLocLabel(chkState.locByQr[a.qr_identifier])) + '</span>' +
+          '<span class="chk-pick-asset">' + (ASSET_ICONS[a.asset_type] || '📦') + ' ' + chkEsc(a.asset_name) + '</span></label>';
       }).join('')
-    : '<option disabled>' + (chkState.assets.length ? 'No assets match' : 'No assets on file yet — add them from a room') + '</option>';
+    : '<div class="chk-pick-empty">' + (chkState.assets.length ? 'No assets match' : 'No assets on file yet — add them from a room') + '</div>';
+  chkUpdatePickCount();
+}
+
+function chkToggleAsset(cb) {
+  if (cb.checked) chkState.selected.add(cb.value); else chkState.selected.delete(cb.value);
+  cb.parentNode.classList.toggle('on', cb.checked);
+  chkUpdatePickCount();
+}
+
+function chkSelectShown(on) {
+  if (on) chkState.shown.forEach(function(id) { chkState.selected.add(id); });
+  else chkState.selected.clear();
+  chkFilterAssets();
+}
+
+function chkUpdatePickCount() {
+  var n = chkState.selected.size;
+  var countEl = document.getElementById('chk-pick-count');
+  if (countEl) countEl.textContent = n + ' selected';
+  var all = document.getElementById('chk-pick-all');
+  if (all) all.textContent = 'Select all shown (' + chkState.shown.length + ')';
+  var btn = document.getElementById('chk-save-btn');
+  var scope = (document.querySelector('input[name="chk-scope"]:checked') || {}).value;
+  if (btn) btn.textContent = scope === 'asset' && n > 1 ? '+ Add check to ' + n + ' assets' : '+ Add check';
 }
 
 async function chkSave() {
   var scope = (document.querySelector('input[name="chk-scope"]:checked') || {}).value || 'asset';
   var label = document.getElementById('chk-label').value.trim();
   if (!label) { alert('Say what the manager should check.'); return; }
-  var row = {
+  var base = {
     facility_id: FACILITY_ID, scope: scope, label: label,
     details: document.getElementById('chk-details').value.trim() || null,
     repeat: document.getElementById('chk-repeat').value === 'repeat',
     dept: chkState.lockedDept || document.getElementById('chk-dept').value,
     created_by: chkState.by, is_active: true
   };
+  var rows = [base];
   if (scope === 'asset') {
-    var id = document.getElementById('chk-asset').value;
-    var asset = chkState.assets.find(function(a) { return a.id === id; });
-    if (!asset) { alert('Pick the asset to check.'); return; }
-    row.asset_id = asset.id;
-    row.qr_identifier = asset.qr_identifier;
+    var picked = chkState.assets.filter(function(a) { return chkState.selected.has(a.id); });
+    if (!picked.length) { alert('Tick the asset(s) to check.'); return; }
+    var stamp = new Date().toISOString();   // one batch = one line in the list below
+    rows = picked.map(function(a) { return Object.assign({}, base, { asset_id: a.id, qr_identifier: a.qr_identifier, created_at: stamp }); });
   }
-  var { error } = await sb.from('round_checks').insert(row);
-  if (error) { alert('Could not add the check: ' + error.message); return; }
+  var btn = document.getElementById('chk-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  var { error } = await sb.from('round_checks').insert(rows);
+  if (btn) btn.disabled = false;
+  if (error) { chkUpdatePickCount(); alert('Could not add the check: ' + error.message); return; }
   document.getElementById('chk-label').value = '';
   document.getElementById('chk-details').value = '';
+  chkState.selected.clear();
+  chkFilterAssets();
   chkLoadLists();
 }
 
@@ -5837,16 +5897,70 @@ async function chkLoadLists() {
       (isOpen ? '<button class="neu-btn" style="font-size:11px;padding:7px 12px;flex-shrink:0" onclick="chkRemove(\'' + chkEsc(c.id) + '\')">Remove</button>' : '') +
     '</div>';
   }
-  openEl.innerHTML = open.length ? open.map(function(c) { return row(c, true); }).join('')
+  // Checks added together on many assets show as one line.
+  function grouped(list) {
+    var out = [], byKey = {};
+    list.forEach(function(c) {
+      if (c.scope !== 'asset') { out.push([c]); return; }
+      var k = [c.label, c.dept, c.repeat, c.created_by, c.created_at].join('|');
+      if (!byKey[k]) { byKey[k] = []; out.push(byKey[k]); }
+      byKey[k].push(c);
+    });
+    return out;
+  }
+  function groupRow(list, isOpen) {
+    var c = list[0];
+    var ids = list.map(function(x) { return x.id; });
+    var gi = chkState.groups.push(ids) - 1;
+    var types = {}, halls = {};
+    list.forEach(function(x) {
+      var a = assetById[x.asset_id];
+      var t = a ? (a.asset_type || 'Other') : 'Asset';
+      types[t] = (types[t] || 0) + 1;
+      var u = (chkState.locByQr[x.qr_identifier] || {}).unit;
+      if (u) halls[u] = 1;
+    });
+    var typeText = Object.keys(types).map(function(t) { return types[t] + ' ' + t + (types[t] > 1 ? 's' : ''); }).join(', ');
+    var hallList = Object.keys(halls).sort();
+    var res = [];
+    list.forEach(function(x) { res = res.concat(byCheck[x.id] || []); });
+    res.sort(function(a, b) { return new Date(b.checked_at) - new Date(a.checked_at); });
+    var checked = list.filter(function(x) { return (byCheck[x.id] || []).length; }).length;
+    var fails = res.filter(function(x) { return x.result === 'fail'; });
+    var prog = isOpen && !c.repeat
+      ? '<b>' + list.length + '</b> still to check'
+      : '<b>' + checked + ' / ' + list.length + '</b> checked' + (res.length ? ', last ' + chkWhen(res[0].checked_at) : '');
+    if (fails.length) prog += ' · <span style="color:var(--red);font-weight:700">' + fails.length + ' problem' + (fails.length > 1 ? 's' : '') + '</span>' +
+      '<div class="chk-fail-note">Latest problem: ' + chkEsc(fails[0].note || 'No note') + ' (' + chkEsc(chkLocLabel(chkState.locByQr[fails[0].qr_identifier])) + ')</div>';
+    return '<div class="issue-item">' +
+      '<div class="issue-info">' +
+        '<div class="issue-type-label">' + chkEsc(c.label) + '</div>' +
+        '<div class="chk-line">' + chkEsc(typeText) + (hallList.length ? ' · ' + chkEsc(hallList.length > 3 ? hallList.length + ' halls' : hallList.join(', ')) : '') +
+          ' · ' + (c.repeat ? 'Every round' : 'One time') + ' · ' + chkEsc(c.dept || '') + '</div>' +
+        (c.details ? '<div class="chk-line">' + chkEsc(c.details) + '</div>' : '') +
+        '<div class="chk-line">' + prog + '</div>' +
+        '<div class="chk-line chk-muted">Posted by ' + chkEsc(c.created_by || '—') + ', ' + chkWhen(c.created_at) + '</div>' +
+      '</div>' +
+      (isOpen ? '<button class="neu-btn" style="font-size:11px;padding:7px 12px;flex-shrink:0" onclick="chkRemoveGroup(' + gi + ')">Remove all</button>' : '') +
+    '</div>';
+  }
+  function render(list, isOpen) {
+    return grouped(list).map(function(g) { return g.length > 1 ? groupRow(g, isOpen) : row(g[0], isOpen); }).join('');
+  }
+  chkState.groups = [];
+  openEl.innerHTML = open.length ? render(open, true)
     : '<div class="no-round-msg" style="padding:18px">No open checks.</div>';
-  closedEl.innerHTML = closed.length ? closed.map(function(c) { return row(c, false); }).join('')
+  closedEl.innerHTML = closed.length ? render(closed, false)
     : '<div class="no-round-msg" style="padding:18px">Nothing in the last 30 days.</div>';
 }
 
-async function chkRemove(id) {
-  if (!confirm('Remove this check? Managers will stop seeing it.')) return;
+function chkRemove(id) { return chkRemoveIds([id]); }
+function chkRemoveGroup(i) { return chkRemoveIds(chkState.groups[i] || []); }
+async function chkRemoveIds(ids) {
+  if (!ids.length) return;
+  if (!confirm(ids.length > 1 ? 'Remove this check from all ' + ids.length + ' assets? Managers will stop seeing it.' : 'Remove this check? Managers will stop seeing it.')) return;
   var q = sb.from('round_checks').update({ is_active: false, closed_at: new Date().toISOString(), closed_by: 'Removed by ' + chkState.by })
-    .eq('id', id).eq('facility_id', FACILITY_ID);
+    .in('id', ids).eq('facility_id', FACILITY_ID);
   if (chkState.lockedDept) q = q.eq('dept', chkState.lockedDept);
   var { data, error } = await q.select('id');
   if (error) { alert('Could not remove it: ' + error.message); return; }
