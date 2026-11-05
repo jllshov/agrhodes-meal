@@ -256,6 +256,11 @@ body:not(.landing-mode):not(.login-mode) #app{padding:16px 16px calc(28px + env(
 .asset-meta{font-size:12.5px;color:var(--ink-2);margin-top:3px;}
 .asset-condition{font-size:11px;font-weight:700;padding:5px 12px;border-radius:999px;flex-shrink:0;}
 .chk-card{border:1.5px solid var(--cyan);}
+.iso-card{border:1.5px solid var(--red);}
+.iso-banner{display:flex;flex-direction:column;gap:2px;background:#fdecec;border:1.5px solid var(--red);border-radius:16px;padding:12px 16px;margin:0 0 16px;color:#8f1d1d;}
+.iso-banner b{font-size:15px;}
+.iso-banner span{font-size:13px;}
+.iso-pill{display:inline-block;margin-left:8px;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;background:#fdecec;color:#b42318;vertical-align:2px;}
 .chk-meta{font-size:12.5px;color:var(--ink-2);margin:-6px 0 8px;}
 .chk-details{font-size:13px;color:var(--ink);background:#f6f9fb;border-radius:10px;padding:8px 10px;margin-bottom:10px;}
 .check-btns.chk-btns{grid-template-columns:1fr 1fr;}
@@ -1142,9 +1147,10 @@ async function renderLanding() {
   var showAssets = showRoomTools || (!reportOnly && isMaintenanceDirector());
 
   app.innerHTML = '<div class="center-msg">Loading room…</div>';
-  var loaded = await Promise.all([loadLandingStats(loc), canShowZoneRound ? loadChecksForLoc(loc) : Promise.resolve([])]);
+  var loaded = await Promise.all([loadLandingStats(loc), canShowZoneRound ? loadChecksForLoc(loc) : Promise.resolve([]), loadIsolationFor(loc)]);
   var stats = loaded[0];
   if (currentLoc !== loc) return;
+  currentIsolation = loaded[2];
   landingChecks = { qr: loc.qr_identifier, list: loaded[1] };
   var nChecks = loaded[1].length;
 
@@ -1280,6 +1286,10 @@ async function renderLanding() {
       '</div>' +
     '</div>' +
     '<div class="wrap">' +
+      (currentIsolation
+        ? '<div class="iso-banner" role="note"><b>🛡 Isolation · ' + escapeAttr(isoLabel(currentIsolation.precaution)) + ' precautions</b>' +
+          '<span>Follow the sign on the door and put on the PPE before entering.</span></div>'
+        : '') +
       '<section class="sect"><h3>Start a task</h3>' + actionsHtml + '</section>' +
       (roomList ? '<section class="sect"><h3>' + (isStation ? 'This station' : 'This room') + '</h3><div class="list">' + roomList + '</div></section>' : '') +
       (myWork ? '<section class="sect"><h3>My work today</h3><div class="list">' + myWork + '</div></section>' : '') +
@@ -1388,6 +1398,7 @@ async function startRound() {
   currentChecklistMode = 'round';
   roundValues = {}; issueDrafts = {}; checkValues = {};
   roundChecks = landingChecks.qr === currentLoc.qr_identifier ? landingChecks.list : await loadChecksForLoc(currentLoc);
+  if (!currentIsolation || currentIsolation.qr !== currentLoc.qr_identifier) currentIsolation = await loadIsolationFor(currentLoc);
   renderChecklist();
 }
 
@@ -1453,7 +1464,7 @@ var STRIP_WAX_SECTIONS = [
 function getSections() {
   var t = currentLoc.location_type;
   if (t === 'room') {
-    if (currentChecklistMode !== 'cleaning') return ROOM_SECTIONS;
+    if (currentChecklistMode !== 'cleaning') return isolationSections().concat(ROOM_SECTIONS);
     return cleaningPurpose === 'strip_wax' ? ROOM_CLEANING_SECTIONS.concat(STRIP_WAX_SECTIONS) : ROOM_CLEANING_SECTIONS;
   }
   if (t === 'office') return OFFICE_SECTIONS;
@@ -1484,7 +1495,7 @@ function renderChecklist() {
   }
 
   sections.forEach(function(section, si) {
-    html += '<div class="card"><div class="section-title"><span>' + section.title + '</span></div>';
+    html += '<div class="card' + (section.iso ? ' iso-card' : '') + '"><div class="section-title"><span>' + section.title + '</span></div>';
     section.items.forEach(function(item) {
       var val = roundValues[item.key];
       var itemDept = item.dept || section.dept;
@@ -1570,7 +1581,10 @@ function setCheckValue(key, val, dept, label) {
   var isNegative = (val === 'fail' || val === 'no');
   if (isNegative && !issueDrafts[key]) {
     var item = findItem(key);
-    issueDrafts[key] = { dept: dept, description: label + ' needs attention', priority: 'Medium', ftag: item ? item.ftag || null : null };
+    var desc = /^iso_/.test(key) && currentIsolation
+      ? 'Isolation (' + isoLabel(currentIsolation.precaution) + '): ' + label + ' needs attention'
+      : label + ' needs attention';
+    issueDrafts[key] = { dept: dept, description: desc, priority: 'Medium', ftag: item ? item.ftag || null : null };
   } else if (!isNegative) {
     delete issueDrafts[key];
   }
@@ -1722,6 +1736,7 @@ async function submitRound() {
 
   if (isDirectColumnRound) {
     Object.keys(roundValues).forEach(function(k){ roundRow[k] = roundValues[k]; });
+    if (isolationSections().length) roundRow.iso_precaution = currentIsolation.precaution;
   } else {
     var passCount = 0, totalScored = 0;
     var scores = {};
@@ -1745,6 +1760,12 @@ async function submitRound() {
   }
 
   var { data: insertedRound, error: roundErr } = await sb.from('zone_rounds').insert(roundRow).select().single();
+  // Until the isolation columns exist, save the round without them
+  // (a failed isolation check still becomes an Infection Control problem below).
+  if (roundErr && /iso_/.test(roundErr.message || '')) {
+    Object.keys(roundRow).forEach(function(k){ if (/^iso_/.test(k)) delete roundRow[k]; });
+    ({ data: insertedRound, error: roundErr } = await sb.from('zone_rounds').insert(roundRow).select().single());
+  }
   // Until the zone_rounds.no_pests column exists, save the round without it
   // (a pest sighting still becomes a Pest Control problem below).
   if (roundErr && 'no_pests' in roundRow && /no_pests/.test(roundErr.message || '')) {
@@ -1843,6 +1864,52 @@ function renderSuccess(issueCount) {
 /* ── Quick issue report (no checklist required) ── */
 var quickIssue = { dept:'Maintenance', description:'', priority:'Medium' };
 var ISSUE_DEPTS = ['Nursing','Housekeeping','Maintenance','Pest Control','Dietary','Social Services','Activities','Infection Control','Safety','Other'];
+
+/* ── Isolation: rooms the infection nurse marked in Nursiao (room_isolation) ── */
+var ISO_LABELS = { ebp: 'Enhanced Barrier', contact: 'Contact', contact_enteric: 'Contact enteric (C. diff)', droplet: 'Droplet', airborne: 'Airborne' };
+var currentIsolation = null;   // { qr, precaution } for the room on screen
+
+function isoLabel(p) { return ISO_LABELS[p] || p; }
+
+/** This room's active isolation, or null (also null until the setup SQL has run). */
+async function loadIsolationFor(loc) {
+  if (!loc || loc.location_type !== 'room' || !FACILITY_ID) return null;
+  try {
+    var { data, error } = await sb.from('room_isolation').select('precaution,started_at')
+      .eq('facility_id', FACILITY_ID).eq('qr_identifier', loc.qr_identifier).eq('is_active', true).limit(1);
+    if (error || !data || !data.length) return null;
+    return { qr: loc.qr_identifier, precaution: data[0].precaution };
+  } catch (e) { return null; }
+}
+
+/** Active isolation for many rooms: { [qr]: precaution }. */
+async function loadIsolationMap(qrIds) {
+  var out = {};
+  if (!qrIds || !qrIds.length || !FACILITY_ID) return out;
+  try {
+    var { data, error } = await sb.from('room_isolation').select('qr_identifier,precaution')
+      .eq('facility_id', FACILITY_ID).eq('is_active', true).in('qr_identifier', qrIds);
+    if (!error) (data || []).forEach(function(r) { out[r.qr_identifier] = r.precaution; });
+  } catch (e) {}
+  return out;
+}
+
+/** Extra round section for an isolated room (zone round only, not cleanings). */
+function isolationSections() {
+  var loc = currentLoc;
+  if (!currentIsolation || !loc || loc.location_type !== 'room' || currentChecklistMode !== 'round' || currentIsolation.qr !== loc.qr_identifier) return [];
+  var p = currentIsolation.precaution, name = isoLabel(p);
+  var ppe = p === 'airborne' ? 'PPE stocked outside the room, including N95 respirators'
+    : p === 'droplet' ? 'PPE stocked outside the room (gowns, gloves, masks, eye protection)'
+    : 'PPE stocked outside the room (gowns and gloves)';
+  var items = [
+    { key: 'iso_sign', label: 'Precaution sign posted at the door and matches: ' + name, ftag: 'F880' },
+    { key: 'iso_ppe', label: ppe, ftag: 'F880' },
+    { key: 'iso_equipment', label: 'Dedicated or disinfected equipment; isolation trash and linen bins in place', ftag: 'F880' }
+  ];
+  if (p === 'airborne') items.push({ key: 'iso_door', label: 'Door kept closed', ftag: 'F880' });
+  return [{ title: 'Isolation · ' + name, dept: 'Infection Control', type: 'passfail', iso: true, items: items }];
+}
 
 function reportIssueForm() {
   enterAppPage();
@@ -2467,6 +2534,7 @@ function viewMyAssignedRooms() {
 var lastMyAssignedRooms = [];
 var lastMyAssignedDoneQrs = new Set();
 var lastMyAssignedChecks = {};
+var lastMyAssignedIso = {};
 var myAssignedFilter = 'all';
 
 async function loadMyAssignedRooms() {
@@ -2499,6 +2567,7 @@ async function loadMyAssignedRooms() {
     .sort(function(a,b){ return (+a.room_number||0) - (+b.room_number||0); });
   // A room with a one-time check still waiting isn't done yet, even if its round is.
   lastMyAssignedChecks = await loadOpenChecksForRooms(lastMyAssignedRooms);
+  lastMyAssignedIso = await loadIsolationMap(lastMyAssignedRooms.map(function(r){ return r.qr_identifier; }));
   Object.keys(lastMyAssignedChecks).forEach(function(qr){
     if (lastMyAssignedChecks[qr].some(function(c){ return !c.repeat; })) doneQrs.delete(qr);
   });
@@ -2560,6 +2629,7 @@ function renderMyAssignedRoomsPage() {
           '<div class="assign-row-main">' +
             '<div class="assign-row-title-line">' +
               '<span class="assign-row-title">' + r.display_name + '</span>' +
+              (lastMyAssignedIso[r.qr_identifier] ? '<span class="iso-pill">Isolation · ' + escapeAttr(isoLabel(lastMyAssignedIso[r.qr_identifier])) + '</span>' : '') +
               ((lastMyAssignedChecks[r.qr_identifier] || []).length
                 ? '<span class="chk-pill">' + lastMyAssignedChecks[r.qr_identifier].length + ' check' + (lastMyAssignedChecks[r.qr_identifier].length > 1 ? 's' : '') + '</span>' : '') +
             '</div>' +
