@@ -102,10 +102,11 @@ body { min-height: 100vh; padding-bottom: 100px; }
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/private-photos.js"></script>
 <script>
 const SUPABASE_URL  = 'https://gtbiatetqyuxwuehwilr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0YmlhdGV0cXl1eHd1ZWh3aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTgzMjcsImV4cCI6MjA5NTM5NDMyN30.C9nsE4uMqLt8DZTWXZVLToHWMG3ApKyb702hDQSIr34';
-const DEFAULT_FACILITY_DOMAIN = 'agrhodes-meal.vercel.app'; // fallback for localhost/preview URLs
+const DEFAULT_FACILITY_DOMAIN = "agrhodes-meal.vercel.app"; // fallback for localhost/preview URLs
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const VIEW_BASE_URL = window.location.origin + '/inventory.html#view=';
 const NEW_URL = window.location.origin + '/inventory.html#new';
@@ -337,12 +338,25 @@ async function saveInventory() {
     for (var idx=0; idx<itemsWithPhotos.length; idx++) {
       var it = itemsWithPhotos[idx];
       var file = invSelected[it.key].photoFile;
+      var rowIdx = updatedItems.findIndex(function(u){ return u.key === it.key; });
+      // Private storage first; the old public upload only while that isn't set up.
+      if (typeof savePrivatePhoto === 'function') {
+        try {
+          var saved = await savePrivatePhoto(file, { zone_facility_id: FACILITY_ID, kind: 'belongings', inventory_id: inserted.id });
+          if (saved) {
+            if (rowIdx > -1) { updatedItems[rowIdx].photo_id = saved.id; updatedItems[rowIdx].photo_facility = saved.facilityId; }
+            continue;
+          }
+        } catch (e) {
+          showToast('A photo did not upload (' + e.message + '). The intake is saved.', 'error');
+          continue;
+        }
+      }
       var ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
       var path = 'inventory/' + inserted.id + '/' + it.key + '.' + ext;
       var { error: upErr } = await sb.storage.from('round-photos').upload(path, file, { upsert:true });
       if (!upErr) {
         var pub = sb.storage.from('round-photos').getPublicUrl(path);
-        var rowIdx = updatedItems.findIndex(function(u){ return u.key === it.key; });
         if (rowIdx > -1) updatedItems[rowIdx].photo_url = pub.data.publicUrl;
       }
     }
@@ -404,7 +418,9 @@ async function loadAndRenderView(id) {
         '<span class="view-item-badge">' + (it.condition||'') + '</span></div>' +
       '<div class="view-item-meta">' + qtyText + ' · Label Applied: ' + (it.label_applied||'—') + ' · Photo: ' + (it.photo_taken||'No') +
         (it.comments ? '<br>"' + it.comments + '"' : '') + '</div>' +
-      (it.photo_url ? '<img class="view-item-photo" src="'+it.photo_url+'" onclick="window.open(this.src)">' : '') +
+      (it.photo_id && typeof privatePhotoUrl === 'function' && privatePhotoUrl(it.photo_facility, it.photo_id)
+        ? '<a href="' + privatePhotoUrl(it.photo_facility, it.photo_id) + '" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;font-weight:600">📸 Open photo (Nursiao sign-in)</a>'
+        : (/^https:\/\//.test(String(it.photo_url || '')) ? '<img class="view-item-photo" src="'+String(it.photo_url).replace(/"/g, '&quot;')+'" onclick="window.open(this.src)">' : '')) +
     '</div>';
   });
   html += '</div>';
