@@ -271,6 +271,25 @@
   }
   .home-btn:active { background: var(--accent-l); border-color: var(--accent); }
   .home-btn .hicon { font-size: .9rem; }
+  /* Visitor meals */
+  .btn-visit {
+    background: #FFF7ED; color: #9A3412; border: 2px solid #FED7AA;
+    margin-top: 12px; box-shadow: none; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-visit:active { background: #FFEDD5; border-color: #FB923C; transform: scale(.98); }
+  .visit-note { background: #FFF7ED; border: 1.5px solid #FED7AA; border-radius: 16px; padding: 12px 14px;
+    color: #9A3412; font-size: .84rem; font-weight: 600; text-align: center; margin-bottom: 18px; line-height: 1.4; }
+  #visitResident { font-size: 16px; }
+  .party { display: flex; align-items: center; justify-content: center; gap: 18px; }
+  .party-btn { width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--border); background: var(--bg2);
+    font-size: 1.6rem; font-weight: 800; color: var(--accent); font-family: inherit; cursor: pointer; -webkit-appearance: none; }
+  .party-btn:active { border-color: var(--accent); background: var(--accent-l); }
+  .party-btn:disabled { opacity: .35; cursor: not-allowed; }
+  .party-n { min-width: 64px; text-align: center; font-size: 2.2rem; font-weight: 800; color: var(--text); }
+  .party-sub { text-align: center; color: var(--text2); font-size: .78rem; font-weight: 600; margin-top: 6px; }
+  .res-visit { background: #FFF7ED; border: 2px solid #FED7AA; }
+  .rp-orange { background: #FFEDD5; color: #9A3412; }
+
   .page-label {
     font-size: .72rem; font-weight: 700; color: var(--text2);
     text-transform: uppercase; letter-spacing: .08em;
@@ -309,6 +328,7 @@
       autocapitalize="characters" spellcheck="false" inputmode="numeric"/>
     <button class="btn btn-primary" id="lookupBtn">Continue →</button>
     <div class="inline-err" id="idErr"></div>
+    <button class="btn btn-visit" id="visitBtn" type="button">👪 Visiting a resident? Tap here</button>
     <div class="divider">or</div>
     <div class="bottom-links">
       <button class="bottom-link" id="feedbackBtn">💬 Share Meal Feedback</button>
@@ -386,6 +406,29 @@
     </div>
     <button class="btn btn-outline" id="showTicketBtn" onclick="showTicket()" style="margin-top:16px;display:none">🎟 Show Meal Ticket</button>
     <button class="btn btn-outline" onclick="resetAll()" style="margin-top:10px">← New Check-In</button>
+  </div>
+
+  <!-- Screen V: Visitor meal (free; counts only — names can't be read back by this page) -->
+  <div class="screen" id="scr-visit">
+    <div class="card-title">Visitor Meal</div>
+    <div class="visit-note">Meals are free for family and friends visiting a resident. Enjoy your time together!</div>
+    <div class="fg-wrap">
+      <label class="fg-label" for="visitResident">Resident you're visiting</label>
+      <input type="text" id="visitResident" placeholder="Resident's name" maxlength="80"
+        autocomplete="off" autocorrect="off" spellcheck="false"/>
+    </div>
+    <div class="fg-wrap">
+      <label class="fg-label">How many people are eating?</label>
+      <div class="party">
+        <button type="button" class="party-btn" id="partyMinus" aria-label="One fewer person">−</button>
+        <div class="party-n" id="partyN" aria-live="polite">1</div>
+        <button type="button" class="party-btn" id="partyPlus" aria-label="One more person">+</button>
+      </div>
+      <div class="party-sub">Count yourself too</div>
+    </div>
+    <div class="inline-err" id="visitErr"></div>
+    <button class="btn btn-primary" id="visitSubmitBtn" type="button">Get Meal Ticket</button>
+    <button class="back-btn" type="button" id="visitBack">← Back</button>
   </div>
 
   <!-- Screen G: Guest Form -->
@@ -489,7 +532,7 @@ function setStep(n) {
 function showScr(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('scr-'+name).classList.add('active');
-  setStep({id:1,choice:2,done:3,guest:1}[name]);
+  setStep({id:1,choice:2,done:3,guest:1,visit:2}[name]);
 }
 
 // ─── Today's meal logs for an employee ──────────────────────
@@ -867,6 +910,84 @@ async function submitGuest() {
 
   btn.disabled = false; btn.textContent = 'Complete Guest Check-In';
 }
+
+// ─── Visitor meal (free) ────────────────────────────────────
+// The visitor_meals table is add-only for this page: it can save a visit but never read names back.
+const PARTY_MAX = 20;
+let partySize = 1;
+
+function setParty(n) {
+  partySize = Math.max(1, Math.min(PARTY_MAX, n));
+  document.getElementById('partyN').textContent = partySize;
+  document.getElementById('partyMinus').disabled = partySize <= 1;
+  document.getElementById('partyPlus').disabled = partySize >= PARTY_MAX;
+}
+
+function mealNow(d) {
+  const m = d.getHours() * 60 + d.getMinutes();
+  return m < 630 ? 'Breakfast' : m < 960 ? 'Lunch' : 'Dinner';   // same cut-offs as the report
+}
+
+function openVisit() {
+  document.getElementById('visitResident').value = '';
+  document.getElementById('visitErr').style.display = 'none';
+  setParty(1);
+  showScr('visit');
+}
+
+async function submitVisit() {
+  const name = document.getElementById('visitResident').value.replace(/\s+/g, ' ').trim();
+  const errEl = document.getElementById('visitErr');
+  errEl.style.display = 'none';
+  if (name.length < 2) { errEl.textContent = "Please enter the name of the resident you're visiting."; errEl.style.display = 'block'; return; }
+  if (!facilityId)     { errEl.textContent = 'Still connecting. Please try again in a moment.'; errEl.style.display = 'block'; return; }
+
+  const btn = document.getElementById('visitSubmitBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Saving…';
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/visitor_meals`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'          // the page may add a visit but not read it back
+      },
+      body: JSON.stringify({ facility_id: facilityId, resident_name: name, party_size: partySize })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      if (res.status === 404 || /visitor_meals/.test(err.message || '')) throw new Error("Visitor meals aren't set up yet. Please ask the kitchen staff.");
+      throw new Error('Could not save your visit. Please try again.');
+    }
+    const now = new Date();
+    showScr('done');
+    document.getElementById('resultBox').className = 'result res-visit';
+    document.getElementById('rI').textContent = '👪';
+    document.getElementById('rN').textContent = partySize === 1 ? '1 visitor meal' : partySize + ' visitor meals';
+    document.getElementById('rD').textContent = mealNow(now) + ' · Free';
+    document.getElementById('rM').textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) + ' on ' +
+      now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const rp = document.getElementById('rP');
+    rp.className = 'rp rp-orange';
+    rp.textContent = 'Show this screen to the kitchen';
+    document.getElementById('rC').style.display = 'none';
+    document.getElementById('ticketBox').style.display = 'none';
+    document.getElementById('showTicketBtn').style.display = 'none';
+  } catch (e) {
+    errEl.textContent = (e && e.message) || 'Connection error. Please try again.';
+    errEl.style.display = 'block';
+  }
+  btn.disabled = false; btn.textContent = 'Get Meal Ticket';
+}
+
+document.getElementById('visitBtn').addEventListener('click', openVisit);
+document.getElementById('visitBack').addEventListener('click', function() { showScr('id'); });
+document.getElementById('partyMinus').addEventListener('click', function() { setParty(partySize - 1); });
+document.getElementById('partyPlus').addEventListener('click', function() { setParty(partySize + 1); });
+document.getElementById('visitSubmitBtn').addEventListener('click', submitVisit);
+document.getElementById('visitResident').addEventListener('keydown', function(e) { if (e.key === 'Enter') e.target.blur(); });
+document.getElementById('visitResident').addEventListener('input', function() { document.getElementById('visitErr').style.display = 'none'; });
 
 // ─── Event listeners ────────────────────────────────────────
 document.getElementById('lookupBtn').addEventListener('click', lookup);
