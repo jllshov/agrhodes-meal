@@ -285,6 +285,7 @@
     <button class="nav-tab" onclick="showTab('logs')">Meal Logs</button>
     <button class="nav-tab" onclick="showTab('reports')">Reports</button>
     <button class="nav-tab" onclick="showTab('guests')">Guest Logs</button>
+    <button class="nav-tab" onclick="showTab('visitors')">Visitor Meals</button>
     <button class="nav-tab" onclick="showTab('feedback')">Feedback</button>
   </div>
 
@@ -297,6 +298,7 @@
         <div class="stat-card"><div class="stat-label">Total Employees</div><div class="stat-val" id="dTotal">—</div></div>
         <div class="stat-card"><div class="stat-label">Today's Revenue</div><div class="stat-val success" id="dRevenue">—</div></div>
         <div class="stat-card"><div class="stat-label">Free Meals Today</div><div class="stat-val gold" id="dFree">—</div></div>
+        <div class="stat-card" style="grid-column:1/-1"><div class="stat-label">Visitor Meals Today (free)</div><div class="stat-val" id="dVisitors">—</div></div>
       </div>
       <div class="card">
         <div class="card-header"><div class="card-title">Recent Check-ins</div></div>
@@ -406,6 +408,32 @@
           <table>
             <thead><tr><th>Guest</th><th>Date</th><th>Time</th><th>Amount</th><th>Payment</th></tr></thead>
             <tbody id="guestTbody"><tr><td colspan="5"><div class="loading"><div class="spinner"></div><br>Loading…</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- VISITOR MEALS (free; counts only, resident names are never read back) -->
+    <div class="section" id="sec-visitors">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Visitor Meals</div></div>
+        <div class="toolbar">
+          <input type="date" class="filter" id="visFrom" onchange="loadVisitors()" aria-label="From"/>
+          <input type="date" class="filter" id="visTo" onchange="loadVisitors()" aria-label="To"/>
+          <button class="btn-sm btn-outline-sm" onclick="loadVisitors()">Refresh</button>
+          <button class="btn-sm btn-outline-sm" onclick="downloadVisitors()">Download CSV</button>
+        </div>
+        <div class="stats" style="margin-bottom:18px">
+          <div class="stat-card"><div class="stat-label">Meals Served</div><div class="stat-val accent" id="visPeople">—</div></div>
+          <div class="stat-card"><div class="stat-label">Visits</div><div class="stat-val" id="visVisits">—</div></div>
+          <div class="stat-card"><div class="stat-label">Avg Party Size</div><div class="stat-val" id="visAvg">—</div></div>
+          <div class="stat-card"><div class="stat-label">Busiest Meal</div><div class="stat-val gold" id="visBusiest">—</div></div>
+        </div>
+        <div style="font-size:.78rem;color:var(--text2);margin:-6px 0 12px">Visitors scan the meal QR sign and tap “Visiting a resident”. Meals are free. Numbers are people served; resident names are kept private and are not shown here.</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Breakfast</th><th>Lunch</th><th>Dinner</th><th>Visits</th><th>Meals Served</th></tr></thead>
+            <tbody id="visTbody"><tr><td colspan="6"><div class="empty">Choose dates</div></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -569,13 +597,17 @@ async function init() {
     document.getElementById('guestDate').value = today;
     loadLogs();
     loadGuests();
+    const d = new Date();
+    document.getElementById('visTo').value = localYmd(d);
+    document.getElementById('visFrom').value = localYmd(new Date(d.getFullYear(), d.getMonth(), 1));
+    loadVisitors();
   } catch(e) { showToast('Error connecting to database'); console.error(e); }
 }
 
 // ─── TAB NAV ───────────────────────────────────────────────
 function showTab(name) {
   document.querySelectorAll('.nav-tab').forEach((t,i) => {
-    t.classList.toggle('active', ['dashboard','employees','logs','reports','guests','feedback'][i]===name);
+    t.classList.toggle('active', ['dashboard','employees','logs','reports','guests','visitors','feedback'][i]===name);
   });
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-'+name).classList.add('active');
@@ -598,6 +630,7 @@ async function loadDashboard() {
   document.getElementById('dTotal').textContent   = emps.length;
   document.getElementById('dRevenue').textContent = '$'+revenue.toFixed(2);
   document.getElementById('dFree').textContent    = freeMeals;
+  loadVisitorsToday();
 
   // Recent logs table
   const tbody = document.getElementById('recentLogs');
@@ -1047,6 +1080,72 @@ async function loadGuests() {
   }).join('\n');
 }
 
+
+// ─── VISITOR MEALS ─────────────────────────────────────────
+// Counts come from visitor_meal_counts(): numbers only. This page cannot read resident names.
+let visRows = [];
+
+function localYmd(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+async function visitorCounts(from, to) {
+  return sb('rpc/visitor_meal_counts', { method: 'POST', body: JSON.stringify({ p_facility: facilityId, p_from: from, p_to: to }) });
+}
+
+async function loadVisitorsToday() {
+  const today = localYmd(new Date());
+  try {
+    const rows = await visitorCounts(today, today);
+    document.getElementById('dVisitors').textContent = rows.reduce((s, r) => s + r.people, 0);
+  } catch (e) { document.getElementById('dVisitors').textContent = '—'; }
+}
+
+async function loadVisitors() {
+  const from = document.getElementById('visFrom').value, to = document.getElementById('visTo').value;
+  const tbody = document.getElementById('visTbody');
+  if (!from || !to || !facilityId) return;
+  const clear = () => ['visPeople', 'visVisits', 'visAvg', 'visBusiest'].forEach(id => document.getElementById(id).textContent = '—');
+  if (from > to) { visRows = []; clear(); tbody.innerHTML = '<tr><td colspan="6"><div class="empty">The start date is after the end date</div></td></tr>'; return; }
+  tbody.innerHTML = '<tr><td colspan="6"><div class="loading"><div class="spinner"></div><br>Loading…</div></td></tr>';
+  try {
+    visRows = await visitorCounts(from, to);
+  } catch (e) {
+    visRows = []; clear();
+    const missing = /visitor_meal_counts|schema cache|Could not find the function/i.test(e.message || '');
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty">${missing ? 'Visitor meals are not set up yet (setup SQL not run).' : 'Could not load visitor meals: ' + escHtml(e.message || '')}</div></td></tr>`;
+    return;
+  }
+  const byDay = {}, byMeal = { breakfast: 0, lunch: 0, dinner: 0 };
+  let visits = 0, people = 0;
+  visRows.forEach(r => {
+    const d = byDay[r.day] = byDay[r.day] || { breakfast: 0, lunch: 0, dinner: 0, visits: 0, people: 0 };
+    d[r.meal] += r.people; d.visits += r.visits; d.people += r.people;
+    byMeal[r.meal] += r.people; visits += r.visits; people += r.people;
+  });
+  document.getElementById('visPeople').textContent = people;
+  document.getElementById('visVisits').textContent = visits;
+  document.getElementById('visAvg').textContent = visits ? (people / visits).toFixed(1) : '—';
+  const top = Object.keys(byMeal).sort((a, b) => byMeal[b] - byMeal[a])[0];
+  document.getElementById('visBusiest').textContent = people ? top.charAt(0).toUpperCase() + top.slice(1) : '—';
+  const days = Object.keys(byDay).sort().reverse();
+  if (!days.length) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-icon">👪</div>No visitor meals in these dates</div></td></tr>'; return; }
+  const fmt = day => new Date(day + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  tbody.innerHTML = days.map(day => {
+    const d = byDay[day];
+    return `<tr><td><strong>${fmt(day)}</strong></td><td>${d.breakfast || '—'}</td><td>${d.lunch || '—'}</td><td>${d.dinner || '—'}</td><td>${d.visits}</td><td style="font-weight:800">${d.people}</td></tr>`;
+  }).join('') + `<tr><td><strong>Total</strong></td><td><strong>${byMeal.breakfast}</strong></td><td><strong>${byMeal.lunch}</strong></td><td><strong>${byMeal.dinner}</strong></td><td><strong>${visits}</strong></td><td style="font-weight:800">${people}</td></tr>`;
+}
+
+function downloadVisitors() {
+  if (!visRows.length) { showToast('No visitor meals to download'); return; }
+  const lines = [['Date', 'Meal', 'Visits', 'Meals served']].concat(visRows.map(r => [r.day, r.meal, r.visits, r.people]));
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([lines.map(l => l.join(',')).join('\n')], { type: 'text/csv' }));
+  a.download = `visitor-meals-${document.getElementById('visFrom').value}-to-${document.getElementById('visTo').value}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
 
 // ─── FEEDBACK ──────────────────────────────────────────────
 let allFeedback = [];
