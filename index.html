@@ -280,6 +280,11 @@
   .visit-note { background: #FFF7ED; border: 1.5px solid #FED7AA; border-radius: 16px; padding: 12px 14px;
     color: #9A3412; font-size: .84rem; font-weight: 600; text-align: center; margin-bottom: 18px; line-height: 1.4; }
   #visitResident { font-size: 16px; }
+  #visitCode { font-size: 1.4rem; letter-spacing: .4em; text-align: center; }
+  .visit-help { color: var(--text2); font-size: .76rem; font-weight: 600; margin-top: -8px; text-align: center; }
+  .visit-blocked { background: #FEF2F2; border: 1.5px solid #FECACA; border-radius: 16px; padding: 18px 16px;
+    color: #991B1B; font-size: .9rem; font-weight: 600; text-align: center; line-height: 1.45; }
+  .visit-blocked b { display: block; font-size: 1rem; margin-bottom: 6px; }
   .party { display: flex; align-items: center; justify-content: center; gap: 18px; }
   .party-btn { width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--border); background: var(--bg2);
     font-size: 1.6rem; font-weight: 800; color: var(--accent); font-family: inherit; cursor: pointer; -webkit-appearance: none; }
@@ -411,6 +416,11 @@
   <!-- Screen V: Visitor meal (free; counts only — names can't be read back by this page) -->
   <div class="screen" id="scr-visit">
     <div class="card-title">Visitor Meal</div>
+    <div class="visit-blocked" id="visitBlocked" style="display:none">
+      <b>Visitor meals aren't available on this phone</b>
+      This phone was used for an employee meal check-in. Visitors, please use your own phone or ask the front desk.
+    </div>
+    <div id="visitForm">
     <div class="visit-note">Meals are free for family and friends visiting a resident. Enjoy your time together!</div>
     <div class="fg-wrap">
       <label class="fg-label" for="visitResident">Resident you're visiting</label>
@@ -426,8 +436,15 @@
       </div>
       <div class="party-sub">Count yourself too</div>
     </div>
+    <div class="fg-wrap">
+      <label class="fg-label" for="visitCode">Today's visitor code</label>
+      <input type="text" id="visitCode" placeholder="0000" maxlength="4" inputmode="numeric" pattern="[0-9]*"
+        autocomplete="off" autocorrect="off" spellcheck="false"/>
+      <div class="visit-help">Ask the front desk for today's 4-digit code</div>
+    </div>
     <div class="inline-err" id="visitErr"></div>
     <button class="btn btn-primary" id="visitSubmitBtn" type="button">Get Meal Ticket</button>
+    </div>
     <button class="back-btn" type="button" id="visitBack">← Back</button>
   </div>
 
@@ -611,6 +628,7 @@ async function lookup() {
       return;
     }
     emp = employees[0];
+    markStaffPhone();
 
     // Get today's logs
     const todayLogs = await getTodayLogs(emp.id);
@@ -912,8 +930,18 @@ async function submitGuest() {
 }
 
 // ─── Visitor meal (free) ────────────────────────────────────
-// The visitor_meals table is add-only for this page: it can save a visit but never read names back.
+// Visits are saved by add_visitor_meal(), which checks today's visitor code (front desk).
+// This page can save a visit but never read names back.
 const PARTY_MAX = 20;
+const STAFF_PHONE_KEY = 'mt_staff_phone';
+
+// A phone used for an employee check-in can't get visitor meals.
+function markStaffPhone() {
+  try { localStorage.setItem(STAFF_PHONE_KEY, new Date().toISOString()); } catch (e) {}
+}
+function isStaffPhone() {
+  try { return !!localStorage.getItem(STAFF_PHONE_KEY); } catch (e) { return false; }
+}
 let partySize = 1;
 
 function setParty(n) {
@@ -929,7 +957,11 @@ function mealNow(d) {
 }
 
 function openVisit() {
+  const blocked = isStaffPhone();
+  document.getElementById('visitBlocked').style.display = blocked ? 'block' : 'none';
+  document.getElementById('visitForm').style.display = blocked ? 'none' : 'block';
   document.getElementById('visitResident').value = '';
+  document.getElementById('visitCode').value = '';
   document.getElementById('visitErr').style.display = 'none';
   setParty(1);
   showScr('visit');
@@ -939,27 +971,32 @@ async function submitVisit() {
   const name = document.getElementById('visitResident').value.replace(/\s+/g, ' ').trim();
   const errEl = document.getElementById('visitErr');
   errEl.style.display = 'none';
+  const code = document.getElementById('visitCode').value.replace(/\D/g, '');
+  if (isStaffPhone()) { openVisit(); return; }
   if (name.length < 2) { errEl.textContent = "Please enter the name of the resident you're visiting."; errEl.style.display = 'block'; return; }
+  if (code.length !== 4) { errEl.textContent = "Please enter today's 4-digit visitor code from the front desk."; errEl.style.display = 'block'; return; }
   if (!facilityId)     { errEl.textContent = 'Still connecting. Please try again in a moment.'; errEl.style.display = 'block'; return; }
 
   const btn = document.getElementById('visitSubmitBtn');
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Saving…';
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/visitor_meals`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/add_visitor_meal`, {
       method: 'POST',
       headers: {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'          // the page may add a visit but not read it back
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ facility_id: facilityId, resident_name: name, party_size: partySize })
+      body: JSON.stringify({ p_facility: facilityId, p_resident: name, p_party: partySize, p_code: code })
     });
+    const result = await res.json().catch(() => null);
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      if (res.status === 404 || /visitor_meals/.test(err.message || '')) throw new Error("Visitor meals aren't set up yet. Please ask the kitchen staff.");
+      if (res.status === 404) throw new Error("Visitor meals aren't set up yet. Please ask the kitchen staff.");
       throw new Error('Could not save your visit. Please try again.');
     }
+    if (result === 'wrong_code') throw new Error("That code isn't right. Please check today's code with the front desk.");
+    if (result === 'locked') throw new Error('Too many wrong codes. Please wait 10 minutes or ask the front desk.');
+    if (result !== 'ok') throw new Error('Please check the resident name and try again.');
     const now = new Date();
     showScr('done');
     document.getElementById('resultBox').className = 'result res-visit';
@@ -988,6 +1025,10 @@ document.getElementById('partyPlus').addEventListener('click', function() { setP
 document.getElementById('visitSubmitBtn').addEventListener('click', submitVisit);
 document.getElementById('visitResident').addEventListener('keydown', function(e) { if (e.key === 'Enter') e.target.blur(); });
 document.getElementById('visitResident').addEventListener('input', function() { document.getElementById('visitErr').style.display = 'none'; });
+document.getElementById('visitCode').addEventListener('input', function(e) {
+  e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
+  document.getElementById('visitErr').style.display = 'none';
+});
 
 // ─── Event listeners ────────────────────────────────────────
 document.getElementById('lookupBtn').addEventListener('click', lookup);

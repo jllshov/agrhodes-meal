@@ -112,6 +112,15 @@
   .stat-val.accent { color: var(--accent); }
   .stat-val.gold { color: var(--gold); }
   .stat-val.success { color: var(--success); }
+  .vis-code-box { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; background: var(--accent-l, #EEF0FF);
+    border-radius: 16px; padding: 14px 18px; margin-bottom: 16px; }
+  .vis-code { font-size: 2.2rem; font-weight: 800; letter-spacing: .25em; color: var(--accent, #6B73FF); }
+  .vis-code-side { flex: 1 1 200px; font-size: .8rem; color: var(--text2); font-weight: 600; line-height: 1.4; }
+  .vis-flags { margin-bottom: 14px; }
+  .vis-flag-ok { font-size: .8rem; color: var(--success); font-weight: 700; }
+  .vis-flag-h { font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: #B45309; margin-bottom: 6px; }
+  .vis-flag { background: #FFFBEB; border: 1.5px solid #FDE68A; border-radius: 12px; padding: 9px 12px; margin-bottom: 6px;
+    font-size: .82rem; color: #92400E; font-weight: 600; }
 
   /* Card */
   .card {
@@ -298,7 +307,8 @@
         <div class="stat-card"><div class="stat-label">Total Employees</div><div class="stat-val" id="dTotal">—</div></div>
         <div class="stat-card"><div class="stat-label">Today's Revenue</div><div class="stat-val success" id="dRevenue">—</div></div>
         <div class="stat-card"><div class="stat-label">Free Meals Today</div><div class="stat-val gold" id="dFree">—</div></div>
-        <div class="stat-card" style="grid-column:1/-1"><div class="stat-label">Visitor Meals Today (free)</div><div class="stat-val" id="dVisitors">—</div></div>
+        <div class="stat-card"><div class="stat-label">Visitor Meals Today (free)</div><div class="stat-val" id="dVisitors">—</div></div>
+        <div class="stat-card"><div class="stat-label">Today's Visitor Code</div><div class="stat-val accent" id="dVisitCode" style="letter-spacing:.12em">—</div></div>
       </div>
       <div class="card">
         <div class="card-header"><div class="card-title">Recent Check-ins</div></div>
@@ -417,6 +427,16 @@
     <div class="section" id="sec-visitors">
       <div class="card">
         <div class="card-header"><div class="card-title">Visitor Meals</div></div>
+        <div class="vis-code-box">
+          <div>
+            <div class="stat-label">Today's visitor code</div>
+            <div class="vis-code" id="visCodeToday">—</div>
+          </div>
+          <div class="vis-code-side">
+            Give this to families when they sign in at the front desk. It changes every day at midnight.
+            <div style="margin-top:6px">Tomorrow: <strong id="visCodeTomorrow">—</strong></div>
+          </div>
+        </div>
         <div class="toolbar">
           <input type="date" class="filter" id="visFrom" onchange="loadVisitors()" aria-label="From"/>
           <input type="date" class="filter" id="visTo" onchange="loadVisitors()" aria-label="To"/>
@@ -429,7 +449,8 @@
           <div class="stat-card"><div class="stat-label">Avg Party Size</div><div class="stat-val" id="visAvg">—</div></div>
           <div class="stat-card"><div class="stat-label">Busiest Meal</div><div class="stat-val gold" id="visBusiest">—</div></div>
         </div>
-        <div style="font-size:.78rem;color:var(--text2);margin:-6px 0 12px">Visitors scan the meal QR sign and tap “Visiting a resident”. Meals are free. Numbers are people served; resident names are kept private and are not shown here.</div>
+        <div style="font-size:.78rem;color:var(--text2);margin:-6px 0 12px">Visitors scan the meal QR sign, tap “Visiting a resident” and enter today's code. Meals are free. Phones used for an employee check-in can't get visitor meals. Numbers are people served; resident names are kept private and are not shown here.</div>
+        <div class="vis-flags" id="visFlags"></div>
         <div class="tbl-wrap">
           <table>
             <thead><tr><th>Date</th><th>Breakfast</th><th>Lunch</th><th>Dinner</th><th>Visits</th><th>Meals Served</th></tr></thead>
@@ -1093,7 +1114,44 @@ async function visitorCounts(from, to) {
   return sb('rpc/visitor_meal_counts', { method: 'POST', body: JSON.stringify({ p_facility: facilityId, p_from: from, p_to: to }) });
 }
 
+async function loadVisitorCode() {
+  try {
+    const rows = await sb('rpc/visitor_code_today', { method: 'POST', body: JSON.stringify({ p_facility: facilityId }) });
+    const c = rows[0] || {};
+    document.getElementById('visCodeToday').textContent = c.today || '—';
+    document.getElementById('visCodeTomorrow').textContent = c.tomorrow || '—';
+    document.getElementById('dVisitCode').textContent = c.today || '—';
+  } catch (e) {
+    ['visCodeToday', 'visCodeTomorrow', 'dVisitCode'].forEach(id => document.getElementById(id).textContent = '—');
+  }
+}
+
+// Unusual patterns from visitor_meal_flags(): numbers only, never names.
+function flagText(f) {
+  const day = f.day ? new Date(f.day + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ': ' : '';
+  const n = f.n, s = n === 1 ? '' : 's';
+  switch (f.kind) {
+    case 'wrong_codes':  return `${day}${n} wrong visitor codes typed. Someone may be trying to guess the code.`;
+    case 'same_meal':    return `${day}${n} resident name${s} used on more than one ticket at ${f.meal}.`;
+    case 'shift_change': return `${day}${n} visitor ticket${s} at shift change (6:30–7:30 am, 2:30–3:30 pm or 6:30–7:30 pm).`;
+    case 'spike':        return `${day}${n} visitor meals, more than double the usual.`;
+    case 'frequent':     return `${n} resident name${s} used on 5 or more different days in these dates.`;
+    default:             return `${day}${f.kind} (${n})`;
+  }
+}
+
+async function loadVisitorFlags(from, to) {
+  const box = document.getElementById('visFlags');
+  try {
+    const flags = await sb('rpc/visitor_meal_flags', { method: 'POST', body: JSON.stringify({ p_facility: facilityId, p_from: from, p_to: to }) });
+    box.innerHTML = flags.length
+      ? '<div class="vis-flag-h">Things to check</div>' + flags.map(f => `<div class="vis-flag">⚠️ ${escHtml(flagText(f))}</div>`).join('')
+      : '<div class="vis-flag-ok">✓ Nothing unusual in these dates</div>';
+  } catch (e) { box.innerHTML = ''; }
+}
+
 async function loadVisitorsToday() {
+  loadVisitorCode();
   const today = localYmd(new Date());
   try {
     const rows = await visitorCounts(today, today);
@@ -1108,6 +1166,7 @@ async function loadVisitors() {
   const clear = () => ['visPeople', 'visVisits', 'visAvg', 'visBusiest'].forEach(id => document.getElementById(id).textContent = '—');
   if (from > to) { visRows = []; clear(); tbody.innerHTML = '<tr><td colspan="6"><div class="empty">The start date is after the end date</div></td></tr>'; return; }
   tbody.innerHTML = '<tr><td colspan="6"><div class="loading"><div class="spinner"></div><br>Loading…</div></td></tr>';
+  loadVisitorFlags(from, to);
   try {
     visRows = await visitorCounts(from, to);
   } catch (e) {
