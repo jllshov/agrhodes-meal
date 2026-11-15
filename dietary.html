@@ -399,234 +399,322 @@ body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--bla
 .dv2-chart-legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--gray); font-weight: 600; }
 .dv2-chart-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
 
+
+/* ════ 2026-11 look: clean white cards, blue accent, tabs across the top ════ */
+:root {
+  --bg: #F4F6F9; --surface: #FFFFFF; --orange: #2F6FED; --orange-light: #E8F0FE;
+  --black: #111827; --gray: #6B7280; --gray-light: #9CA3AF; --line: #E8EBF0; --soft: #F3F5F8;
+  --shadow-out: 0 1px 2px rgba(16,24,40,.06); --shadow-in: inset 0 0 0 1px #E5E7EB;
+  --shadow-card: 0 1px 2px rgba(16,24,40,.04); --r: 22px;
+  --t1: #DC2626; --t2: #D97706; --t3: #2F6FED;
+}
+body { display: block; background: var(--bg); }
+.main { padding: 28px 36px 48px; max-width: 1560px; margin: 0 auto; }
+.card, .stat-card, .dv2-card-white, .modal-box { box-shadow: none; border: 1px solid var(--line); }
+.neu-btn { box-shadow: none; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; }
+.neu-btn:hover { border-color: var(--orange); color: var(--orange); }
+.neu-btn.primary { background: var(--orange); border-color: var(--orange); color: #fff; box-shadow: 0 4px 12px rgba(47,111,237,.28); }
+.neu-btn.primary:hover { color: #fff; filter: brightness(1.08); }
+.tab-pill { box-shadow: none; background: var(--soft); border-radius: 12px; }
+.tab-pill.active { background: var(--orange); color: #fff; }
+.page-title { font-weight: 500; font-size: 32px; letter-spacing: -.02em; }
+input, select, textarea { font-size: 16px; }
+
+/* Top bar */
+.dx-top { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+.dx-logo { width: 50px; height: 50px; flex-shrink: 0; border-radius: 50%; background: #111827; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; }
+.dx-tabs { display: flex; gap: 6px; flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.dx-tabs::-webkit-scrollbar { display: none; }
+.dx-tabs .nav2-item { all: unset; box-sizing: border-box; flex-shrink: 0; cursor: pointer; background: var(--soft); color: var(--gray); border-radius: 12px; padding: 14px 16px; font: 500 14px/1 'Inter', sans-serif; display: inline-flex; align-items: center; gap: 7px; }
+.dx-tabs .nav2-item:hover { color: var(--black); }
+.dx-tabs .nav2-item.active { background: var(--orange); color: #fff; box-shadow: 0 4px 12px rgba(47,111,237,.3); }
+.dx-tabs .nav2-item:focus-visible, .dx-round:focus-visible, .dx-add:focus-visible, .dx-go:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+.dx-tab-badge { background: #DC2626; color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px; }
+.dx-search { display: flex; align-items: center; gap: 8px; background: var(--soft); border-radius: 14px; padding: 0 14px; width: 240px; flex-shrink: 1; min-width: 140px; }
+.dx-search span { font-size: 18px; color: var(--gray); }
+.dx-search input { border: 0; background: transparent; outline: none; width: 100%; padding: 14px 0; font: 400 14px 'Inter', sans-serif; color: var(--black); }
+.dx-round { width: 50px; height: 50px; flex-shrink: 0; border-radius: 50%; border: 0; background: var(--soft); font-size: 17px; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; box-shadow: none; }
+.dx-round:hover { background: var(--orange-light); }
+.dx-top .notif-bell-wrap { position: relative; flex-shrink: 0; }
+.dx-role { flex-shrink: 0; height: 50px; border-radius: 999px; border: 0; background: #111827; color: #fff; padding: 0 18px; font: 600 13px 'Inter', sans-serif; cursor: pointer; white-space: nowrap; }
+
+/* Greeting */
+.dx-hello { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+.dx-hello-l { flex: 1 1 360px; min-width: 0; }
+.dx-h1 { font-size: 46px; font-weight: 500; letter-spacing: -.03em; line-height: 1.05; color: var(--black); }
+.dx-hello p { font-size: 16px; color: var(--gray); margin-top: 8px; }
+.dx-adds { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.dx-add { border: 1px solid var(--line); background: var(--surface); color: var(--black); border-radius: 14px; padding: 14px 18px; font: 500 14px/1 'Inter', sans-serif; cursor: pointer; }
+.dx-add:hover { border-color: var(--orange); color: var(--orange); }
+
+/* Bento */
+.dx-ov { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; margin-bottom: 18px; container-type: inline-size; }
+.dx-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 24px 26px; min-width: 0; display: flex; flex-direction: column; }
+.dx-a { grid-column: 1 / span 5; grid-row: 1 / span 2; }
+.dx-b { grid-column: 6 / span 4; }
+.dx-c { grid-column: 10 / span 3; }
+.dx-d { grid-column: 6 / span 7; }
+.dx-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+.dx-h3 { font-size: 22px; font-weight: 500; letter-spacing: -.01em; color: var(--black); }
+.dx-card-top p { font-size: 13px; color: var(--gray); margin-top: 6px; }
+.dx-corner { width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-size: 17px; cursor: pointer; color: var(--black); }
+.dx-corner:hover { border-color: var(--orange); color: var(--orange); }
+.dx-seg { display: flex; gap: 4px; background: var(--soft); border-radius: 12px; padding: 4px; flex-wrap: wrap; }
+.dx-seg button { border: 0; background: transparent; color: var(--gray); border-radius: 9px; padding: 10px 14px; font: 500 13px/1 'Inter', sans-serif; cursor: pointer; box-shadow: none; }
+.dx-seg button.active { background: var(--orange); color: #fff; }
+.dx-empty { font-size: 13px; color: var(--gray); background: var(--soft); border-radius: 14px; padding: 16px; text-align: center; }
+
+/* Stock overview: donut + tiles */
+.dx-donut { display: flex; align-items: center; gap: 26px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+.dx-donut-svg { position: relative; width: 190px; height: 190px; flex-shrink: 0; }
+.dx-donut-svg svg { width: 100%; height: 100%; }
+.dx-donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.dx-donut-center b { font-size: 34px; font-weight: 500; color: var(--black); }
+.dx-donut-center span { font-size: 11.5px; color: var(--gray); }
+.dx-legend { flex: 1 1 200px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.dx-legend-item { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto 44px; gap: 10px; align-items: center; background: var(--soft); border-radius: 12px; padding: 10px 12px; font-size: 13.5px; }
+.dx-legend-item i { width: 10px; height: 10px; border-radius: 50%; }
+.dx-legend-item span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--black); }
+.dx-legend-item b { font-weight: 600; color: var(--black); }
+.dx-legend-item em { font-style: normal; font-size: 11px; font-weight: 700; color: var(--orange); background: var(--orange-light); border-radius: 8px; padding: 3px 0; text-align: center; }
+.dx-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: auto; }
+.dx-tile { background: var(--soft); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; min-width: 0; min-height: 160px; }
+.dx-tile > b { font-size: 16px; font-weight: 500; color: var(--black); }
+.dx-tile-sub { font-size: 12px; color: var(--gray); margin-top: 3px; }
+.dx-bar { height: 6px; border-radius: 99px; background: #E3E8EF; overflow: hidden; margin-top: 12px; }
+.dx-bar i { display: block; height: 100%; width: 0; background: var(--orange); border-radius: 99px; transition: width .5s; }
+.dx-tile-foot { margin-top: auto; padding-top: 12px; display: flex; align-items: flex-end; gap: 8px; }
+.dx-tile-foot > div { flex: 1; min-width: 0; }
+.dx-tile-foot small { display: block; font-size: 11px; color: var(--gray); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.dx-tile-foot strong { display: block; font-size: 22px; font-weight: 500; color: var(--black); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dx-tile-foot strong small { display: inline; font-size: 12px; }
+.dx-pct { font-size: 11px; font-weight: 700; color: var(--gray); padding-bottom: 6px; }
+.dx-go { width: 46px; height: 46px; flex-shrink: 0; border: 0; border-radius: 12px; background: var(--orange); color: #fff; font-size: 18px; cursor: pointer; box-shadow: 0 4px 10px rgba(47,111,237,.3); }
+.dx-go:hover { filter: brightness(1.1); }
+
+/* Budget */
+.dx-stripes { display: flex; gap: 3px; height: 82px; }
+.dx-stripes i { flex: 1; border-radius: 2px; background: #DCE7FD; }
+.dx-stripes i.on { background: var(--orange); }
+.dx-big { display: flex; align-items: baseline; gap: 12px; margin: 18px 0 14px; flex-wrap: wrap; }
+.dx-big b { font-size: 36px; font-weight: 500; letter-spacing: -.02em; color: var(--black); }
+.dx-big b small { font-size: 14px; color: var(--gray); font-weight: 400; }
+.dx-big span { font-size: 13px; color: var(--gray); flex: 1 1 160px; }
+.dx-rows { display: flex; flex-direction: column; gap: 8px; }
+.dx-rows > div { display: grid; grid-template-columns: minmax(0, 1fr) auto 56px; gap: 12px; align-items: center; background: var(--soft); border-radius: 12px; padding: 11px 14px; font-size: 13.5px; }
+.dx-rows > div > span { display: flex; align-items: center; gap: 9px; color: var(--black); min-width: 0; white-space: nowrap; overflow: hidden; }
+.dx-rows i { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dx-rows i.t1 { background: var(--t1); } .dx-rows i.t2 { background: var(--t2); } .dx-rows i.t3 { background: var(--t3); }
+.dx-rows em { font-style: normal; font-size: 12px; color: var(--gray); white-space: nowrap; }
+.dx-rows b { font-size: 12px; font-weight: 700; text-align: center; border-radius: 8px; padding: 4px 0; border: 1px solid; }
+.dx-rows b.t1 { color: var(--t1); background: #FEF2F2; } .dx-rows b.t2 { color: var(--t2); background: #FFFBEB; } .dx-rows b.t3 { color: var(--t3); background: var(--orange-light); }
+.dx-rows b small { font-size: 10px; font-weight: 600; }
+.dx-stars { font-size: 12px; letter-spacing: 1px; }
+.dx-stars .dv2-star { color: #D1D5DB; } .dx-stars .dv2-star.filled, .dx-stars .dv2-star.half { color: #F59E0B; }
+
+/* Heatmap */
+.dx-heat { display: flex; flex-direction: column; gap: 6px; flex: 1; justify-content: center; }
+.dx-heat-row { display: grid; grid-template-columns: 58px repeat(7, minmax(0, 1fr)); gap: 6px; align-items: center; }
+.dx-heat-row > span { font-size: 11.5px; color: var(--gray); white-space: nowrap; }
+.dx-cell { height: 50px; border-radius: 8px; background: color-mix(in srgb, var(--orange) calc(var(--a) * 100%), #fff); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--black); }
+.dx-cell.dark { color: #fff; }
+.dx-heat-row.foot em { font-style: normal; font-size: 11.5px; color: var(--gray); text-align: center; }
+
+/* Stock watch rows (rendered by loadDashboard) */
+.dx-watch { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; }
+.dx-watch .txn-row { background: var(--soft); border: 0; border-radius: 12px; padding: 12px 14px; }
+.dx-watch .txn-row:hover { background: #ECEFF4; }
+.dx-watch .txn-title { font-size: 13.5px; font-weight: 500; }
+.dx-watch .txn-meta { font-size: 12px; }
+.exp-badge, .qty-badge { border-radius: 999px; font-weight: 600; }
+
+/* Trend chart */
+.dx-trend .dv2-chart-tabs { display: flex; gap: 4px; background: var(--soft); border-radius: 12px; padding: 4px; width: fit-content; max-width: 100%; flex-wrap: wrap; margin-bottom: 16px; }
+.dx-trend .dv2-chart-tab { border: 0; box-shadow: none; background: transparent; color: var(--gray); border-radius: 9px; padding: 10px 14px; font: 500 13px/1 'Inter', sans-serif; }
+.dx-trend .dv2-chart-tab.active { background: var(--orange); color: #fff; }
+.dx-trend .dv2-chart-header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.dx-trend .dv2-chart-title { font-size: 22px; font-weight: 500; }
+.dx-trend .dv2-month-nav { display: flex; align-items: center; gap: 10px; margin: 0; }
+.dx-trend .dv2-month-nav button { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); box-shadow: none; cursor: pointer; font-size: 16px; }
+
+/* Layout by the overview's own width */
+@container (max-width: 1180px) {
+  .dx-a { grid-column: 1 / span 5; grid-row: 1 / span 2; }
+  .dx-b { grid-column: 6 / span 7; grid-row: 1; } .dx-c { grid-column: 6 / span 7; grid-row: 2; }
+  .dx-d { grid-column: 1 / -1; }
+}
+@container (max-width: 820px) {
+  .dx-ov > .dx-card { grid-column: 1 / -1; grid-row: auto; }
+}
+@media (max-width: 900px) {
+  .main { padding: 14px 16px 40px; }
+  .dx-top { flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .dx-logo { width: 44px; height: 44px; }
+  .dx-tabs { order: 3; flex-basis: 100%; }
+  .dx-tabs .nav2-item { padding: 12px 16px; }
+  .dx-search { order: 4; flex: 1 1 100%; width: auto; min-width: 0; }
+  .dx-role { margin-left: auto; }
+  .dx-round { width: 44px; height: 44px; }
+  .dx-role { height: 44px; padding: 0 12px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+  .dx-h1 { font-size: 32px; }
+  .dx-hello p { font-size: 14px; }
+  .dx-adds { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+  .dx-add { min-height: 44px; }
+  .dx-card { padding: 18px 16px; }
+  .dx-h3, .dx-trend .dv2-chart-title { font-size: 19px; }
+  .dx-tiles { grid-template-columns: 1fr; }
+  .dx-trend .dv2-chart-tab { padding: 10px 11px; }
+  #dv2-chart-wrap div[style*="bottom:0;width:60px"] { font-size: 9px !important; }
+  .dx-tile { min-height: 0; }
+  .dx-cell { height: 40px; }
+  .dx-heat-row { grid-template-columns: 52px repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .dx-seg { width: 100%; } .dx-seg button { flex: 1; min-height: 40px; }
+  .dx-rows em { display: none; }
+  .dx-rows > div { grid-template-columns: minmax(0, 1fr) 56px; }
+}
 </style>
 </head>
 <body>
 
-<div class="mobile-topbar">
-  <div class="mobile-logo"><div class="mobile-logo-icon">AG</div><div class="mobile-logo-name">Dietary</div></div>
-  <button class="hamburger" onclick="openDrawer()">☰</button>
-</div>
-<div class="mobile-drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
-<div class="mobile-drawer" id="mobileDrawer">
-  <div class="mobile-drawer-header">
-    <div class="mobile-logo"><div class="mobile-logo-icon">AG</div><div class="mobile-logo-name">Dietary</div></div>
-    <button class="drawer-close" onclick="closeDrawer()">✕</button>
-  </div>
-  <button class="nav-item active" id="drawer-dashboard" onclick="drawerNav('dashboard')"><span class="nav-icon">📊</span> Dashboard</button>
-  <button class="nav-item" id="drawer-inventory" onclick="drawerNav('inventory')"><span class="nav-icon">📦</span> Inventory</button>
-  <button class="nav-item" id="drawer-catalog" onclick="drawerNav('catalog')"><span class="nav-icon">📋</span> Item Catalog</button>
-  <button class="nav-item" id="drawer-vendors" onclick="drawerNav('vendors')"><span class="nav-icon">🚚</span> Vendors</button>
-  <button class="nav-item" id="drawer-emergency" onclick="drawerNav('emergency')"><span class="nav-icon">🆘</span> Emergency Supply</button>
-  <button class="nav-item" id="drawer-grievances" onclick="drawerNav('grievances')"><span class="nav-icon">📢</span> Grievances</button>
-  <button class="nav-item" id="drawer-policies" onclick="drawerNav('policies')"><span class="nav-icon">📖</span> Policies &amp; Procedures</button>
-  <button class="nav-item" id="drawer-monthly" data-perm="addItem" onclick="drawerNav('monthly')"><span class="nav-icon">📅</span> Monthly Report</button>
-  <button class="nav-item" onclick="location.href='dietary-scan.html'"><span class="nav-icon">📷</span> QR Scanner</button>
-</div>
-
-<aside class="sidebar">
-  <div class="sb2-profile">
-    <div class="sb2-avatar">AG</div>
-    <div><div class="sb2-profile-name" id="sb2ProfileName">A.G. Rhodes</div><div class="sb2-profile-sub">Dietary Inventory</div></div>
-    <button class="sb2-refresh" onclick="loadDashboard()" title="Refresh">↻</button>
-  </div>
-  <div class="sb2-search">
-    <span>🔍</span>
-    <input type="text" placeholder="Search items, vendors…" onkeydown="if(event.key==='Enter'){switchTab_direct('inventory');document.getElementById('invSearch').value=this.value;renderInventoryTable();}">
-  </div>
-  <button class="nav2-item active" id="sb2-nav-dashboard" onclick="switchTab('dashboard')"><span class="nav2-icon">▦</span> Overview</button>
-  <button class="nav2-item" id="sb2-nav-inventory" onclick="switchTab('inventory')"><span class="nav2-icon">📦</span> Inventory</button>
-  <button class="nav2-item" id="sb2-nav-catalog" onclick="switchTab('catalog')"><span class="nav2-icon">📋</span> Item Catalog</button>
-  <button class="nav2-item" id="sb2-nav-vendors" onclick="switchTab('vendors')"><span class="nav2-icon">🚚</span> Vendors</button>
-  <button class="nav2-item" id="sb2-nav-emergency" onclick="switchTab('emergency')"><span class="nav2-icon">🆘</span> Emergency Supply</button>
-  <button class="nav2-item" id="sb2-nav-grievances" onclick="switchTab('grievances')"><span class="nav2-icon">📢</span> Grievances<span id="grievanceNavBadge" style="display:none;margin-left:auto;background:var(--red);color:white;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;"></span></button>
-  <button class="nav2-item" id="sb2-nav-policies" onclick="switchTab('policies')"><span class="nav2-icon">📖</span> Policies &amp; Procedures</button>
-  <button class="nav2-item" id="sb2-nav-monthly" data-perm="addItem" onclick="switchTab('monthly')"><span class="nav2-icon">📅</span> Monthly Report</button>
-  <button class="nav2-item" onclick="location.href='dietary-scan.html'"><span class="nav2-icon">📷</span> QR Scanner</button>
-
-  <div class="sb2-bottom-card">
-    <div class="sb2-bottom-title">
-      <span>Budget Remaining</span>
-      <span class="sb2-bottom-dot"></span>
-    </div>
-    <div class="sb2-bottom-num" id="sb2-budget-num">— <small>kcal</small></div>
-    <div class="sb2-bottom-desc" id="sb2-budget-desc">Loading…</div>
-    <div class="sb2-progress-track">
-      <div class="sb2-progress-fill" id="sb2-progress-fill" style="width:0%">
-        <span class="sb2-progress-badge" id="sb2-progress-badge">0%</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="sb2-signout" onclick="openRolePicker(true)">↩ Switch Role</div>
-</aside>
-
 <main class="main">
 
+  <div class="dx-top">
+    <div class="dx-logo" aria-hidden="true">AG</div>
+    <div class="dx-tabs" role="tablist" aria-label="Dietary sections">
+      <button class="nav2-item active" id="sb2-nav-dashboard" onclick="switchTab('dashboard')">Overview</button>
+      <button class="nav2-item" id="sb2-nav-inventory" onclick="switchTab('inventory')">Inventory</button>
+      <button class="nav2-item" id="sb2-nav-catalog" onclick="switchTab('catalog')">Catalog</button>
+      <button class="nav2-item" id="sb2-nav-vendors" onclick="switchTab('vendors')">Vendors</button>
+      <button class="nav2-item" id="sb2-nav-emergency" onclick="switchTab('emergency')">Emergency</button>
+      <button class="nav2-item" id="sb2-nav-grievances" onclick="switchTab('grievances')">Grievances<span id="grievanceNavBadge" class="dx-tab-badge" style="display:none;"></span></button>
+      <button class="nav2-item" id="sb2-nav-policies" onclick="switchTab('policies')">Policies</button>
+      <button class="nav2-item" id="sb2-nav-monthly" data-perm="addItem" onclick="switchTab('monthly')">Monthly</button>
+    </div>
+    <label class="dx-search"><span aria-hidden="true">⌕</span>
+      <input type="search" placeholder="Search items…" aria-label="Search items" onkeydown="if(event.key==='Enter'){switchTab('inventory');document.getElementById('invSearch').value=this.value;renderInventoryTable();}"></label>
+    <div class="notif-bell-wrap">
+      <button class="dx-round notif-bell" onclick="toggleNotifDropdown()" title="Notifications" aria-label="Notifications">🔔<span class="notif-badge" id="notifBadge" style="display:none;">0</span></button>
+      <div class="notif-dropdown" id="notifDropdown">
+        <div class="notif-dropdown-title">Notifications</div>
+        <div id="notifContent"></div>
+      </div>
+    </div>
+    <button class="dx-round" onclick="location.href='dietary-scan.html'" title="QR Scanner" aria-label="QR Scanner">📷</button>
+    <button class="dx-role" id="roleBadge" onclick="openRolePicker(true)" title="Switch role">—</button>
+  </div>
+
   <div id="panel-dashboard">
-    <div class="dv2-header-row">
-      <div class="dv2-title">Dietary Stats</div>
-      <div class="dv2-header-icons">
-        <span class="role-badge" id="roleBadge" onclick="openRolePicker(true)" style="margin-right:4px;">—</span>
-        <div class="notif-bell-wrap">
-          <button class="notif-bell" onclick="toggleNotifDropdown()">🔔<span class="notif-badge" id="notifBadge" style="display:none;">0</span></button>
-          <div class="notif-dropdown" id="notifDropdown">
-            <div class="notif-dropdown-title">Notifications</div>
-            <div id="notifContent"></div>
-          </div>
-        </div>
-        <div class="dv2-toggle" onclick="toggleDarkMode()"><div class="dv2-toggle-dot" id="dv2ToggleDot"></div></div>
-        <button class="dv2-icon-btn" onclick="exportDashboardCSV()" title="Export CSV">⬇</button>
-        <button class="dv2-icon-btn" onclick="location.href='dietary-scan.html'" title="Quick Scan">📷</button>
+    <div class="dx-hello">
+      <div class="dx-hello-l">
+        <div class="dx-h1" role="heading" aria-level="1">Hello, <span id="dxHelloRole">team</span></div>
+        <p>It’s <span id="dxToday"></span> · <span id="sb2ProfileName">A.G. Rhodes</span> Dietary</p>
+      </div>
+      <div class="dx-adds">
+        <button class="dx-add" onclick="location.href='dietary-scan.html'">Quick Scan</button>
+        <button class="dx-add" data-perm="receive" onclick="showManifestModal()">Submit Manifest</button>
+        <button class="dx-add" data-perm="addItem" onclick="showAddItem()">+ Add Item</button>
+        <button class="dx-add" onclick="exportDashboardCSV()">Export CSV</button>
       </div>
     </div>
 
-    <div class="dv2-period-row">
-      <div class="dv2-period-tabs">
-        <button class="dv2-period-tab active" data-period="today" onclick="setDashPeriod(this,'today')">Today</button>
-        <button class="dv2-period-tab" data-period="week" onclick="setDashPeriod(this,'week')">This week</button>
-        <button class="dv2-period-tab" data-period="month" onclick="setDashPeriod(this,'month')">This month</button>
-      </div>
-      <button class="dv2-filter-btn" onclick="switchTab_direct('inventory')" title="Go to Inventory filters">⚙</button>
+    <div class="dx-ov">
+      <!-- Left: stock by category + the four numbers -->
+      <section class="dx-card dx-a">
+        <div class="dx-card-top">
+          <div><div class="dx-h3" role="heading" aria-level="2">Stock Overview</div><p>Active items by category</p></div>
+          <div class="dx-seg dv2-period-tabs" role="tablist" aria-label="Period">
+            <button class="dv2-period-tab active" data-period="today" onclick="setDashPeriod(this,'today')">Today</button>
+            <button class="dv2-period-tab" data-period="week" onclick="setDashPeriod(this,'week')">Week</button>
+            <button class="dv2-period-tab" data-period="month" onclick="setDashPeriod(this,'month')">Month</button>
+          </div>
+        </div>
+        <div class="dx-donut">
+          <div class="dx-donut-svg">
+            <svg viewBox="0 0 120 120" id="dv2-donut-svg" role="img" aria-label="Items by category"></svg>
+            <div class="dx-donut-center"><b id="dv2-donut-total">0</b><span>items tracked</span></div>
+          </div>
+          <div class="dx-legend" id="dv2-donut-legend"></div>
+        </div>
+        <div class="dx-tiles">
+          <div class="dx-tile"><b>Inventory Value</b><span class="dx-tile-sub">Total on hand</span>
+            <div class="dx-bar"><i id="m-invval-bar"></i></div>
+            <div class="dx-tile-foot"><div><small id="m-invval-goal">—</small><strong id="m-invval">—</strong></div>
+              <span class="dx-pct" id="m-invval-pct">0%</span><button class="dx-go" onclick="switchTab('inventory')" aria-label="Open inventory">↗</button></div></div>
+          <div class="dx-tile"><b>Deliveries</b><span class="dx-tile-sub">Received this period</span>
+            <div class="dx-bar"><i id="m-deliv-bar"></i></div>
+            <div class="dx-tile-foot"><div><small id="m-deliv-goal">—</small><strong id="m-deliv">—</strong></div>
+              <span class="dx-pct" id="m-deliv-pct">0%</span><button class="dx-go" onclick="switchTab('inventory')" aria-label="Open inventory">↗</button></div></div>
+          <div class="dx-tile"><b>Stock Health</b><span class="dx-tile-sub">Adequately stocked</span>
+            <div class="dx-bar"><i id="m-stock-bar"></i></div>
+            <div class="dx-tile-foot"><div><small id="m-stock-goal">—</small><strong id="m-stock">—</strong></div>
+              <span class="dx-pct" id="m-stock-pct">0%</span><button class="dx-go" onclick="switchTab('inventory')" aria-label="Open inventory">↗</button></div></div>
+          <div class="dx-tile"><b>Waste</b><span class="dx-tile-sub">Discarded this period</span>
+            <div class="dx-bar"><i id="m-waste-bar"></i></div>
+            <div class="dx-tile-foot"><div><small id="m-waste-goal">—</small><strong id="m-waste">—</strong></div>
+              <span class="dx-pct" id="m-waste-pct">0%</span><button class="dx-go" onclick="switchTab('inventory')" aria-label="Open inventory">↗</button></div></div>
+        </div>
+      </section>
+
+      <!-- Middle: budget -->
+      <section class="dx-card dx-b">
+        <div class="dx-card-top">
+          <div><div class="dx-h3" role="heading" aria-level="2">Monthly Budget</div><p>Inventory value against the target</p></div>
+          <button class="dx-corner" onclick="switchTab('inventory')" aria-label="Open inventory">↗</button>
+        </div>
+        <div class="dx-stripes" id="dxStripes" role="img" aria-label="Budget used"></div>
+        <div class="dx-big"><b id="sb2-budget-num">—</b><span id="sb2-budget-desc">Loading…</span></div>
+        <span id="sb2-progress-fill" hidden></span><span id="sb2-progress-badge" hidden></span>
+        <div class="dx-rows">
+          <div><span><i class="t1"></i>Running low</span><em>at or below minimum</em><b class="t1" id="dxLowCount">0</b></div>
+          <div><span><i class="t2"></i>Expiring soon</span><em>within 7 days or past</em><b class="t2" id="dxExpCount">0</b></div>
+          <div><span><i class="t3"></i>Meal satisfaction <span class="dx-stars" id="m-satisfaction-stars"></span></span><em id="m-satisfaction-goal">0 responses</em><b class="t3" id="m-satisfaction">—</b></div>
+        </div>
+      </section>
+
+      <!-- Right: when the kitchen is busiest -->
+      <section class="dx-card dx-c">
+        <div class="dx-card-top">
+          <div><div class="dx-h3" role="heading" aria-level="2">Peak Activity</div><p>Scans by weekday and time · last 30 days</p></div>
+        </div>
+        <div id="dxHeat" class="dx-heat"></div>
+      </section>
+
+      <!-- Bottom right: what needs attention -->
+      <section class="dx-card dx-d">
+        <div class="dx-card-top">
+          <div><div class="dx-h3" role="heading" aria-level="2">Stock Watch</div><p id="dxWatchSub">Items at or below their minimum</p></div>
+          <div class="dx-seg" role="tablist" aria-label="Stock watch">
+            <button class="active" data-watch="low" onclick="dxWatch('low')">Running Low</button>
+            <button data-watch="exp" onclick="dxWatch('exp')">Expiring</button>
+            <button data-watch="act" onclick="dxWatch('act')">Recent Activity</button>
+          </div>
+        </div>
+        <div class="dx-watch" id="lowStockList"></div>
+        <div class="dx-watch" id="expirationList" style="display:none"></div>
+        <div class="dx-watch" id="activityFeed" style="display:none"></div>
+      </section>
     </div>
 
-    <div class="dv2-top-grid" style="grid-template-columns:1fr;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
-      <!-- Left column: 4 metric cards -->
-      <div>
-        <div class="dv2-metric-group">
-          <div class="dv2-metric-label">Inventory Value <span>Total on hand</span></div>
-          <div class="dv2-metric-card">
-            <div><div class="dv2-metric-val" id="m-invval">— <small>USD</small></div><div class="dv2-metric-goal" id="m-invval-goal">of $15,000 target</div></div>
-            <div class="dv2-metric-bar-wrap"><div class="dv2-metric-bar-fill" id="m-invval-bar" style="background:linear-gradient(90deg,#FCE3B0,var(--orange));width:0%">
-              <div class="dv2-metric-dots">⋯</div></div><div class="dv2-metric-pct orange" id="m-invval-pct">0%</div></div>
-          </div>
-        </div>
-        <div class="dv2-metric-group">
-          <div class="dv2-metric-label">Deliveries <span>This period</span></div>
-          <div class="dv2-metric-card">
-            <div><div class="dv2-metric-val" id="m-deliv">— <small>items</small></div><div class="dv2-metric-goal" id="m-deliv-goal">of goal</div></div>
-            <div class="dv2-metric-bar-wrap"><div class="dv2-metric-bar-fill" id="m-deliv-bar" style="background:var(--bg);width:0%">
-              <div class="dv2-metric-dots">⋯</div></div><div class="dv2-metric-pct" id="m-deliv-pct">0%</div></div>
-          </div>
-        </div>
-        <div class="dv2-metric-group">
-          <div class="dv2-metric-label">Stock Health <span>Adequately stocked</span></div>
-          <div class="dv2-metric-card">
-            <div><div class="dv2-metric-val" id="m-stock">— <small>items</small></div><div class="dv2-metric-goal" id="m-stock-goal">of total items</div></div>
-            <div class="dv2-metric-bar-wrap"><div class="dv2-metric-bar-fill" id="m-stock-bar" style="background:var(--bg);width:0%">
-              <div class="dv2-metric-dots">⋯</div></div><div class="dv2-metric-pct" id="m-stock-pct">0%</div></div>
-          </div>
-        </div>
-        <div class="dv2-metric-group">
-          <div class="dv2-metric-label">Waste <span>This month</span></div>
-          <div class="dv2-metric-card">
-            <div><div class="dv2-metric-val" id="m-waste">— <small>USD</small></div><div class="dv2-metric-goal" id="m-waste-goal">of $75 limit</div></div>
-            <div class="dv2-metric-bar-wrap"><div class="dv2-metric-bar-fill" id="m-waste-bar" style="background:var(--bg);width:0%">
-              <div class="dv2-metric-dots">⋯</div></div><div class="dv2-metric-pct" id="m-waste-pct">0%</div></div>
-          </div>
-        </div>
-        <div class="dv2-metric-group">
-          <div class="dv2-metric-label">Meal Satisfaction <span>From feedback</span></div>
-          <div class="dv2-metric-card">
-            <div><div class="dv2-metric-val" id="m-satisfaction">— <small>/ 5</small></div><div class="dv2-metric-goal" id="m-satisfaction-goal">0 responses</div></div>
-            <div class="dv2-stars-display" id="m-satisfaction-stars"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Right column: donut + banner + peak time -->
-      <div>
-        <div class="dv2-card-white" style="margin-bottom:18px;">
-          <div class="dv2-card-title-row">
-            <div class="dv2-card-title">Category Breakdown <span>Active items</span></div>
-            <button class="dv2-expand-btn" onclick="switchTab_direct('inventory')">↗</button>
-          </div>
-          <div class="dv2-donut-layout">
-            <div class="dv2-donut-legend" id="dv2-donut-legend"></div>
-            <div class="dv2-donut-svg-wrap">
-              <svg viewBox="0 0 120 120" width="180" height="180" id="dv2-donut-svg"></svg>
-              <div class="dv2-donut-center"><div class="dv2-donut-center-num" id="dv2-donut-total">0</div><div class="dv2-donut-center-lbl">items<br>tracked</div></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="dv2-banner" style="margin-bottom:18px;">
-          <div class="dv2-banner-dots">⋮⋮</div>
-          <div class="dv2-banner-text" id="dv2-banner-text">Loading performance…</div>
-          <div class="dv2-banner-bars"><div style="height:40%"></div><div style="height:70%"></div><div style="height:55%"></div><div style="height:85%"></div><div style="height:35%"></div></div>
-        </div>
-
-        <div class="dv2-card-white">
-          <div class="dv2-card-title-row">
-            <div class="dv2-card-title">Peak Activity <span>Per day</span></div>
-            <button class="dv2-expand-btn" onclick="switchTab_direct('inventory')">↗</button>
-          </div>
-          <div class="dv2-peak-labels"><span>6 AM</span><span>10 AM</span><span>2 PM</span><span>6 PM</span><span>9 PM</span></div>
-          <div class="dv2-peak-track"><div class="dv2-peak-chip" id="dv2-peak-chip" style="left:35%;width:18%;"><span id="dv2-peak-label">—</span></div></div>
-        </div>
-      </div>
-      </div>
-    </div>
-
-    <!-- Main trend chart -->
-    <div class="dv2-card-white" style="margin-bottom:18px;">
+    <!-- Trend chart -->
+    <section class="dx-card dx-trend">
       <div class="dv2-chart-tabs">
         <button class="dv2-chart-tab active" onclick="setChartMetric(this,'all')">All</button>
         <button class="dv2-chart-tab" onclick="setChartMetric(this,'value')">Value</button>
         <button class="dv2-chart-tab" onclick="setChartMetric(this,'receiving')">Receiving</button>
         <button class="dv2-chart-tab" onclick="setChartMetric(this,'removals')">Removals</button>
         <button class="dv2-chart-tab" onclick="setChartMetric(this,'waste')">Waste</button>
-        <div style="margin-left:auto;display:flex;gap:6px;">
-          <button class="dv2-chart-icon-btn active">📊</button>
-          <button class="dv2-chart-icon-btn">🕐</button>
-          <button class="dv2-chart-icon-btn">〰</button>
-        </div>
       </div>
-
       <div class="dv2-chart-header-row">
         <div class="dv2-chart-title" id="dv2-chart-title">Daily Transactions <span>Per month</span></div>
-      </div>
-      <div class="dv2-month-nav">
-        <button onclick="shiftChartMonth(-1)">‹</button>
-        <span id="dv2-month-label">—</span>
-        <button onclick="shiftChartMonth(1)">›</button>
-        <div class="dv2-range-tabs">
-          <button class="dv2-range-tab" onclick="setChartRange(this,'1d')">1d</button>
-          <button class="dv2-range-tab" onclick="setChartRange(this,'7d')">7d</button>
-          <button class="dv2-range-tab active" onclick="setChartRange(this,'1m')">1 month</button>
-          <button class="dv2-range-tab" onclick="setChartRange(this,'6m')">6m</button>
-          <button class="dv2-range-tab" onclick="setChartRange(this,'1y')">1y</button>
+        <div class="dv2-month-nav">
+          <button onclick="shiftChartMonth(-1)" aria-label="Previous month">‹</button>
+          <span id="dv2-month-label">—</span>
+          <button onclick="shiftChartMonth(1)" aria-label="Next month">›</button>
         </div>
       </div>
-
       <div id="dv2-chart-wrap" style="position:relative;height:280px;"></div>
-
-      <div class="dv2-chart-legend">
-        <div class="dv2-chart-legend-item"><span class="dv2-chart-legend-dot" style="background:var(--orange)"></span>Your goal</div>
-        <div class="dv2-chart-legend-item"><span class="dv2-chart-legend-dot" style="background:#1A1A1A"></span>Actual</div>
-        <div class="dv2-chart-legend-item"><span class="dv2-chart-legend-dot" style="background:#D1D5DB"></span>Last month</div>
-      </div>
-    </div>
-
-    <!-- Kept: expiration + activity feed + low stock, restyled -->
-    <div class="content-grid">
-      <div class="dv2-card-white">
-        <div class="dv2-card-title-row"><div class="dv2-card-title">Expiration Tracker <span>Soonest first</span></div></div>
-        <div id="expirationList"></div>
-      </div>
-      <div class="dv2-card-white">
-        <div class="dv2-card-title-row"><div class="dv2-card-title">Recent Activity <span>Last 15</span></div></div>
-        <div id="activityFeed"></div>
-      </div>
-    </div>
-
-    <div class="dv2-card-white" style="margin-top:18px;">
-      <div class="dv2-card-title-row"><div class="dv2-card-title">Items Running Low <span>At or below minimum</span></div></div>
-      <div id="lowStockList"></div>
-    </div>
+    </section>
   </div>
-
   <div id="panel-inventory" style="display:none;">
     <div class="page-header">
       <div><div class="page-title">Inventory</div><div class="page-sub">All dietary stock items</div></div>
@@ -1164,7 +1252,7 @@ async function loadInventoryJoined(statusFilter) {
 var currentItem = null;
 
 function switchTab(tab) {
-  document.querySelectorAll('.sidebar .nav2-item').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('.dx-tabs .nav2-item').forEach(function(b){ b.classList.remove('active'); });
   var navBtn = document.getElementById('sb2-nav-' + tab);
   if (navBtn) navBtn.classList.add('active');
   switchTab_direct(tab);
@@ -1255,7 +1343,7 @@ async function loadRefData() {
 var dashPeriod = 'today';
 var chartMetric = 'all';
 var chartMonthOffset = 0;
-var CATEGORY_COLORS = ['#1A1A1A','#F5A623','#9CA3AF','#D1D5DB','#F7B84D','#6B7280'];
+var CATEGORY_COLORS = ['#2F6FED','#0D9488','#7C3AED','#F59E0B','#93C5FD','#9CA3AF'];
 
 function setDashPeriod(btn, period) {
   document.querySelectorAll('.dv2-period-tab').forEach(function(b){ b.classList.remove('active'); });
@@ -1307,14 +1395,8 @@ async function loadDashboard() {
   // ── Category donut ──
   renderCategoryDonut(items, cats);
 
-  // ── Performance banner ──
-  var bannerEl = document.getElementById('dv2-banner-text');
-  var wastePct = invValue > 0 ? Math.round((wasteValue / (invValue + wasteValue)) * 100) : 0;
-  var betterThan = Math.max(10, Math.min(95, 100 - wastePct * 4));
-  bannerEl.innerHTML = 'Your Waste Rate Is Better Than <br>' + betterThan + '% Of Similar Facilities';
-
   // ── Peak activity time ──
-  renderPeakActivity(recentTxns.length ? recentTxns : txnsPeriod);
+  renderPeakActivity();
 
   // ── Recent activity / expiration / low stock (existing logic, restyled) ──
   var expEl = document.getElementById('expirationList');
@@ -1354,6 +1436,8 @@ async function loadDashboard() {
   document.getElementById('sb2-progress-fill').style.width = budgetPct + '%';
   document.getElementById('sb2-progress-badge').textContent = budgetPct + '%';
 
+  dxAfterDashboard(lowStock.length, expired.length + expiringSoon.length, budgetPct);
+
   // ── Main trend chart ──
   await renderTrendChart(items);
 }
@@ -1363,9 +1447,6 @@ function setMetric(prefix, val, unit, goalText, pct, orangeFill) {
   document.getElementById(prefix+'-goal').textContent = goalText;
   document.getElementById(prefix+'-pct').textContent = pct + '%';
   document.getElementById(prefix+'-bar').style.width = pct + '%';
-  if (!orangeFill) {
-    document.getElementById(prefix+'-bar').style.background = pct >= 90 ? 'linear-gradient(90deg,#111,#333)' : 'linear-gradient(90deg,#E5E7EB,#D1D5DB)';
-  }
 }
 
 function renderCategoryDonut(items, cats) {
@@ -1382,7 +1463,7 @@ function renderCategoryDonut(items, cats) {
 
   var legend = document.getElementById('dv2-donut-legend');
   legend.innerHTML = entries.map(function(e, i) {
-    return '<div class="dv2-legend-item"><span class="dv2-legend-chip" style="background:'+CATEGORY_COLORS[i]+'">'+e[1]+'</span>'+e[0]+'</div>';
+    return '<div class="dx-legend-item"><i style="background:'+CATEGORY_COLORS[i]+'"></i><span>'+e[0]+'</span><b>'+e[1]+'</b><em>'+Math.round(e[1]/total*100)+'%</em></div>';
   }).join('') || '<div style="font-size:12px;color:var(--gray);">No items yet</div>';
 
   var svg = document.getElementById('dv2-donut-svg');
@@ -1408,15 +1489,54 @@ function renderCategoryDonut(items, cats) {
   svg.innerHTML = paths;
 }
 
-function renderPeakActivity(txns) {
-  var hourCounts = new Array(24).fill(0);
-  txns.forEach(function(t) { hourCounts[new Date(t.created_at).getHours()]++; });
-  var peakHour = hourCounts.indexOf(Math.max.apply(null, hourCounts));
-  if (Math.max.apply(null, hourCounts) === 0) peakHour = 12;
-  var pct = ((peakHour - 6) / (21 - 6)) * 82;
-  document.getElementById('dv2-peak-chip').style.left = Math.max(0, Math.min(80, pct)) + '%';
-  var label = peakHour === 0 ? '12 AM' : peakHour < 12 ? peakHour+' AM' : peakHour===12 ? '12 PM' : (peakHour-12)+' PM';
-  document.getElementById('dv2-peak-label').textContent = label;
+async function renderPeakActivity() {
+  var el = document.getElementById('dxHeat');
+  if (!el) return;
+  var since = new Date(Date.now() - 30 * 86400000).toISOString();
+  var { data: txns } = await sb.from('dietary_transactions').select('created_at').eq('facility_id', FACILITY_ID).gte('created_at', since);
+  txns = txns || [];
+  var DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  var BLOCKS = [[0, 9, 'Before 9'], [9, 12, '9–12'], [12, 15, '12–3'], [15, 18, '3–6'], [18, 24, 'After 6']];
+  var grid = {}, max = 0;
+  txns.forEach(function(t) {
+    var d = new Date(t.created_at), h = d.getHours(), wd = (d.getDay() + 6) % 7;
+    var b = BLOCKS.findIndex(function(x){ return h >= x[0] && h < x[1]; });
+    var k = b + ':' + wd; grid[k] = (grid[k] || 0) + 1; if (grid[k] > max) max = grid[k];
+  });
+  var html = '';
+  BLOCKS.forEach(function(blk, b) {
+    html += '<div class="dx-heat-row"><span>' + blk[2] + '</span>';
+    DAYS.forEach(function(d, w) {
+      var n = grid[b + ':' + w] || 0, a = max ? n / max : 0;
+      html += '<div class="dx-cell' + (a > 0.55 ? ' dark' : '') + '" style="--a:' + (0.07 + a * 0.93).toFixed(2) + '" title="' + d + ' ' + blk[2] + ': ' + n + ' scan' + (n === 1 ? '' : 's') + '">' + (n || '') + '</div>';
+    });
+    html += '</div>';
+  });
+  html += '<div class="dx-heat-row foot"><span></span>' + DAYS.map(function(d){ return '<em>' + d + '</em>'; }).join('') + '</div>';
+  el.innerHTML = txns.length ? html : '<div class="dx-empty">No scans in the last 30 days.</div>';
+}
+
+/* Overview helpers: budget stripes, stock-watch counts, the greeting */
+function dxAfterDashboard(lowCount, expCount, budgetPct) {
+  document.getElementById('dxLowCount').textContent = lowCount;
+  document.getElementById('dxExpCount').textContent = expCount;
+  var N = 56, used = Math.round(Math.min(100, budgetPct) / 100 * N), html = '';
+  for (var i = 0; i < N; i++) html += '<i class="' + (i < used ? 'on' : '') + '"></i>';
+  document.getElementById('dxStripes').innerHTML = html;
+}
+function dxWatch(which) {
+  var map = { low: ['lowStockList', 'Items at or below their minimum'], exp: ['expirationList', 'Soonest expiration first'], act: ['activityFeed', 'Last 15 scans'] };
+  Object.keys(map).forEach(function(k) {
+    document.getElementById(map[k][0]).style.display = k === which ? '' : 'none';
+    var b = document.querySelector('[data-watch="' + k + '"]'); if (b) b.classList.toggle('active', k === which);
+  });
+  document.getElementById('dxWatchSub').textContent = map[which][1];
+}
+function dxSetHello() {
+  var el = document.getElementById('dxHelloRole');
+  if (el) el.textContent = currentRole || 'team';
+  var t = document.getElementById('dxToday');
+  if (t) t.textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 async function renderMealSatisfaction(periodStart) {
@@ -1503,15 +1623,15 @@ async function renderTrendChart(items) {
     var y = h - padB - barH;
     var isPeak = i === peakIdx && v > 0;
     var color = isPeak ? 'var(--orange)' : (i%2===0 ? '#1A1A1A' : '#D1D5DB');
-    bars += '<rect x="'+(x-barW/2)+'" y="'+y+'" width="'+barW+'" height="'+Math.max(barH,4)+'" rx="10" fill="'+(isPeak?'#F5A623':(i%2===0?'#1A1A1A':'#E5E7EB'))+'"/>';
+    bars += '<rect x="'+(x-barW/2)+'" y="'+y+'" width="'+barW+'" height="'+Math.max(barH,4)+'" rx="10" fill="'+(isPeak?'#2F6FED':(i%2===0?'#BFD3FB':'#DCE7FD'))+'"/>';
     points.push([x, y]);
     var dayNum = startIdx + i + 1;
     var dLabel = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), dayNum).toLocaleDateString('en-US',{day:'2-digit',month:'short'});
-    dayLabels += '<div style="position:absolute;left:'+(x-30)+'px;bottom:0;width:60px;text-align:center;font-size:11px;color:'+(isPeak?'#111':'#9CA3AF')+';font-weight:'+(isPeak?'800':'600')+';">'+dLabel+'</div>';
+    dayLabels += '<div style="position:absolute;left:calc('+(x/w*100).toFixed(2)+'% - 30px);bottom:0;width:60px;text-align:center;font-size:11px;color:'+(isPeak?'#111':'#9CA3AF')+';font-weight:'+(isPeak?'800':'600')+';">'+dLabel+'</div>';
   });
 
   var linePath = 'M' + points.map(function(p){return p[0]+','+p[1];}).join(' L');
-  var circles = points.map(function(p){return '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="5" fill="white" stroke="#1A1A1A" stroke-width="2"/>';}).join('');
+  var circles = points.map(function(p){return '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="5" fill="white" stroke="#1E3A8A" stroke-width="2"/>';}).join('');
   var peakVal = slice[peakIdx];
   var peakX = points[peakIdx] ? points[peakIdx][0] : 0;
   var peakY = points[peakIdx] ? points[peakIdx][1] : 0;
@@ -1519,7 +1639,7 @@ async function renderTrendChart(items) {
   wrap.innerHTML =
     '<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="100%" style="overflow:visible;">' +
       bars +
-      '<path d="'+linePath+'" fill="none" stroke="#1A1A1A" stroke-width="2"/>' +
+      '<path d="'+linePath+'" fill="none" stroke="#1E3A8A" stroke-width="2"/>' +
       circles +
       (peakVal>0 ? '<g><rect x="'+(peakX-38)+'" y="'+(peakY-38)+'" width="76" height="26" rx="13" fill="#1A1A1A"/>' +
         '<text x="'+peakX+'" y="'+(peakY-20)+'" text-anchor="middle" fill="white" font-size="12" font-weight="700" font-family="DM Mono, monospace">'+peakVal+'</text></g>' : '') +
@@ -1960,6 +2080,7 @@ function setRole(role) {
   localStorage.setItem('agrhodes_dietary_role', role);
   document.getElementById('roleModal').classList.remove('open');
   document.getElementById('roleBadge').textContent = role;
+  dxSetHello();
   applyRolePermissions();
 }
 
@@ -3060,6 +3181,7 @@ async function submitReceiveStock() {
 
 // Boot
 facilityReady.then(function() {
+  dxSetHello();
   if (!FACILITY_ID) { alert('Facility not available for this site.'); return; }
   if (currentRole) {
     document.getElementById('roleBadge').textContent = currentRole;
