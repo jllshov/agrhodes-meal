@@ -279,7 +279,7 @@
   .btn-visit:active { background: #FFEDD5; border-color: #FB923C; transform: scale(.98); }
   .visit-note { background: #FFF7ED; border: 1.5px solid #FED7AA; border-radius: 16px; padding: 12px 14px;
     color: #9A3412; font-size: .84rem; font-weight: 600; text-align: center; margin-bottom: 18px; line-height: 1.4; }
-  #visitResident { font-size: 16px; }
+  #visitRoom { font-size: 1.2rem; letter-spacing: .08em; text-align: center; text-transform: uppercase; }
   #visitCode { font-size: 1.4rem; letter-spacing: .4em; text-align: center; }
   .visit-help { color: var(--text2); font-size: .76rem; font-weight: 600; margin-top: -8px; text-align: center; }
   .visit-blocked { background: #FEF2F2; border: 1.5px solid #FECACA; border-radius: 16px; padding: 18px 16px;
@@ -413,7 +413,7 @@
     <button class="btn btn-outline" onclick="resetAll()" style="margin-top:10px">← New Check-In</button>
   </div>
 
-  <!-- Screen V: Visitor meal (free; counts only — names can't be read back by this page) -->
+  <!-- Screen V: Visitor meal (free; counts only. Asks for the room number, never the resident's name) -->
   <div class="screen" id="scr-visit">
     <div class="card-title">Visitor Meal</div>
     <div class="visit-blocked" id="visitBlocked" style="display:none">
@@ -423,9 +423,10 @@
     <div id="visitForm">
     <div class="visit-note">Meals are free for family and friends visiting a resident. Enjoy your time together!</div>
     <div class="fg-wrap">
-      <label class="fg-label" for="visitResident">Resident you're visiting</label>
-      <input type="text" id="visitResident" placeholder="Resident's name" maxlength="80"
-        autocomplete="off" autocorrect="off" spellcheck="false"/>
+      <label class="fg-label" for="visitRoom">Room number you're visiting</label>
+      <input type="text" id="visitRoom" placeholder="e.g. 112" maxlength="10" inputmode="text"
+        autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"/>
+      <div class="visit-help">Just the room number. Please don't type the resident's name.</div>
     </div>
     <div class="fg-wrap">
       <label class="fg-label">How many people are eating?</label>
@@ -931,7 +932,7 @@ async function submitGuest() {
 
 // ─── Visitor meal (free) ────────────────────────────────────
 // Visits are saved by add_visitor_meal(), which checks today's visitor code (front desk).
-// This page can save a visit but never read names back.
+// It asks for the room number only (never the resident's name), and this page can't read visits back.
 const PARTY_MAX = 20;
 const STAFF_PHONE_KEY = 'mt_staff_phone';
 
@@ -960,7 +961,7 @@ function openVisit() {
   const blocked = isStaffPhone();
   document.getElementById('visitBlocked').style.display = blocked ? 'block' : 'none';
   document.getElementById('visitForm').style.display = blocked ? 'none' : 'block';
-  document.getElementById('visitResident').value = '';
+  document.getElementById('visitRoom').value = '';
   document.getElementById('visitCode').value = '';
   document.getElementById('visitErr').style.display = 'none';
   setParty(1);
@@ -968,12 +969,12 @@ function openVisit() {
 }
 
 async function submitVisit() {
-  const name = document.getElementById('visitResident').value.replace(/\s+/g, ' ').trim();
+  const room = document.getElementById('visitRoom').value.replace(/\s+/g, '').toUpperCase();
   const errEl = document.getElementById('visitErr');
   errEl.style.display = 'none';
   const code = document.getElementById('visitCode').value.replace(/\D/g, '');
   if (isStaffPhone()) { openVisit(); return; }
-  if (name.length < 2) { errEl.textContent = "Please enter the name of the resident you're visiting."; errEl.style.display = 'block'; return; }
+  if (!/^[A-Z0-9-]{1,10}$/.test(room) || !/[0-9]/.test(room)) { errEl.textContent = "Please enter the room number you're visiting (numbers and letters only)."; errEl.style.display = 'block'; return; }
   if (code.length !== 4) { errEl.textContent = "Please enter today's 4-digit visitor code from the front desk."; errEl.style.display = 'block'; return; }
   if (!facilityId)     { errEl.textContent = 'Still connecting. Please try again in a moment.'; errEl.style.display = 'block'; return; }
 
@@ -987,7 +988,7 @@ async function submitVisit() {
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ p_facility: facilityId, p_resident: name, p_party: partySize, p_code: code })
+      body: JSON.stringify({ p_facility: facilityId, p_room: room, p_party: partySize, p_code: code })
     });
     const result = await res.json().catch(() => null);
     if (!res.ok) {
@@ -996,7 +997,8 @@ async function submitVisit() {
     }
     if (result === 'wrong_code') throw new Error("That code isn't right. Please check today's code with the front desk.");
     if (result === 'locked') throw new Error('Too many wrong codes. Please wait 10 minutes or ask the front desk.');
-    if (result !== 'ok') throw new Error('Please check the resident name and try again.');
+    if (result === 'unknown_room') throw new Error("We couldn't find that room in this building. Please check the room number with the front desk.");
+    if (result !== 'ok') throw new Error('Please check the room number and try again.');
     const now = new Date();
     showScr('done');
     document.getElementById('resultBox').className = 'result res-visit';
@@ -1023,8 +1025,8 @@ document.getElementById('visitBack').addEventListener('click', function() { show
 document.getElementById('partyMinus').addEventListener('click', function() { setParty(partySize - 1); });
 document.getElementById('partyPlus').addEventListener('click', function() { setParty(partySize + 1); });
 document.getElementById('visitSubmitBtn').addEventListener('click', submitVisit);
-document.getElementById('visitResident').addEventListener('keydown', function(e) { if (e.key === 'Enter') e.target.blur(); });
-document.getElementById('visitResident').addEventListener('input', function() { document.getElementById('visitErr').style.display = 'none'; });
+document.getElementById('visitRoom').addEventListener('keydown', function(e) { if (e.key === 'Enter') e.target.blur(); });
+document.getElementById('visitRoom').addEventListener('input', function() { document.getElementById('visitErr').style.display = 'none'; });
 document.getElementById('visitCode').addEventListener('input', function(e) {
   e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
   document.getElementById('visitErr').style.display = 'none';

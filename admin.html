@@ -423,7 +423,7 @@
       </div>
     </div>
 
-    <!-- VISITOR MEALS (free; counts only, resident names are never read back) -->
+    <!-- VISITOR MEALS (free; counts only; visitors give a room number, never a resident's name) -->
     <div class="section" id="sec-visitors">
       <div class="card">
         <div class="card-header"><div class="card-title">Visitor Meals</div></div>
@@ -449,7 +449,7 @@
           <div class="stat-card"><div class="stat-label">Avg Party Size</div><div class="stat-val" id="visAvg">—</div></div>
           <div class="stat-card"><div class="stat-label">Busiest Meal</div><div class="stat-val gold" id="visBusiest">—</div></div>
         </div>
-        <div style="font-size:.78rem;color:var(--text2);margin:-6px 0 12px">Visitors scan the meal QR sign, tap “Visiting a resident” and enter today's code. Meals are free. Phones used for an employee check-in can't get visitor meals. Numbers are people served; resident names are kept private and are not shown here.</div>
+        <div style="font-size:.78rem;color:var(--text2);margin:-6px 0 12px">Visitors scan the meal QR sign, tap “Visiting a resident”, type the room number and today's code. Meals are free. Phones used for an employee check-in can't get visitor meals. Numbers are people served. Resident names are never asked for.</div>
         <div class="vis-flags" id="visFlags"></div>
         <div class="tbl-wrap">
           <table>
@@ -1103,7 +1103,7 @@ async function loadGuests() {
 
 
 // ─── VISITOR MEALS ─────────────────────────────────────────
-// Counts come from visitor_meal_counts(): numbers only. This page cannot read resident names.
+// Counts come from visitor_meal_counts(): numbers only. Visitors give a room number; resident names are never collected.
 let visRows = [];
 
 function localYmd(d) {
@@ -1126,16 +1126,15 @@ async function loadVisitorCode() {
   }
 }
 
-// Unusual patterns from visitor_meal_flags(): numbers only, never names.
+// Unusual patterns from visitor_meal_flags(): numbers only.
 function flagText(f) {
   const day = f.day ? new Date(f.day + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ': ' : '';
   const n = f.n, s = n === 1 ? '' : 's';
   switch (f.kind) {
     case 'wrong_codes':  return `${day}${n} wrong visitor codes typed. Someone may be trying to guess the code.`;
-    case 'same_meal':    return `${day}${n} resident name${s} used on more than one ticket at ${f.meal}.`;
+    case 'same_meal':    return `${day}${n} room${s} with more than one visitor ticket at ${f.meal}.`;
     case 'shift_change': return `${day}${n} visitor ticket${s} at shift change (6:30–7:30 am, 2:30–3:30 pm or 6:30–7:30 pm).`;
     case 'spike':        return `${day}${n} visitor meals, more than double the usual.`;
-    case 'frequent':     return `${n} resident name${s} used on 5 or more different days in these dates.`;
     default:             return `${day}${f.kind} (${n})`;
   }
 }
