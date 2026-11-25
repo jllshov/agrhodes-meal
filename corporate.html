@@ -593,7 +593,7 @@ function previewBulkEmployees() {
       const d = new Date(hire);
       if (!isNaN(d)) hireISO = d.toISOString().split('T')[0];
     }
-    const r = { lastName: lastName || '', firstName: firstName || '', empId: (empId || '').slice(0, 40), unit: unit || '', role: role || '', hireISO, status: 'checking' };
+    const r = { lastName: lastName || '', firstName: firstName || '', empId: normEmpId(empId).slice(0, 40), unit: unit || '', role: role || '', hireISO, status: 'checking' };
     if (!(r.lastName && r.firstName && r.empId)) r.status = 'missing';
     else if (seen[r.empId]) r.status = 'dup';
     seen[r.empId] = true;
@@ -643,6 +643,26 @@ function renderBulkPreview() {
   btn.textContent = adds + ups ? `Add ${adds} · update ${ups}` : 'Add employees';
 }
 
+// ─── Employee IDs: leading zeros don't matter ("005326" = "5326") ───
+/** All-digit IDs are kept without leading zeros. */
+function normEmpId(v) {
+  const s = String(v == null ? '' : v).trim();
+  return /^\d+$/.test(s) ? (s.replace(/^0+/, '') || '0') : s;
+}
+/** The forms of an all-digit ID that may be saved (5326, 05326, 005326, …). */
+function empIdVariants(v) {
+  const s = normEmpId(v);
+  if (!/^\d+$/.test(s)) return [s];
+  const out = [];
+  for (let n = s.length; n <= Math.max(s.length, 10); n++) out.push(s.padStart(n, '0'));
+  return out;
+}
+/** PostgREST filter value for employee_number matching this ID with or without leading zeros. */
+function empIdFilter(v) {
+  const vs = empIdVariants(v);
+  return vs.length === 1 ? 'eq.' + encodeURIComponent(vs[0]) : 'in.(' + vs.join(',') + ')';
+}
+
 /** Marks each row New / Update / clash by looking up the IDs in the employee list. */
 async function checkBulkAgainstList() {
   const seq = ++bulkCheckSeq;
@@ -653,14 +673,16 @@ async function checkBulkAgainstList() {
   const quote = v => '"' + String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
   const here = {}, elsewhere = {}, floatElsewhere = {};
   try {
-    for (let i = 0; i < ids.length; i += 80) {
-      const list = encodeURIComponent('(' + ids.slice(i, i + 80).map(quote).join(',') + ')');
+    for (let i = 0; i < ids.length; i += 20) {
+      const forms = ids.slice(i, i + 20).flatMap(empIdVariants);
+      const list = encodeURIComponent('(' + forms.map(quote).join(',') + ')');
       const found = await sb(`employees?employee_number=in.${list}&select=id,facility_id,employee_number,is_active,works_all_buildings`);
       found.forEach(e => {
-        if (e.facility_id === s.facilityId) here[e.employee_number] = e;
+        const k = normEmpId(e.employee_number);
+        if (e.facility_id === s.facilityId) here[k] = e;
         else if (e.is_active) {
-          elsewhere[e.employee_number] = true;
-          if (e.works_all_buildings) floatElsewhere[e.employee_number] = true;
+          elsewhere[k] = true;
+          if (e.works_all_buildings) floatElsewhere[k] = true;
         }
       });
     }

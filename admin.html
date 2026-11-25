@@ -762,7 +762,7 @@ function closeModal() { document.getElementById('empModal').classList.remove('op
 async function saveEmployee() {
   const first = document.getElementById('mFirst').value.trim();
   const last  = document.getElementById('mLast').value.trim();
-  const empNo = document.getElementById('mEmpId').value.trim();
+  const empNo = normEmpId(document.getElementById('mEmpId').value);
   const unit  = document.getElementById('mUnit').value.trim();
   const role  = document.getElementById('mRole').value.trim();
   const hire  = document.getElementById('mHire').value;
@@ -803,13 +803,33 @@ async function saveEmployee() {
   } catch(e) { showToast('Error: '+e.message); document.getElementById('modalSaveBtn').disabled=false; document.getElementById('modalSaveBtn').textContent='Save'; }
 }
 
+// ─── Employee IDs: leading zeros don't matter ("005326" = "5326") ───
+/** All-digit IDs are kept without leading zeros. */
+function normEmpId(v) {
+  const s = String(v == null ? '' : v).trim();
+  return /^\d+$/.test(s) ? (s.replace(/^0+/, '') || '0') : s;
+}
+/** The forms of an all-digit ID that may be saved (5326, 05326, 005326, …). */
+function empIdVariants(v) {
+  const s = normEmpId(v);
+  if (!/^\d+$/.test(s)) return [s];
+  const out = [];
+  for (let n = s.length; n <= Math.max(s.length, 10); n++) out.push(s.padStart(n, '0'));
+  return out;
+}
+/** PostgREST filter value for employee_number matching this ID with or without leading zeros. */
+function empIdFilter(v) {
+  const vs = empIdVariants(v);
+  return vs.length === 1 ? 'eq.' + encodeURIComponent(vs[0]) : 'in.(' + vs.join(',') + ')';
+}
+
 /** Message when this ID would scan as the wrong person in another building, else ''. */
 async function idClashElsewhere(empNo, floats) {
-  const num = encodeURIComponent(empNo);
+  const num = empIdFilter(empNo);
   const other = `&facility_id=neq.${facilityId}&is_active=eq.true&select=id&limit=1`;
   const rows = floats
-    ? await sb(`employees?employee_number=eq.${num}${other}`)
-    : await sb(`employees?employee_number=eq.${num}&works_all_buildings=eq.true${other}`);
+    ? await sb(`employees?employee_number=${num}${other}`)
+    : await sb(`employees?employee_number=${num}&works_all_buildings=eq.true${other}`);
   if (!rows.length) return '';
   return floats
     ? `ID ${empNo} is already used by someone at another building. Pick a different ID to let this person work in all buildings.`
