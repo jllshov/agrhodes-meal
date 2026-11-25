@@ -584,13 +584,33 @@ async function getBundleCredits(employeeId, config) {
   return Math.max(0, totalEntitlement - totalUsed);
 }
 
+// ─── Employee IDs: leading zeros don't matter ("005326" = "5326") ───
+/** All-digit IDs are kept without leading zeros. */
+function normEmpId(v) {
+  const s = String(v == null ? '' : v).trim();
+  return /^\d+$/.test(s) ? (s.replace(/^0+/, '') || '0') : s;
+}
+/** The forms of an all-digit ID that may be saved (5326, 05326, 005326, …). */
+function empIdVariants(v) {
+  const s = normEmpId(v);
+  if (!/^\d+$/.test(s)) return [s];
+  const out = [];
+  for (let n = s.length; n <= Math.max(s.length, 10); n++) out.push(s.padStart(n, '0'));
+  return out;
+}
+/** PostgREST filter value for employee_number matching this ID with or without leading zeros. */
+function empIdFilter(v) {
+  const vs = empIdVariants(v);
+  return vs.length === 1 ? 'eq.' + encodeURIComponent(vs[0]) : 'in.(' + vs.join(',') + ')';
+}
+
 // ─── Employees who work in all buildings (floats, agency) ───
 // Not found at this building → look for someone whose ID works everywhere.
 // The meal is still saved under this building (where they ate).
 async function findFloatEmployee(id) {
   try {
     return await sbFetch(
-      `employees?works_all_buildings=eq.true&employee_number=eq.${encodeURIComponent(id)}&is_active=eq.true&select=*`
+      `employees?works_all_buildings=eq.true&employee_number=${empIdFilter(id)}&is_active=eq.true&select=*`
     );
   } catch (e) {
     return []; // before the meals database has the works_all_buildings column
@@ -611,7 +631,7 @@ async function lookup() {
 
     // Look up employee
     let employees = await sbFetch(
-      `employees?facility_id=eq.${facilityId}&employee_number=eq.${encodeURIComponent(id)}&is_active=eq.true&select=*`
+      `employees?facility_id=eq.${facilityId}&employee_number=${empIdFilter(id)}&is_active=eq.true&select=*`
     );
     if (!employees.length) employees = await findFloatEmployee(id);
     if (employees.length > 1) {
